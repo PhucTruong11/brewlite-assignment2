@@ -4,7 +4,7 @@
 
 ## Luồng hiện tại
 
-Khách chọn món và cấu hình → giỏ kiểm tra công thức/nguyên liệu qua API → bấm “Tiến hành Thanh toán” để tạo đơn, giữ nguyên liệu 2 phút → trang checkout hiển thị QR và đồng hồ → bấm “Xác nhận trả” để thanh toán mô phỏng → hóa đơn và theo dõi đơn. Trang admin Nguyên liệu/Công thức đã đọc API thật; thao tác ghi còn chờ backend.
+Khách chọn món và cấu hình → giỏ kiểm tra công thức/nguyên liệu qua API → bấm “Tiến hành Thanh toán” để tạo đơn, giữ nguyên liệu 2 phút → trang checkout hiển thị QR và đồng hồ → xác nhận kết quả thanh toán → hóa đơn và theo dõi đơn. Trang admin Nguyên liệu/Công thức dùng API backend.
 
 Các file chính: `src/stores/cart.store.ts` giữ giỏ, `src/components/cart/CartContent.tsx` tạo đơn, `src/app/checkout/page.tsx` xử lý xác nhận trả/gia hạn, `src/app/admin/ingredients/page.tsx` và `src/app/admin/recipes/page.tsx` hiển thị dữ liệu quản trị. Chi tiết nằm ở [PROJECT_FLOW.md](../PROJECT_FLOW.md).
 
