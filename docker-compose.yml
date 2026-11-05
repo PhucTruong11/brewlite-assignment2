@@ -1,5 +1,5 @@
-# Docker Compose cho BrewLite (Gộp db, api, web)
-# Đặt name: docker để khớp với project name và volume docker_brewlite_pgdata đã tạo trước đó
+# Docker Compose local cho BrewLite Assignment 2 (db, api, web)
+# Project name riêng để volume local không trùng với bản BrewLite cũ.
 name: brewlite-assignment2
 
 include:

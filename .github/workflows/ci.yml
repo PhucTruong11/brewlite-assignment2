@@ -36,11 +36,11 @@ jobs:
       - name: Lint Backend
         run: npm run lint
 
-      - name: Build Backend (Check TypeScript Errors)
-        run: npm run build
-
       - name: Test Backend
         run: npm test
+
+      - name: Build Backend (Check TypeScript Errors)
+        run: npm run build
 
   check-frontend:
     name: Build & Check Frontend
@@ -66,8 +66,56 @@ jobs:
       - name: Lint Frontend (Check ESLint Errors)
         run: npm run lint
 
+      - name: Test Frontend
+        run: npm test
+
       - name: Build Frontend (Check Next.js Build Errors)
         run: npm run build
 
-      - name: Test Frontend
-        run: npm test
+  integration-e2e:
+    name: API integration and order E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: brewlite
+          POSTGRES_PASSWORD: brewlite_test
+          POSTGRES_DB: brewlite_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U brewlite -d brewlite_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: ./apps/api
+    env:
+      DATABASE_URL: postgresql://brewlite:brewlite_test@localhost:5432/brewlite_test
+      E2E_DATABASE: '1'
+      JWT_SECRET: ci-only-jwt-secret-do-not-use-in-production
+      NODE_ENV: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: './apps/api/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Apply migrations to disposable PostgreSQL
+        run: npx prisma migrate deploy
+
+      - name: Test menu, orders, payment and confirmation
+        run: npm run test:e2e

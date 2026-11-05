@@ -16,7 +16,7 @@ brewlite-assignment2/
 │   ├── traceability-matrix.md
 │   └── deployment.md
 ├── tests/                # Thunder/Postman collections
-├── .github/workflows/    # CI; mẫu CD chưa kích hoạt
+├── .github/workflows/    # CI và phát hành production theo tag
 ├── docker/               # Compose local theo yêu cầu đề
 ├── docker-compose.yml
 ├── .env.example
@@ -25,13 +25,13 @@ brewlite-assignment2/
 
 Đề gốc: [Assignment 2](docs/requirements/assignment2-brief.pdf). Bản này **dùng môi trường deploy để chạy và demo**; Compose local được giữ để đáp ứng checklist của đề nhưng không được khởi động khi chuẩn bị thư mục này.
 
-## Production hiện có
+## Production cho Assignment 2
 
 - Web HTTPS: https://brewlite-frontend.vercel.app/
 - API HTTPS: https://brewlite-api-omni.onrender.com/api
 - DB: Supabase PostgreSQL; credentials chỉ ở Render Environment.
 
-Các URL trên đang thuộc cấu hình deploy hiện có. **Chưa xác nhận hosting đã build từ thư mục Assignment 2 này.** Vercel/Render phải được trỏ sang repository chứa thư mục này, với Root Directory lần lượt `apps/web` và `apps/api`, trước khi coi deployment là bản Assignment 2. Xem [hướng dẫn triển khai và rollback](docs/deployment.md).
+Nhóm dùng lại **chính các project Vercel/Render và DB Supabase này** cho Assignment 2, giữ nguyên URL. Repo Assignment 2 là [PhucTruong11/brewlite-assignment2](https://github.com/PhucTruong11/brewlite-assignment2). Bản `../brewlite` tiếp tục chạy local; sau khi đổi nguồn deploy, các URL trên sẽ phục vụ mã Assignment 2. **Hiện chưa xác nhận hosting đã đổi nguồn và deploy bản này.** Xem [hướng dẫn chuyển nguồn và rollback](docs/deployment.md).
 
 Web production cần `NEXT_PUBLIC_API_URL=/api` và `API_INTERNAL_URL=https://brewlite-api-omni.onrender.com` ở Vercel. API cần `FRONTEND_URL=https://brewlite-frontend.vercel.app`, `DATABASE_URL` Supabase, `JWT_SECRET` và secret mail/thanh toán ở Render. Không commit `.env` thật. Các file `.env.example` chỉ mô tả tên và định dạng biến.
 
@@ -54,14 +54,27 @@ npm test
 npm run build
 ```
 
+CI chạy tự động cho pull request và `main`: lint, unit test, build của hai app và bài E2E API với PostgreSQL 16 tạm. Bài E2E đi qua menu → đăng nhập → tạo đơn → thanh toán CARD mô phỏng → xác nhận trạng thái `PAID`; còn kiểm tra thiếu nguyên liệu, hết hạn, idempotency và health. Chạy riêng trên máy chỉ khi đã tạo DB **`brewlite_test`**:
+
+```powershell
+cd apps/api
+$env:DATABASE_URL = 'postgresql://brewlite:brewlite_test@localhost:5432/brewlite_test'
+$env:E2E_DATABASE = '1'
+$env:JWT_SECRET = 'local-test-only'
+npx prisma migrate deploy
+npm run test:e2e
+```
+
+Bài test từ chối chạy nếu tên DB không phải `brewlite_test`; tuyệt đối không đặt `E2E_DATABASE=1` với DB thật. CI tạo DB tạm tự động, nên nhóm có thể xem kết quả trên GitHub Actions mà không chạy local. Đường dẫn lệnh này chỉ dành cho kiểm thử, không phải cách chạy bản Assignment 2 để demo.
+
 Test API thủ công trong `tests/` chỉ gửi đến URL được chọn trong environment của Thunder/Postman. Đừng để mặc định `localhost` khi kiểm tra production; các request `POST /api/orders` và thanh toán có thể ghi **DB production**. Dùng tài khoản và dữ liệu demo riêng, tránh chạy ca thay đổi stock trên DB thật.
 
 ## Trạng thái Assignment 2
 
 - **Đã sắp cấu trúc:** `apps/web`, `apps/api`, `docs`, `tests`, `.github/workflows`, Dockerfile/Compose và Prisma migration được sao chép; CI đã cập nhật đường dẫn mới.
 - **Cần làm Task 1–3:** SRS, use-case, ba loại sơ đồ UML, deployment diagram đúng nền tảng thật, ADR được nhóm duyệt và ma trận truy vết hoàn chỉnh. Xem README trong từng thư mục `docs/`.
-- **Cần chứng minh Task 4–5:** CI chạy trên PR và branch protection; integration/E2E với DB test riêng; health endpoint kiểm tra DB; CD thực sự build/tag/push image, migration/deploy/smoke/rollback; release notes, Sprint Review/Retrospective và video demo. `.github/workflows/cd.yml.example` hiện **chưa được kích hoạt**.
+- **Task 4–5:** Workflow CI và CD, E2E API với DB test riêng và `GET /api/health` đã có trong mã nguồn. CD chỉ chạy khi tạo tag `v*` hoặc gọi thủ công; cần cấu hình secrets, chuyển source Render sang repo mới, kiểm tra migration production và ghi bằng chứng run thành công. Branch protection, release notes, Sprint Review/Retrospective và video demo vẫn cần nhóm thực hiện trên GitHub/tài liệu.
 
 ## Git và bàn giao
 
-Thư mục này là bản sao nguồn **chưa tự kết nối với GitHub**. Tạo repository/branch cho Assignment 2 rồi push, review qua PR và bật CI. Không đổi Root Directory của các dịch vụ đang phục vụ Assignment 1 cho tới khi nhóm xác nhận cách chuyển; có thể tạo project deploy riêng cho Assignment 2 để hai bản độc lập. Lưu URL, release/tag và bằng chứng pipeline trong `docs/deployment.md`.
+Thư mục này đã là Git repo riêng và đã push lên `PhucTruong11/brewlite-assignment2`, nhánh `main`. Nhóm đã chọn chuyển **các project deploy hiện có** sang repo này; cần kiểm tra CI, đổi đường dẫn build, deploy và lưu bằng chứng trong `docs/deployment.md`. Việc chuyển nguồn deploy không sửa thư mục local `../brewlite`.

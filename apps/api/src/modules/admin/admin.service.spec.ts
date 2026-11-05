@@ -11,7 +11,8 @@ describe('AdminService', () => {
         pointTransaction: { create: vi.fn() },
     };
     const prisma = {
-        $transaction: vi.fn((cb: (t: typeof tx) => unknown) => cb(tx)),
+        $transaction: vi.fn((input: ((t: typeof tx) => unknown) | Promise<unknown>[]) =>
+            Array.isArray(input) ? Promise.all(input) : input(tx)),
         product: { findUnique: vi.fn(), updateMany: vi.fn() },
         order: { findMany: vi.fn(), count: vi.fn(), groupBy: vi.fn(), aggregate: vi.fn() },
         promotion: { findUnique: vi.fn(), create: vi.fn() },
@@ -24,8 +25,6 @@ describe('AdminService', () => {
     it('danh sách admin loại đơn chờ thanh toán và chỉ giữ đơn hủy đã trả tiền', async () => {
         prisma.order.findMany.mockResolvedValue([]);
         prisma.order.count.mockResolvedValue(0);
-        prisma.$transaction.mockImplementationOnce(async (requests: Promise<unknown>[]) => Promise.all(requests));
-
         await service.listOrders({ range: 'all' });
 
         expect(prisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({

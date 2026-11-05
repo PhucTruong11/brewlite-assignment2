@@ -1,0 +1,159 @@
+name: BrewLite production release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brewlite-production
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    name: Run CI before release
+    uses: ./.github/workflows/ci.yml
+
+  images:
+    name: Build and publish SHA images
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare immutable image tags
+        id: image
+        shell: bash
+        run: |
+          repo="${GITHUB_REPOSITORY,,}"
+          echo "api=ghcr.io/${repo}-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "web=ghcr.io/${repo}-web:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Sign in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/api
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: ${{ steps.image.outputs.api }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and publish web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/web
+          file: ./apps/web/Dockerfile
+          push: true
+          tags: ${{ steps.image.outputs.web }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=/api
+            API_INTERNAL_URL=https://brewlite-api-omni.onrender.com
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+
+  deploy:
+    name: Migrate, deploy and smoke test
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment:
+      name: production
+      url: https://brewlite-frontend.vercel.app/
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ./apps/api/package-lock.json
+
+      - name: Check production secrets
+        shell: bash
+        run: |
+          for name in RENDER_API_KEY RENDER_SERVICE_ID VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Thiếu secret $name trong environment production"
+              exit 1
+            fi
+          done
+
+      - name: Install Prisma CLI
+        working-directory: apps/api
+        run: npm ci
+
+      - name: Apply versioned migrations to Supabase
+        working-directory: apps/api
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        shell: bash
+        run: |
+          if [[ -z "$DATABASE_URL" ]]; then
+            echo '::error::Thiếu PRODUCTION_DATABASE_URL trong environment production'
+            exit 1
+          fi
+          npx prisma migrate deploy
+
+      - name: Deploy exact release commit to Render
+        id: render
+        run: node scripts/cd/render-deploy.mjs deploy
+
+      - name: Smoke test API and database
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location --retry 12 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 5 --max-time 20 https://brewlite-api-omni.onrender.com/api/health
+          curl --fail --silent --show-error --location --retry 6 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 5 --max-time 20 https://brewlite-api-omni.onrender.com/api/products > /dev/null
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull production web settings
+        working-directory: apps/web
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Deploy web to Vercel
+        id: web
+        working-directory: apps/web
+        run: vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Smoke test HTTPS web and its API proxy
+        id: smoke
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location --retry 10 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 5 --max-time 20 https://brewlite-frontend.vercel.app/ > /dev/null
+          curl --fail --silent --show-error --location --retry 10 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 5 --max-time 20 https://brewlite-frontend.vercel.app/api/health > /dev/null
+
+      - name: Restore previous Vercel deployment after failed smoke test
+        if: failure() && steps.web.outcome == 'success'
+        continue-on-error: true
+        working-directory: apps/web
+        run: vercel rollback --token="$VERCEL_TOKEN"
+
+      - name: Restore previous Render commit after failed rollout
+        if: failure() && steps.render.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/cd/render-deploy.mjs rollback
