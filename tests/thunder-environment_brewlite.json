@@ -1,0 +1,40 @@
+{
+  "client": "Thunder Client",
+  "environmentName": "BrewLite Local",
+  "dateExported": "2026-10-29T00:00:00Z",
+  "version": "1.1",
+  "variables": [
+    {
+      "name": "baseUrl",
+      "value": "https://SET_TEST_API_HOST/api"
+    },
+    {
+      "name": "adminEmail",
+      "value": ""
+    },
+    {
+      "name": "adminPassword",
+      "value": ""
+    },
+    {
+      "name": "token",
+      "value": ""
+    },
+    {
+      "name": "productId",
+      "value": ""
+    },
+    {
+      "name": "teaProductId",
+      "value": ""
+    },
+    {
+      "name": "toppingId",
+      "value": ""
+    },
+    {
+      "name": "orderId",
+      "value": ""
+    }
+  ]
+}

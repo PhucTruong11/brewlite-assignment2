@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1440" viewBox="0 0 1440 1440" role="img" aria-labelledby="title desc">
+<title id="title">BrewLite | Luồng hệ thống hiện tại</title><desc id="desc">Luồng UI hiện có: menu, size và topping, giỏ, kiểm tra đăng nhập, đăng ký/login và gộp giỏ khách. Checkout gọi tạo đơn, thanh toán mô phỏng, đọc lại đơn PAID rồi xóa giỏ và mở xác nhận. Có nhánh lỗi thử lại và quá hạn. Ghi rõ Orders/Checkout thiếu guard, admin thiếu role và gia hạn chưa đồng bộ backend.</desc>
+
+<defs><marker id="arrow-main" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#276653"/></marker><marker id="arrow-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#a56a22"/></marker></defs>
+<style>text{font-family:"Segoe UI",Arial,sans-serif;fill:#183f32}.title{font-size:38px;font-weight:750}.subtitle{font-size:21px;fill:#576d62}.lane{font-size:20px;font-weight:700;letter-spacing:.5px}.node{font-size:25px;font-weight:700}.node-small{font-size:22px;font-weight:700}.body{font-size:21px}.small{font-size:19px;fill:#52685e}.tiny{font-size:18px;fill:#52685e}.main{stroke:#276653;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.warn{stroke:#a56a22;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}</style><rect width="1440" height="1440" fill="#f7faf8"/>
+<text x="48" y="62" class="title" >BrewLite | Luồng hệ thống hiện tại</text>
+<text x="48" y="100" class="subtitle" >Đường đi đang có trong code; phần chưa hoàn thiện được ghi ở cuối sơ đồ.</text>
+<rect x="32" y="142" width="1376" height="374" rx="20" fill="#eff5f1" stroke="#d6e1da" stroke-width="1.5"/>
+<text x="52" y="182" class="lane" >01  KHÁCH, TÀI KHOẢN VÀ GIỎ HÀNG</text>
+<rect x="48" y="214" width="282" height="104" rx="18" fill="#ffffff" stroke="#cbd8d2" stroke-width="1.5"/><text x="189" y="249" class="node" text-anchor="middle">01. Xem menu</text><text x="189" y="283" class="body" text-anchor="middle">GET /products</text><text x="189" y="311" class="small" text-anchor="middle">Chi tiết + bảng giá</text>
+<rect x="402" y="214" width="282" height="104" rx="18" fill="#ffffff" stroke="#cbd8d2" stroke-width="1.5"/><text x="543" y="249" class="node" text-anchor="middle">02. Chọn tùy chọn</text><text x="543" y="283" class="body" text-anchor="middle">Size + topping + số phần</text><text x="543" y="311" class="small" text-anchor="middle">Chọn số ly cần mua</text>
+<rect x="756" y="214" width="282" height="104" rx="18" fill="#ffffff" stroke="#cbd8d2" stroke-width="1.5"/><text x="897" y="249" class="node" text-anchor="middle">03. Giỏ hàng</text><text x="897" y="283" class="body" text-anchor="middle">Gộp dòng + tính giá</text><text x="897" y="311" class="small" text-anchor="middle">Voucher theo tổng mới</text>
+<rect x="1110" y="214" width="282" height="104" rx="18" fill="#e3efe7" stroke="#cbd8d2" stroke-width="1.5"/><text x="1251" y="249" class="node" text-anchor="middle">04. Đi checkout</text><text x="1251" y="283" class="body" text-anchor="middle">UI kiểm tra đăng nhập</text><text x="1251" y="311" class="small" text-anchor="middle">GET /auth/me</text>
+<path d="M330 266 H402" class="main" fill="none" marker-end="url(#arrow-main)" />
+<path d="M684 266 H756" class="main" fill="none" marker-end="url(#arrow-main)" />
+<path d="M1038 266 H1110" class="main" fill="none" marker-end="url(#arrow-main)" />
+<path d="M1251 318 V370" class="warn" fill="none" marker-end="url(#arrow-warn)" />
+<text x="1270" y="351" class="small" >Chưa</text>
+<rect x="1110" y="370" width="282" height="112" rx="18" fill="#fff5e6" stroke="#cbd8d2" stroke-width="1.5"/><text x="1251" y="405" class="node-small" text-anchor="middle">Đăng ký / Login</text><text x="1251" y="439" class="body" text-anchor="middle">OTP khi tạo tài khoản</text><text x="1251" y="467" class="small" text-anchor="middle">Cookie access_token</text>
+<rect x="756" y="370" width="282" height="112" rx="18" fill="#ffffff" stroke="#cbd8d2" stroke-width="1.5"/><text x="897" y="405" class="node-small" text-anchor="middle">Gộp giỏ theo user</text><text x="897" y="439" class="body" text-anchor="middle">Cùng cấu hình → cộng ly</text><text x="897" y="467" class="small" text-anchor="middle">Khác tùy chọn → tách dòng</text>
+<path d="M1110 426 H1038" class="main" fill="none" marker-end="url(#arrow-main)" />
+<path d="M897 370 V318" class="main" fill="none" marker-end="url(#arrow-main)" />
+<text x="916" y="350" class="tiny" >Giỏ sau login</text>
+<rect x="32" y="568" width="1376" height="300" rx="20" fill="#ffffff" stroke="#d6e1da" stroke-width="1.5"/>
+<text x="52" y="610" class="lane" >02  CHECKOUT, XỬ LÝ ĐƠN VÀ XÁC NHẬN</text>
+<path d="M1392 266 H1424 V636 H1251 V654" class="main" fill="none" marker-end="url(#arrow-main)" />
+<text x="1390" y="558" class="small" text-anchor="end">Đã đăng nhập</text>
+<rect x="1110" y="654" width="282" height="160" rx="18" fill="#ffffff" stroke="#cbd8d2" stroke-width="1.5"/><text x="1251" y="689" class="node" text-anchor="middle">05. Tạo đơn</text><text x="1251" y="723" class="body" text-anchor="middle">POST /orders</text><text x="1251" y="751" class="small" text-anchor="middle">Tính giá lại từ DB</text><text x="1251" y="779" class="small" text-anchor="middle">Lưu Order PENDING</text>
+<rect x="756" y="654" width="282" height="160" rx="18" fill="#e3efe7" stroke="#cbd8d2" stroke-width="1.5"/><text x="897" y="689" class="node" text-anchor="middle">06. Thanh toán</text><text x="897" y="723" class="body" text-anchor="middle">POST /checkout</text><text x="897" y="751" class="small" text-anchor="middle">Key + khóa dòng Order</text><text x="897" y="779" class="small" text-anchor="middle">Trừ kho, PAID, cộng điểm</text>
+<rect x="402" y="654" width="282" height="160" rx="18" fill="#ffffff" stroke="#cbd8d2" stroke-width="1.5"/><text x="543" y="689" class="node" text-anchor="middle">07. Kiểm tra lại</text><text x="543" y="723" class="body" text-anchor="middle">GET /orders/:id</text><text x="543" y="751" class="small" text-anchor="middle">Chỉ xác nhận khi PAID</text><text x="543" y="779" class="small" text-anchor="middle">Giá và trạng thái từ server</text>
+<rect x="48" y="654" width="282" height="160" rx="18" fill="#ffffff" stroke="#cbd8d2" stroke-width="1.5"/><text x="189" y="689" class="node" text-anchor="middle">08. Xác nhận đơn</text><text x="189" y="723" class="body" text-anchor="middle">Xóa giỏ + timer</text><text x="189" y="751" class="small" text-anchor="middle">/orders/:id?confirmed=1</text><text x="189" y="779" class="small" text-anchor="middle">Hiển thị mã và số tiền</text>
+<path d="M1110 734 H1038" class="main" fill="none" marker-end="url(#arrow-main)" />
+<path d="M756 734 H684" class="main" fill="none" marker-end="url(#arrow-main)" />
+<path d="M402 734 H330" class="main" fill="none" marker-end="url(#arrow-main)" />
+<rect x="32" y="916" width="1376" height="290" rx="20" fill="#eff5f1" stroke="#d6e1da" stroke-width="1.5"/>
+<text x="52" y="958" class="lane" >03  KẾT QUẢ VÀ THEO DÕI ĐƠN</text>
+<rect x="48" y="1000" width="636" height="140" rx="18" fill="#ffffff" stroke="#cbd8d2" stroke-width="1.5"/>
+<text x="76" y="1040" class="node" >Lịch sử và nhận đồ uống</text>
+<text x="76" y="1081" class="body" >PAID → PREPARING → READY → COMPLETED</text>
+<text x="76" y="1118" class="small" >Nhân viên/admin cập nhật trạng thái đơn.</text>
+<path d="M48 782 H16 V1070 H48" class="main" fill="none" marker-end="url(#arrow-main)" />
+<rect x="756" y="1000" width="282" height="140" rx="18" fill="#fff5e6" stroke="#cbd8d2" stroke-width="1.5"/><text x="897" y="1035" class="node-small" text-anchor="middle">Lỗi / chưa rõ kết quả</text><text x="897" y="1069" class="body" text-anchor="middle">Giữ giỏ, hiển thị lỗi</text><text x="897" y="1097" class="small" text-anchor="middle">Kiểm tra đơn trước retry</text>
+<path d="M897 814 V1000" class="warn" fill="none" marker-end="url(#arrow-warn)" />
+<text x="916" y="911" class="small" >Fail / timeout</text>
+<path d="M1038 1048 H1062 V775 H1038" class="warn" fill="none" marker-end="url(#arrow-warn)" />
+<text x="1040" y="895" class="tiny" text-anchor="end">Thử lại</text>
+<rect x="1110" y="1000" width="282" height="140" rx="18" fill="#fff5e6" stroke="#cbd8d2" stroke-width="1.5"/><text x="1251" y="1035" class="node-small" text-anchor="middle">Quá hạn thanh toán</text><text x="1251" y="1069" class="body" text-anchor="middle">2 phút từ createdAt</text><text x="1251" y="1097" class="small" text-anchor="middle">PENDING → CANCELLED</text>
+<path d="M1038 792 H1082 V984 H1251 V1000" class="warn" fill="none" marker-end="url(#arrow-warn)" />
+<text x="1100" y="945" class="tiny" >Nếu quá hạn</text>
+<text x="1251" y="1180" class="tiny" text-anchor="middle">Cron quét mỗi 30 giây.</text>
+<rect x="48" y="1240" width="1344" height="164" rx="16" fill="#fff5e6" stroke="#dac8a6" stroke-width="1.5"/>
+<text x="76" y="1278" class="lane" >ĐIỂM CẦN HOÀN THIỆN TRONG CODE</text>
+<text x="76" y="1316" class="body" >Orders/Checkout chưa gắn JWT guard; guest có thể bị gán vào user đầu tiên.</text>
+<text x="76" y="1350" class="body" >Admin chưa có role; gia hạn UI chưa đồng bộ thời hạn đơn ở backend.</text>
+<text x="76" y="1384" class="body" >Gateway mô phỏng mặc định thành công; cần kiểm thử chủ động các nhánh lỗi và đồng thời.</text>
+</svg>

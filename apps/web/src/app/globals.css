@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FAF6EE;
+  --foreground: #1E5631;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-primary: #006241;
+  /* Xanh lá Starbucks */
+  --color-primary-hover: #004d33;
+  /* Xanh lá đậm khi trỏ chuột */
+  --color-surface: #FFFFFF;
+  /* Màu nền trắng tinh cho khung/thẻ */
+  --color-text: #1E3932;
+  /* Màu chữ mặc định (dùng text-text) */
+
+  /* Thêm độ bo góc chung cho toàn dự án */
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --background: #111111;
+    --foreground: #E0E0E0;
+  }
+} */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+}
+
+/* Tối ưu khi bấm In / Xuất PDF Hóa đơn */
+@media print {
+
+  header,
+  footer,
+  nav,
+  button,
+  a,
+  .no-print {
+    display: none !important;
+  }
+
+  body,
+  main {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #brewlite-receipt {
+    box-shadow: none !important;
+    border: 1px dashed #ccc !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 20px !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 98, 65, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 98, 65, 0.4);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 98, 65, 0.25) transparent;
+}

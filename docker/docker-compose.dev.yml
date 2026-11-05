@@ -1,0 +1,35 @@
+# PostgreSQL Development Environment
+# Chỉ dùng cho giai đoạn phát triển, KHÔNG dùng cho production
+# Chạy: docker compose -f docker/docker-compose.dev.yml up -d
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.5
+    pids_limit: 256
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      POSTGRES_USER: brewlite
+      POSTGRES_PASSWORD: brewlite
+      POSTGRES_DB: brewlite
+    ports:
+      - "5433:5432"
+    volumes:
+      - brewlite_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brewlite"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  brewlite_pgdata:
+    driver: local

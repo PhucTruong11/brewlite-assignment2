@@ -1,0 +1,341 @@
+// Lược đồ cơ sở dữ liệu BrewLite.
+// Tài liệu: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Các kiểu liệt kê.
+// ==========================================
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PREPARING
+  READY
+  COMPLETED
+  PAYMENT_FAILED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  EWALLET
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum ProductSize {
+  S
+  M
+  L
+}
+
+enum IngredientUnit {
+  G
+  ML
+  PIECE
+}
+
+enum InventoryState {
+  LEGACY
+  RESERVED
+  CONSUMED
+  RELEASED
+  RESTORED
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PointTransactionType {
+  EARN
+  REDEEM
+  REFUND
+}
+
+// ==========================================
+// Các bảng dữ liệu.
+// ==========================================
+
+model User {
+  id                String             @id @default(uuid())
+  email             String             @unique
+  fullName          String?            // Họ và tên
+  phone             String?            // Số điện thoại liên hệ
+  passwordHash      String
+  role              Role               @default(USER)
+  loyaltyPoints     Int                @default(0)
+  emailVerifiedAt   DateTime?          // null = chưa xác minh email
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  orders            Order[]
+
+  
+  userVouchers      UserVoucher[]
+  pointTransactions PointTransaction[]
+
+  emailVerification EmailVerification?
+
+  @@map("users")
+}
+
+model EmailVerification {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash   String   // Băm (hash) của mã OTP 6 số
+  expiresAt  DateTime // Thời điểm hết hạn của mã (10 phút)
+  attempts   Int      @default(0) // Số lần nhập sai (giới hạn thử)
+  lastSentAt DateTime @default(now()) // Thời điểm gửi OTP gần nhất (chống gửi lại liên tục)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("email_verifications")
+}
+
+model Product {
+  id            String  @id @default(uuid())
+  name          String
+  description   String? // Mô tả ngắn bằng tiếng Anh hoặc tiếng Việt.
+  imageUrl      String?
+  category      String  // "phin", "tra", "freeze", "phindi", "espresso", "other"
+  allowToppings Boolean @default(false) // Giá trị đúng cho phép thêm topping.
+  stock         Int     @default(100)
+  version       Int     @default(1) // Phiên bản dùng để phát hiện cập nhật chồng chéo.
+  isAvailable   Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  prices     ProductPrice[] // Bảng giá theo size (S/M/L)
+  orderItems OrderItem[]
+  recipes    Recipe[]
+
+  @@map("products")
+}
+
+/// Bảng giá theo từng size của sản phẩm.
+/// Một sản phẩm có thể có 1-3 size tùy loại.
+/// VD: Trà Sữa Highlands chỉ có M và L (không có S).
+model ProductPrice {
+  id        String      @id @default(uuid())
+  productId String
+  size      ProductSize
+  price     Int         // VND (đơn vị: đồng)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, size]) // Mỗi sản phẩm chỉ có 1 giá cho mỗi size
+  @@map("product_prices")
+}
+
+/// Topping có thể thêm vào đồ uống.
+/// Chỉ những Product có allowToppings=true mới hiển thị danh sách topping.
+model Topping {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  price       Int     // VND
+  imageUrl    String?
+  isAvailable Boolean @default(true)
+  createdAt   DateTime @default(now())
+  recipes     Recipe[]
+
+  @@map("toppings")
+}
+
+model Ingredient {
+  id                String         @id @default(uuid())
+  code              String         @unique
+  name              String
+  unit              IngredientUnit
+  trackStock        Boolean        @default(true)
+  onHand            Decimal?       @db.Decimal(14, 3)
+  reserved          Decimal?       @db.Decimal(14, 3)
+  packageQuantity   Decimal?       @db.Decimal(14, 3)
+  lowStockThreshold Decimal?       @db.Decimal(14, 3)
+  version           Int            @default(1)
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  recipes           Recipe[]
+
+  @@map("ingredients")
+}
+
+// Mỗi dòng công thức thuộc một sản phẩm/size hoặc một topping, không thuộc cả hai.
+model Recipe {
+  id           String       @id @default(uuid())
+  productId    String?
+  size         ProductSize?
+  toppingId    String?
+  ingredientId String
+  quantity     Decimal      @db.Decimal(14, 3)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  product    Product?   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  topping    Topping?   @relation(fields: [toppingId], references: [id], onDelete: Restrict)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, size, ingredientId])
+  @@unique([toppingId, ingredientId])
+  @@index([ingredientId])
+  @@map("recipes")
+}
+
+model Order {
+  id                  String      @id @default(uuid())
+  userId              String
+  status              OrderStatus @default(PENDING)
+  total               Int         // VND
+  discount            Int         @default(0) // VND
+  promoCode           String?
+  loyaltyPointsEarned Int         @default(0)
+  inventoryState      InventoryState @default(LEGACY)
+  reservationExpiresAt DateTime?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id])
+  items    OrderItem[]
+  payments Payment[]
+
+  userVoucher       UserVoucher?
+  pointTransactions PointTransaction[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String      @id @default(uuid())
+  orderId   String
+  productId String?
+  productName String
+  productImageUrl String?
+  size      ProductSize @default(S)
+  toppings  String[]    // Tên topping được lưu tại thời điểm đặt đơn.
+  qty       Int         @default(1)
+  lineTotal Int         // VND
+  recipeSnapshot Json?
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("order_items")
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  orderId        String
+  idempotencyKey String        @unique
+  amount         Int           // VND
+  method         PaymentMethod
+  status         PaymentStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("payments")
+}
+
+model Promotion {
+  id             String    @id @default(uuid())
+  code           String    @unique // Mã giảm giá (ví dụ: BREW10, COFFEE20K)
+  description    String?   // Mô tả ưu đãi
+  discountType   String    // "PERCENTAGE" (giảm %) hoặc "FIXED_AMOUNT" (giảm tiền cố định)
+  discountValue  Float     // Giá trị giảm (10% hoặc 20000đ)
+  minOrderValue  Float     @default(0) // Giá trị đơn hàng tối thiểu
+  maxDiscount    Float?    // Giảm tối đa (áp dụng cho %)
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  isRewardOnly Boolean       @default(false) // Giá trị đúng nghĩa là phải đổi điểm mới dùng được.
+  rewardItems  RewardItem[]
+  userVouchers UserVoucher[]
+
+  @@map("promotions")
+}
+
+model PasswordReset {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  codeHash   String   // Giá trị băm của mã xác minh sáu số.
+  expiresAt  DateTime // Hạn sử dụng (10 phút)
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("password_resets")
+}
+
+/// Danh mục quà đổi điểm; mỗi quà gắn với một mã ưu đãi chỉ dùng sau khi đổi điểm.
+model RewardItem {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  pointsCost  Int
+  promotionId String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  promotion    Promotion     @relation(fields: [promotionId], references: [id])
+  userVouchers UserVoucher[]
+
+  @@map("reward_items")
+}
+
+/// Mã ưu đãi người dùng đã đổi bằng điểm. Không có hạn dùng; chưa có thời điểm sử dụng nghĩa là còn dùng được.
+model UserVoucher {
+  id           String    @id @default(uuid())
+  userId       String
+  promotionId  String
+  rewardItemId String
+  createdAt    DateTime  @default(now())
+  usedAt       DateTime?
+  usedOrderId  String?   @unique
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promotion  Promotion  @relation(fields: [promotionId], references: [id])
+  rewardItem RewardItem @relation(fields: [rewardItemId], references: [id])
+  usedOrder  Order?     @relation(fields: [usedOrderId], references: [id])
+
+  @@index([userId, promotionId, usedAt])
+  @@map("user_vouchers")
+}
+
+/// Lịch sử cộng và trừ điểm. Ràng buộc duy nhất theo đơn và loại giao dịch ngăn cộng điểm hai lần.
+model PointTransaction {
+  id            String               @id @default(uuid())
+  userId        String
+  type          PointTransactionType
+  points        Int                  // dương = cộng, âm = trừ
+  balanceAfter  Int
+  orderId       String?
+  userVoucherId String?
+  createdAt     DateTime             @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@unique([orderId, type])
+  @@index([userId, createdAt])
+  @@map("point_transactions")
+}

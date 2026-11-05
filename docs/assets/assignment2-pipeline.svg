@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="678" viewBox="0 0 1120 678" role="img" aria-labelledby="title desc">
+<title id="title">Assignment 2 | CI và CD cần hoàn thiện</title><desc id="desc">CI cho pull request gồm install lint unit test build và required merge gate. CD sau push hoặc tag gồm build image, kiểm thử container, registry, migration, deploy, smoke test và ghi nhận bản phát hành hoặc rollback.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#315e50"/></marker></defs>
+<style>text{font-family:"Segoe UI",Arial,sans-serif;fill:#203b31}.title{font-size:29px;font-weight:700}.subtitle{font-size:17px;fill:#57675f}.node-title{font-size:21px;font-weight:650}.body{font-size:17px}.small{font-size:15px;fill:#57675f}.lane{font-size:16px;font-weight:700;letter-spacing:1px;fill:#315e50}.state{font-size:18px;font-weight:700}.edge{font-size:16px;fill:#57675f}</style>
+<rect width="1120" height="678" fill="#f8faf8"/>
+<text x="32" y="49" class="title" >Assignment 2 | Từ PR đến bản phát hành</text>
+<text x="32" y="79" class="subtitle" >Pipeline mục tiêu; CI hiện tại mới có một phần, CD chưa được cấu hình.</text>
+<rect x="32" y="112" width="1056" height="157" rx="14" fill="#eef5f0" stroke="#cfddd3" stroke-width="1.4"/>
+<text x="52" y="142" class="lane" >TASK 4.4 · CI CHO PULL REQUEST</text>
+<rect x="52" y="171" width="140" height="61" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="122" y="208" class="body" text-anchor="middle" font-weight="600">Pull request</text>
+<rect x="224" y="171" width="140" height="61" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="294" y="208" class="body" text-anchor="middle" font-weight="600">Install</text>
+<rect x="396" y="171" width="140" height="61" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="466" y="208" class="body" text-anchor="middle" font-weight="600">Lint</text>
+<rect x="568" y="171" width="140" height="61" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="638" y="208" class="body" text-anchor="middle" font-weight="600">Unit test</text>
+<rect x="740" y="171" width="140" height="61" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="810" y="208" class="body" text-anchor="middle" font-weight="600">Build</text>
+<rect x="912" y="171" width="140" height="61" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="982" y="208" class="body" text-anchor="middle" font-weight="600">Merge gate</text>
+<path d="M192 201 H224" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M364 201 H396" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M536 201 H568" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M708 201 H740" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M880 201 H912" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="52" y="253" class="small" >Required checks: lint, test hoặc build lỗi thì không được merge.</text>
+<rect x="32" y="303" width="1056" height="321" rx="14" fill="#ffffff" stroke="#cfddd3" stroke-width="1.4"/>
+<text x="52" y="334" class="lane" >TASK 5.3 · CD SAU PUSH / TAG ĐƯỢC CHỌN</text>
+<rect x="52" y="358" width="208" height="76" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="156" y="390" class="node-title" text-anchor="middle">Push / Tag</text><text x="156" y="417" class="body" text-anchor="middle">Quality gate đạt</text>
+<rect x="316" y="358" width="208" height="76" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="420" y="390" class="node-title" text-anchor="middle">Build image</text><text x="420" y="417" class="body" text-anchor="middle">Tag bằng SHA / version</text>
+<rect x="580" y="358" width="208" height="76" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="684" y="390" class="node-title" text-anchor="middle">Test container</text><text x="684" y="417" class="body" text-anchor="middle">Integration / E2E</text>
+<rect x="844" y="358" width="208" height="76" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="948" y="390" class="node-title" text-anchor="middle">Registry</text><text x="948" y="417" class="body" text-anchor="middle">Push image nếu cần</text>
+<path d="M260 396 H316" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M524 396 H580" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M788 396 H844" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M948 434 V487" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="844" y="487" width="208" height="76" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="948" y="519" class="node-title" text-anchor="middle">Migration</text><text x="948" y="546" class="body" text-anchor="middle">Bước có kiểm soát</text>
+<rect x="580" y="487" width="208" height="76" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="684" y="519" class="node-title" text-anchor="middle">Deploy</text><text x="684" y="546" class="body" text-anchor="middle">Đúng image đã test</text>
+<rect x="316" y="487" width="208" height="76" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="420" y="519" class="node-title" text-anchor="middle">Smoke test</text><text x="420" y="546" class="body" text-anchor="middle">Web / API / Health</text>
+<rect x="52" y="487" width="208" height="76" rx="14" fill="#eef5f0" stroke="#cbd5d0" stroke-width="1.4"/><text x="156" y="519" class="node-title" text-anchor="middle">Ghi nhận release</text><text x="156" y="546" class="body" text-anchor="middle">Hoặc xử lý thất bại</text>
+<path d="M844 525 H788" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M580 525 H524" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M316 525 H260" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="52" y="604" class="small" >Chạy lại quality gate trước phát hành; lỗi phải dừng pipeline và có cách rollback.</text>
+<text x="32" y="656" class="subtitle" >Docker làm sớm trong Task 5.2; test lại trên container trước deploy, smoke test sau deploy.</text>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="610" viewBox="0 0 1120 610" role="img" aria-labelledby="title desc">
+<title id="title">BrewLite | Máy trạng thái đơn hàng</title><desc id="desc">Luồng chính PENDING đến PAID, PREPARING, READY và COMPLETED. PENDING có thể PAYMENT_FAILED hoặc CANCELLED; PAYMENT_FAILED được PAID hoặc CANCELLED; PAID được CANCELLED. Hai trạng thái cuối không chuyển tiếp.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#315e50"/></marker></defs>
+<style>text{font-family:"Segoe UI",Arial,sans-serif;fill:#203b31}.title{font-size:29px;font-weight:700}.subtitle{font-size:17px;fill:#57675f}.node-title{font-size:21px;font-weight:650}.body{font-size:17px}.small{font-size:15px;fill:#57675f}.lane{font-size:16px;font-weight:700;letter-spacing:1px;fill:#315e50}.state{font-size:18px;font-weight:700}.edge{font-size:16px;fill:#57675f}</style>
+<rect width="1120" height="610" fill="#f8faf8"/>
+<text x="32" y="49" class="title" >BrewLite | Máy trạng thái đơn hàng</text>
+<text x="32" y="79" class="subtitle" >Theo bảng ALLOWED_TRANSITIONS trong orders-state.ts.</text>
+<rect x="32" y="170" width="176" height="100" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="120" y="210" class="state" text-anchor="middle">PENDING</text><text x="120" y="242" class="small" text-anchor="middle">Đơn vừa tạo</text>
+<rect x="252" y="170" width="176" height="100" rx="14" fill="#eef5f0" stroke="#cbd5d0" stroke-width="1.4"/><text x="340" y="210" class="state" text-anchor="middle">PAID</text><text x="340" y="242" class="small" text-anchor="middle">Đã thanh toán</text>
+<rect x="472" y="170" width="176" height="100" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="560" y="210" class="state" text-anchor="middle">PREPARING</text><text x="560" y="242" class="small" text-anchor="middle">Đang pha chế</text>
+<rect x="692" y="170" width="176" height="100" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="780" y="210" class="state" text-anchor="middle">READY</text><text x="780" y="242" class="small" text-anchor="middle">Sẵn sàng nhận</text>
+<rect x="912" y="170" width="176" height="100" rx="14" fill="#eef5f0" stroke="#cbd5d0" stroke-width="1.4"/><text x="1000" y="210" class="state" text-anchor="middle">COMPLETED</text><text x="1000" y="242" class="small" text-anchor="middle">Đã giao khách</text>
+<path d="M208 220 H252" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M428 220 H472" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M648 220 H692" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M868 220 H912" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="32" y="400" width="176" height="90" rx="14" fill="#fff5e5" stroke="#dcc9a4" stroke-width="1.4"/>
+<text x="120" y="436" class="small" text-anchor="middle" font-weight="700">PAYMENT_FAILED</text>
+<text x="120" y="465" class="small" text-anchor="middle">Có thể thử lại</text>
+<rect x="560" y="400" width="220" height="90" rx="14" fill="#f0f1f0" stroke="#cbd5d0" stroke-width="1.4"/>
+<text x="670" y="439" class="state" text-anchor="middle">CANCELLED</text>
+<text x="670" y="467" class="small" text-anchor="middle">Trạng thái kết thúc</text>
+<path d="M120 270 V400" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="135" y="345" class="edge" >Thanh toán lỗi</text>
+<path d="M208 432 H300 V270" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="311" y="385" class="edge" >Thử lại thành công</text>
+<path d="M70 270 V365 H610 V400" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="376" y="354" class="edge" >Hủy / quá hạn</text>
+<path d="M390 270 V315 H720 V400" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="512" y="304" class="edge" >Hủy</text>
+<path d="M208 471 H560" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="368" y="458" class="edge" >Hủy</text>
+<rect x="32" y="535" width="1056" height="45" rx="9" fill="#edf2ef" stroke="#d7e1db" stroke-width="1.4"/>
+<text x="50" y="563" class="body" >PAID → CANCELLED đã có trong code; quy tắc hoàn tiền / hoàn kho cần hoàn thiện.</text>
+</svg>

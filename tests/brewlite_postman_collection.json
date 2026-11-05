@@ -1,0 +1,1434 @@
+{
+  "info": {
+    "_postman_id": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+    "name": "BrewLite API - danh mục nguyên liệu và thanh toán",
+    "description": "Chạy trên DB demo đã migrate, seed/bootstrap và có tồn nguyên liệu. Cần tài khoản ADMIN đã xác minh; có thể đổi adminEmail/adminPassword. Collection tạo một đơn và thanh toán thật trong DB demo, sau đó chuyển COMPLETED. Cổng thanh toán hiện là mock luôn thành công; không kiểm thử PAYMENT_FAILED tự động. Để kiểm tra hết hạn, tạo đơn riêng rồi chờ quá 120 giây trước khi GET /checkout/status/:id. API ghi nguyên liệu/công thức admin chưa có nên chưa đưa vào collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Xác thực",
+      "item": [
+        {
+          "name": "1.1 Đăng nhập tài khoản kiểm thử",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập 200',()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json(); pm.test('Có JWT',()=>pm.expect(j.accessToken).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('token', j.accessToken);",
+                  "pm.environment.set('token', j.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Sai mật khẩu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"sai_mat_khau\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401',()=>pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Không đăng nhập không xem được đơn",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "access_token=invalid"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401',()=>pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 Thông tin tài khoản",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Menu và ưu đãi",
+      "item": [
+        {
+          "name": "2.1 Danh sách 6 món",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json(); const list=j.data;",
+                  "pm.test('Đúng 6 món',()=>pm.expect(list).to.be.an('array').with.lengthOf(6));",
+                  "const phin=list.find(p=>p.name==='Phin Sữa Đá'); const tea=list.find(p=>p.name==='Trà Thanh Đào');",
+                  "pm.test('Món mẫu còn bán và đủ nguyên liệu',()=>{pm.expect(phin).to.exist;pm.expect(phin.stock).to.be.above(0);pm.expect(tea).to.exist;});",
+                  "if(phin){pm.collectionVariables.set('productId', phin.id);pm.environment.set('productId', phin.id);pm.collectionVariables.set('productPriceS', phin.prices.find(x=>x.size==='S').price);pm.environment.set('productPriceS', phin.prices.find(x=>x.size==='S').price);}",
+                  "if(tea){pm.collectionVariables.set('teaProductId', tea.id);pm.environment.set('teaProductId', tea.id);pm.collectionVariables.set('teaPriceS', tea.prices.find(x=>x.size==='S').price);pm.environment.set('teaPriceS', tea.prices.find(x=>x.size==='S').price);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Danh sách 3 topping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/toppings"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const list=pm.response.json().data;",
+                  "pm.test('Đúng 3 topping',()=>pm.expect(list).to.be.an('array').with.lengthOf(3));",
+                  "const topping=list.find(x=>x.name==='Trân Châu Trắng'); pm.test('Có topping mẫu',()=>pm.expect(topping).to.exist);",
+                  "if(topping){pm.collectionVariables.set('toppingId', topping.id);pm.environment.set('toppingId', topping.id);pm.collectionVariables.set('toppingPrice', topping.price);pm.environment.set('toppingPrice', topping.price);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Chi tiết món",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const p=pm.response.json().data; pm.test('Đúng món và có giá size S',()=>{pm.expect(p.id).to.equal(pm.variables.get('productId'));pm.expect(p.prices.some(x=>x.size==='S')).to.be.true;});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Danh sách ưu đãi còn hạn",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/promotions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const list=pm.response.json(); pm.test('Chỉ còn hiệu lực',()=>{pm.expect(list).to.be.an('array');list.forEach(p=>{pm.expect(p.isActive).to.be.true;if(p.endDate)pm.expect(Date.parse(p.endDate)).to.be.above(Date.now());});});",
+                  "const promo=list.find(p=>p.code==='BREW10')||list[0]; if(promo){pm.collectionVariables.set('promoCode', promo.code);pm.environment.set('promoCode', promo.code);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Áp mã ưu đãi còn hạn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/promotions/apply",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{promoCode}}\",\n  \"subtotal\": 1000000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201',()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();pm.test('Có giảm giá',()=>pm.expect(j.discountAmount).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.6 Mã không tồn tại",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/promotions/apply",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"KHONG_CO_MA_NAY_987\",\n  \"subtotal\": 1000000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404',()=>pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.7 Danh mục đổi điểm",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/rewards"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json();pm.test('Có số điểm và danh mục',()=>{pm.expect(j.points).to.be.a('number');pm.expect(j.rewards).to.be.an('array');});",
+                  "pm.collectionVariables.set('pointsBefore', j.points);",
+                  "pm.environment.set('pointsBefore', j.points);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Giỏ và nguyên liệu",
+      "item": [
+        {
+          "name": "3.1 Kiểm tra giỏ, giá lấy từ DB",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/cart/validate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201',()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();pm.test('Đủ nguyên liệu, giá không tin client',()=>{pm.expect(j.available).to.be.true;pm.expect(j.subtotal).to.equal(Number(pm.variables.get('productPriceS')));});",
+                  "pm.collectionVariables.set('expectedSubtotal', j.subtotal);",
+                  "pm.environment.set('expectedSubtotal', j.subtotal);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Kiểm tra công thức topping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/cart/validate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{teaProductId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [\n        \"Trân Châu Trắng\"\n      ],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201',()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();pm.test('Giá gồm món và topping',()=>pm.expect(j.subtotal).to.equal(Number(pm.variables.get('teaPriceS'))+Number(pm.variables.get('toppingPrice'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Topping không tồn tại",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/cart/validate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{teaProductId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [\n        \"Topping_Khong_Ton_Tai\"\n      ],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400',()=>pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 Vượt tồn nguyên liệu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/cart/validate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 999999,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201',()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();pm.test('Cảnh báo thiếu nguyên liệu',()=>{pm.expect(j.available).to.be.false;pm.expect(j.shortages).to.be.an('array').that.is.not.empty;});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 Admin xem nguyên liệu",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/ingredients"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const list=pm.response.json().data;pm.test('Có nguyên liệu',()=>pm.expect(list).to.be.an('array').that.is.not.empty);",
+                  "const beans=list.find(x=>x.code==='COFFEE_BEANS');pm.test('Có hạt cà phê',()=>pm.expect(beans).to.exist);",
+                  "if(beans){pm.collectionVariables.set('beanId', beans.id);pm.environment.set('beanId', beans.id);pm.collectionVariables.set('beanOnHandBefore', beans.onHand);pm.environment.set('beanOnHandBefore', beans.onHand);pm.collectionVariables.set('beanReservedBefore', beans.reserved);pm.environment.set('beanReservedBefore', beans.reserved);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 Công thức món size S",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/recipes?productId={{productId}}&size=S"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const list=pm.response.json().data;pm.test('Có công thức',()=>pm.expect(list).to.be.an('array').that.is.not.empty);",
+                  "const bean=list.find(x=>x.ingredientId===pm.variables.get('beanId'));pm.test('Có hạt cà phê',()=>pm.expect(bean).to.exist);",
+                  "if(bean){pm.collectionVariables.set('beanQuantity', bean.quantity);pm.environment.set('beanQuantity', bean.quantity);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.7 Công thức topping",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/recipes?toppingId={{toppingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Có công thức',()=>pm.expect(pm.response.json().data).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Tạo đơn và giữ kho",
+      "item": [
+        {
+          "name": "4.1 Khách chưa đăng nhập không tạo đơn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token=invalid"
+              }
+            ],
+            "url": "{{baseUrl}}/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401',()=>pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Giỏ rỗng bị từ chối",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400',()=>pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2a Tạo đơn vượt tồn nguyên liệu bị từ chối",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1000000,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400',()=>pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2b Tạo đơn có topping không tồn tại bị từ chối",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [\n        \"TOPPING_KHONG_TON_TAI\"\n      ],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400',()=>pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 Tạo đơn PENDING, giữ nguyên liệu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201',()=>pm.response.to.have.status(201));",
+                  "const o=pm.response.json().data;",
+                  "pm.test('Đơn dùng giá DB và giữ nguyên liệu 2 phút',()=>{pm.expect(o.id).to.be.a('string');pm.expect(o.status).to.equal('PENDING');pm.expect(o.inventoryState).to.equal('RESERVED');pm.expect(o.total).to.equal(Number(pm.variables.get('expectedSubtotal')));pm.expect(Date.parse(o.reservationExpiresAt)-Date.now()).to.be.within(1,120000);});",
+                  "pm.collectionVariables.set('orderId', o.id);",
+                  "pm.environment.set('orderId', o.id);",
+                  "pm.collectionVariables.set('orderPrefix', o.id.slice(0,8));",
+                  "pm.environment.set('orderPrefix', o.id.slice(0,8));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 Kiểm tra thời hạn thanh toán 2 phút",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/checkout/status/{{orderId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json();pm.test('Đang chờ, còn tối đa 120 giây',()=>{pm.expect(j.status).to.equal('PENDING');pm.expect(j.remainingSeconds).to.be.within(1,120);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 Nguyên liệu đã được giữ",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/ingredients"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const b=pm.response.json().data.find(x=>x.id===pm.variables.get('beanId'));",
+                  "pm.test('reserved tăng, onHand chưa giảm',()=>{pm.expect(Number(b.reserved)).to.equal(Number(pm.variables.get('beanReservedBefore'))+Number(pm.variables.get('beanQuantity')));pm.expect(Number(b.onHand)).to.equal(Number(pm.variables.get('beanOnHandBefore')));});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.6 Admin chưa thấy đơn chưa thanh toán",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/orders?range=all&search={{orderPrefix}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const list=pm.response.json().data.items;pm.test('PENDING không có trong admin',()=>pm.expect(list.some(x=>x.id===pm.variables.get('orderId'))).to.be.false);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Checkout và thanh toán",
+      "item": [
+        {
+          "name": "5.1 Thiếu Idempotency-Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/checkout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"method\": \"CARD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400',()=>pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 Xác nhận thanh toán CARD",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{paymentKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/checkout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"method\": \"CARD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const key=pm.variables.replaceIn('{{$guid}}');",
+                  "pm.collectionVariables.set('paymentKey',key);pm.environment.set('paymentKey',key);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201',()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();pm.test('Thanh toán thành công',()=>{pm.expect(j.success).to.be.true;pm.expect(j.isDuplicate).to.be.false;pm.expect(j.payment.status).to.equal('SUCCESS');pm.expect(j.payment.amount).to.equal(Number(pm.variables.get('expectedSubtotal')));});",
+                  "pm.collectionVariables.set('paymentId', j.payment.id);",
+                  "pm.environment.set('paymentId', j.payment.id);",
+                  "pm.collectionVariables.set('pointsEarned', j.pointsEarned);",
+                  "pm.environment.set('pointsEarned', j.pointsEarned);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 Gửi lại cùng Idempotency-Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{paymentKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/checkout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"method\": \"CARD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201',()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();pm.test('Không thanh toán hai lần',()=>{pm.expect(j.isDuplicate).to.be.true;pm.expect(j.payment.id).to.equal(pm.variables.get('paymentId'));});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.4 Chỉ có một giao dịch",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/checkout/order/{{orderId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const list=pm.response.json();pm.test('Một payment duy nhất',()=>{pm.expect(list).to.be.an('array').with.lengthOf(1);pm.expect(list[0].id).to.equal(pm.variables.get('paymentId'));});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.5 Trạng thái PAID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/checkout/status/{{orderId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "pm.test('PAID',()=>pm.expect(pm.response.json().status).to.equal('PAID'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.6 Trừ nguyên liệu sau thanh toán",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/ingredients"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const b=pm.response.json().data.find(x=>x.id===pm.variables.get('beanId'));",
+                  "pm.test('onHand giảm, reserved được giải phóng',()=>{pm.expect(Number(b.onHand)).to.equal(Number(pm.variables.get('beanOnHandBefore'))-Number(pm.variables.get('beanQuantity')));pm.expect(Number(b.reserved)).to.equal(Number(pm.variables.get('beanReservedBefore')));});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.7 Điểm chỉ cộng một lần",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/rewards"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json();pm.test('Điểm tăng đúng một lần',()=>pm.expect(j.points).to.equal(Number(pm.variables.get('pointsBefore'))+Number(pm.variables.get('pointsEarned'))));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Admin và lịch sử",
+      "item": [
+        {
+          "name": "6.1 Admin thấy đơn đã thanh toán",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/orders?range=all&search={{orderPrefix}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const list=pm.response.json().data.items;pm.test('Có đơn PAID',()=>pm.expect(list.some(x=>x.id===pm.variables.get('orderId')&&x.status==='PAID')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.2 Admin không tự đặt trạng thái PAID",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAID\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400',()=>pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.3 PAID sang PREPARING",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PREPARING\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "pm.test('PREPARING',()=>pm.expect(pm.response.json().data.status).to.equal('PREPARING'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.4 Không hủy khi đang pha chế",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400',()=>pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.5 PREPARING sang READY",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"READY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "pm.test('READY',()=>pm.expect(pm.response.json().data.status).to.equal('READY'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.6 READY sang COMPLETED",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "pm.test('COMPLETED',()=>pm.expect(pm.response.json().data.status).to.equal('COMPLETED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.7 Chi tiết đơn giữ snapshot món",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{orderId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json().data;pm.test('Đơn hoàn tất vẫn có tên món',()=>{pm.expect(j.status).to.equal('COMPLETED');pm.expect(j.items[0].product.name).to.be.a('string').and.not.empty;});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.8 Lịch sử đơn của tôi",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Có đơn vừa đặt',()=>pm.expect(pm.response.json().data.some(x=>x.id===pm.variables.get('orderId'))).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://SET_TEST_API_HOST/api",
+      "type": "string"
+    },
+    {
+      "key": "adminEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productPriceS",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "teaProductId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "teaPriceS",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "toppingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "toppingPrice",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "promoCode",
+      "value": "BREW10",
+      "type": "string"
+    },
+    {
+      "key": "expectedSubtotal",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderPrefix",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "beanId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "beanQuantity",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "beanOnHandBefore",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "beanReservedBefore",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pointsBefore",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pointsEarned",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,207 @@
+# Mau chua kich hoat. Chon nen tang va hoan thanh TODO trong CI_CD_GUIDE.md.
+# Phuong an minh hoa: GHCR, Linux amd64, migration/deploy qua script cua nhom.
+name: BrewLite CD
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brewlite-production
+  cancel-in-progress: false
+
+jobs:
+  quality-gate:
+    name: Quality gate
+    # Can thay ci.yml bang noi dung ci.yml.example truoc khi bat CD.
+    uses: ./.github/workflows/ci.yml
+
+  images:
+    name: Build, test and publish images
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      web: ${{ steps.images.outputs.web }}
+      api: ${{ steps.images.outputs.api }}
+    env:
+      PRODUCTION_WEB_URL: ${{ vars.PRODUCTION_WEB_URL }}
+      PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
+      PRODUCTION_API_HEALTH_URL: ${{ vars.PRODUCTION_API_HEALTH_URL }}
+      DEPLOY_TARGET: ${{ vars.DEPLOY_TARGET }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js for checks and container tests
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Check release prerequisites
+        shell: bash
+        run: |
+          # TODO: tao cac file nay; script phai thuc thi that va bao loi dung.
+          for path in \
+            apps/web/Dockerfile \
+            apps/api/Dockerfile \
+            docker-compose.yml \
+            scripts/ci/test-containers.sh \
+            scripts/cd/migrate.sh \
+            scripts/cd/deploy.sh \
+            scripts/cd/rollback.sh; do
+            if [[ ! -f "$path" ]]; then
+              echo "::error::Missing release prerequisite: $path"
+              exit 1
+            fi
+          done
+          if ! compgen -G 'apps/api/prisma/migrations/*/migration.sql' > /dev/null; then
+            echo '::error::Commit Prisma migrations before enabling CD.'
+            exit 1
+          fi
+          : "${DEPLOY_TARGET:?Configure repository variable DEPLOY_TARGET}"
+          node --input-type=module <<'NODE'
+          for (const key of ['PRODUCTION_WEB_URL', 'PRODUCTION_API_URL', 'PRODUCTION_API_HEALTH_URL']) {
+            try {
+              const url = new URL(process.env[key]);
+              if (url.protocol !== 'https:') throw new Error('HTTPS required');
+            } catch {
+              console.error(`::error::Configure repository variable ${key} with an HTTPS URL.`);
+              process.exitCode = 1;
+            }
+          }
+          NODE
+
+      - name: Prepare image references
+        id: images
+        shell: bash
+        run: |
+          # GHCR yeu cau ten image viet thuong; khong dung tag latest.
+          repository="${GITHUB_REPOSITORY,,}"
+          echo "web=ghcr.io/${repository}/web:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "api=ghcr.io/${repository}/api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build API image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./apps/api
+          file: ./apps/api/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ steps.images.outputs.api }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build web image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./apps/web
+          file: ./apps/web/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ steps.images.outputs.web }}
+          # Dockerfile web phai nhan ARG nay truoc lenh npm run build.
+          build-args: |
+            NEXT_PUBLIC_API_URL=/api
+            API_INTERNAL_URL=${{ vars.PRODUCTION_API_URL }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Integration and browser E2E tests on built images
+        env:
+          WEB_IMAGE: ${{ steps.images.outputs.web }}
+          API_IMAGE: ${{ steps.images.outputs.api }}
+          RELEASE_SHA: ${{ github.sha }}
+        # TODO: script dung DB test rieng, chay test that, don container khi loi.
+        run: bash scripts/ci/test-containers.sh
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish the images that passed tests
+        env:
+          WEB_IMAGE: ${{ steps.images.outputs.web }}
+          API_IMAGE: ${{ steps.images.outputs.api }}
+        run: |
+          docker push "$WEB_IMAGE"
+          docker push "$API_IMAGE"
+
+  deploy:
+    name: Migrate, deploy and verify production
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_WEB_URL }}
+    env:
+      WEB_IMAGE: ${{ needs.images.outputs.web }}
+      API_IMAGE: ${{ needs.images.outputs.api }}
+      RELEASE_SHA: ${{ github.sha }}
+      DEPLOY_TARGET: ${{ vars.DEPLOY_TARGET }}
+      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+      PRODUCTION_WEB_URL: ${{ vars.PRODUCTION_WEB_URL }}
+      PRODUCTION_API_HEALTH_URL: ${{ vars.PRODUCTION_API_HEALTH_URL }}
+
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check deployment credentials
+        run: |
+          : "${DEPLOY_TOKEN:?Configure DEPLOY_TOKEN in the production environment}"
+
+      - name: Run migration on target environment
+        # TODO: chay prisma migrate deploy tren nen tang dich, khong seed production.
+        run: bash scripts/cd/migrate.sh
+
+      - name: Deploy tested images
+        id: deploy
+        # TODO: luu cap image truoc do de rollback; cho rollout hoan tat.
+        run: bash scripts/cd/deploy.sh
+
+      - name: Smoke test
+        id: smoke
+        shell: bash
+        run: |
+          for url in "$PRODUCTION_WEB_URL" "$PRODUCTION_API_HEALTH_URL"; do
+            curl --fail --silent --show-error --location \
+              --proto '=https' --proto-redir '=https' \
+              --retry 8 --retry-all-errors --retry-delay 5 \
+              --connect-timeout 5 --max-time 15 \
+              "$url" > /dev/null
+          done
+
+      - name: Roll back application after failed rollout or smoke test
+        if: failure() && (steps.deploy.outcome == 'failure' || steps.smoke.outcome == 'failure')
+        # TODO: doc ban truoc tu noi luu cua nen tang; khong tu dong undo schema DB.
+        # Buoc that bai truoc do van giu trang thai workflow la failure.
+        run: bash scripts/cd/rollback.sh

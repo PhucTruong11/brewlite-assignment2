@@ -1,0 +1,1163 @@
+{
+  "clientName": "Thunder Client",
+  "collectionName": "BrewLite API - nguyên liệu và thanh toán",
+  "collectionId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+  "dateExported": "2026-10-29T00:00:00Z",
+  "version": "1.2",
+  "folders": [
+    {
+      "_id": "e5b0e1bd-565d-5575-94e3-24b1cbe7a598",
+      "name": "1. Xác thực",
+      "containerId": "",
+      "created": "2026-10-29T00:00:00Z",
+      "sortNum": 10000
+    },
+    {
+      "_id": "c435a8cc-d2a9-5382-8ba7-9abf6a3dfc2e",
+      "name": "2. Menu và ưu đãi",
+      "containerId": "",
+      "created": "2026-10-29T00:00:00Z",
+      "sortNum": 20000
+    },
+    {
+      "_id": "479f368d-5763-5181-a568-32d189528bc3",
+      "name": "3. Giỏ và nguyên liệu",
+      "containerId": "",
+      "created": "2026-10-29T00:00:00Z",
+      "sortNum": 30000
+    },
+    {
+      "_id": "768f4a1b-49db-5ba8-b4e7-7eed2f846fa3",
+      "name": "4. Tạo đơn và giữ kho",
+      "containerId": "",
+      "created": "2026-10-29T00:00:00Z",
+      "sortNum": 40000
+    },
+    {
+      "_id": "2d527fe6-df6a-5b87-8467-5b69e6afa91d",
+      "name": "5. Checkout và thanh toán",
+      "containerId": "",
+      "created": "2026-10-29T00:00:00Z",
+      "sortNum": 50000
+    },
+    {
+      "_id": "5220199a-6a2e-5685-b755-58bbce6835a8",
+      "name": "6. Admin và lịch sử",
+      "containerId": "",
+      "created": "2026-10-29T00:00:00Z",
+      "sortNum": 60000
+    }
+  ],
+  "requests": [
+    {
+      "_id": "b4204c26-d076-5c97-b3b2-0e15b3dda564",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "e5b0e1bd-565d-5575-94e3-24b1cbe7a598",
+      "name": "1.1 Đăng nhập tài khoản kiểm thử",
+      "url": "{{baseUrl}}/auth/login",
+      "method": "POST",
+      "sortNum": 10100,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "json.accessToken",
+          "action": "setto",
+          "value": "token"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "4963abba-47ae-5070-a84f-be671959a737",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "e5b0e1bd-565d-5575-94e3-24b1cbe7a598",
+      "name": "1.2 Sai mật khẩu",
+      "url": "{{baseUrl}}/auth/login",
+      "method": "POST",
+      "sortNum": 10200,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "401"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"sai_mat_khau\"\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "95b16472-c721-5b43-b79e-be1429e3c470",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "e5b0e1bd-565d-5575-94e3-24b1cbe7a598",
+      "name": "1.3 Không đăng nhập không xem được đơn",
+      "url": "{{baseUrl}}/orders/me",
+      "method": "GET",
+      "sortNum": 10300,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Cookie",
+          "value": "access_token=invalid"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "401"
+        }
+      ]
+    },
+    {
+      "_id": "c7610aca-e9bd-5fe8-97d5-5092e3f2a87c",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "e5b0e1bd-565d-5575-94e3-24b1cbe7a598",
+      "name": "1.4 Thông tin tài khoản",
+      "url": "{{baseUrl}}/auth/me",
+      "method": "GET",
+      "sortNum": 10400,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "11422e07-8564-5340-a2cc-dcf0becd1f8e",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "c435a8cc-d2a9-5382-8ba7-9abf6a3dfc2e",
+      "name": "2.1 Danh sách 6 món",
+      "url": "{{baseUrl}}/products",
+      "method": "GET",
+      "sortNum": 20500,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ]
+    },
+    {
+      "_id": "f0d21312-1bba-517d-a430-a26e1c6bc96b",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "c435a8cc-d2a9-5382-8ba7-9abf6a3dfc2e",
+      "name": "2.2 Danh sách 3 topping",
+      "url": "{{baseUrl}}/products/toppings",
+      "method": "GET",
+      "sortNum": 20600,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "json.data[0].id",
+          "action": "setto",
+          "value": "toppingId"
+        }
+      ]
+    },
+    {
+      "_id": "130fc055-2532-5444-bddb-567c1db81d9e",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "c435a8cc-d2a9-5382-8ba7-9abf6a3dfc2e",
+      "name": "2.3 Lấy ID Phin Sữa Đá cho các bước sau",
+      "url": "{{baseUrl}}/admin/products?search=Phin%20S%E1%BB%AFa%20%C4%90%C3%A1",
+      "method": "GET",
+      "sortNum": 20700,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "json.data[0].id",
+          "action": "setto",
+          "value": "productId"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "50dd9352-c63f-5d8c-a607-981716073dcc",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "c435a8cc-d2a9-5382-8ba7-9abf6a3dfc2e",
+      "name": "2.4 Lấy ID Trà Thanh Đào",
+      "url": "{{baseUrl}}/admin/products?search=Tr%C3%A0%20Thanh%20%C4%90%C3%A0o",
+      "method": "GET",
+      "sortNum": 20800,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "json.data[0].id",
+          "action": "setto",
+          "value": "teaProductId"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "e142201b-ee90-5678-b686-9f7c02afa38f",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "c435a8cc-d2a9-5382-8ba7-9abf6a3dfc2e",
+      "name": "2.5 Danh sách ưu đãi còn hạn",
+      "url": "{{baseUrl}}/promotions",
+      "method": "GET",
+      "sortNum": 20900,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ]
+    },
+    {
+      "_id": "3ee56abe-03cb-5cae-9261-21a2d1b09d58",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "c435a8cc-d2a9-5382-8ba7-9abf6a3dfc2e",
+      "name": "2.6 Mã không tồn tại",
+      "url": "{{baseUrl}}/promotions/apply",
+      "method": "POST",
+      "sortNum": 21000,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "404"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"code\": \"KHONG_CO_MA_NAY_987\",\n  \"subtotal\": 1000000\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "0fdea2d3-42ca-5780-b473-8ff4ffafdc8e",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "c435a8cc-d2a9-5382-8ba7-9abf6a3dfc2e",
+      "name": "2.7 Danh mục đổi điểm",
+      "url": "{{baseUrl}}/rewards",
+      "method": "GET",
+      "sortNum": 21100,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "5b33ab9b-4219-5050-b8d6-e0ccee643976",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "479f368d-5763-5181-a568-32d189528bc3",
+      "name": "3.1 Kiểm tra giỏ trước thanh toán",
+      "url": "{{baseUrl}}/cart/validate",
+      "method": "POST",
+      "sortNum": 31200,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "201"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.available",
+          "action": "equal",
+          "value": "true"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "44fc86f9-cd50-52e2-8d21-242b36d8a42e",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "479f368d-5763-5181-a568-32d189528bc3",
+      "name": "3.2 Kiểm tra công thức topping",
+      "url": "{{baseUrl}}/cart/validate",
+      "method": "POST",
+      "sortNum": 31300,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "201"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{teaProductId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [\n        \"Trân Châu Trắng\"\n      ],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "14cdb877-5a31-578c-bb1c-2f08b49f0ff7",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "479f368d-5763-5181-a568-32d189528bc3",
+      "name": "3.3 Topping không tồn tại",
+      "url": "{{baseUrl}}/cart/validate",
+      "method": "POST",
+      "sortNum": 31400,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "400"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{teaProductId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [\n        \"Topping_Khong_Ton_Tai\"\n      ],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "1f33337e-b784-5801-b8db-0d316ba23046",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "479f368d-5763-5181-a568-32d189528bc3",
+      "name": "3.4 Vượt tồn nguyên liệu: 200 nhưng available=false",
+      "url": "{{baseUrl}}/cart/validate",
+      "method": "POST",
+      "sortNum": 31500,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "201"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.available",
+          "action": "equal",
+          "value": "false"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 999999,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "9f2b7edf-9f8b-5826-87fd-b918864b8cdc",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "479f368d-5763-5181-a568-32d189528bc3",
+      "name": "3.5 Admin xem nguyên liệu",
+      "url": "{{baseUrl}}/admin/ingredients",
+      "method": "GET",
+      "sortNum": 31600,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "c4b3fb1f-31f3-57c3-8a6d-38f1ec31ec66",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "479f368d-5763-5181-a568-32d189528bc3",
+      "name": "3.6 Công thức món size S",
+      "url": "{{baseUrl}}/admin/recipes?productId={{productId}}&size=S",
+      "method": "GET",
+      "sortNum": 31700,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "407d6a87-d7a1-51e4-8124-2bcbac813b59",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "479f368d-5763-5181-a568-32d189528bc3",
+      "name": "3.7 Công thức topping",
+      "url": "{{baseUrl}}/admin/recipes?toppingId={{toppingId}}",
+      "method": "GET",
+      "sortNum": 31800,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "373a76e7-ee39-59ab-acbc-beeb11b464e4",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "768f4a1b-49db-5ba8-b4e7-7eed2f846fa3",
+      "name": "4.1 Khách chưa đăng nhập không tạo đơn",
+      "url": "{{baseUrl}}/orders",
+      "method": "POST",
+      "sortNum": 41900,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Cookie",
+          "value": "access_token=invalid"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "401"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "7cfaebbb-e07b-51b8-9022-979a5b31e9e4",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "768f4a1b-49db-5ba8-b4e7-7eed2f846fa3",
+      "name": "4.2 Giỏ rỗng bị từ chối",
+      "url": "{{baseUrl}}/orders",
+      "method": "POST",
+      "sortNum": 42000,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "400"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"items\": []\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "64bc8160-090d-54bc-afed-7b1722d1a0ac",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "768f4a1b-49db-5ba8-b4e7-7eed2f846fa3",
+      "name": "4.2a Tạo đơn vượt tồn nguyên liệu bị từ chối",
+      "url": "{{baseUrl}}/orders",
+      "method": "POST",
+      "sortNum": 42098,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{token}}"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "400"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1000000,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "9308c5b1-c14c-5e67-8684-1f097cd02395",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "768f4a1b-49db-5ba8-b4e7-7eed2f846fa3",
+      "name": "4.2b Tạo đơn có topping không tồn tại bị từ chối",
+      "url": "{{baseUrl}}/orders",
+      "method": "POST",
+      "sortNum": 42099,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{token}}"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "400"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [\n        \"TOPPING_KHONG_TON_TAI\"\n      ],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+        "form": []
+      }
+    },
+    {
+      "_id": "0221c512-9a51-5e08-b383-7f0296972ae7",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "768f4a1b-49db-5ba8-b4e7-7eed2f846fa3",
+      "name": "4.3 Tạo đơn PENDING, giữ nguyên liệu",
+      "url": "{{baseUrl}}/orders",
+      "method": "POST",
+      "sortNum": 42100,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "201"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.data.status",
+          "action": "equal",
+          "value": "PENDING"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "json.data.id",
+          "action": "setto",
+          "value": "orderId"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"size\": \"S\",\n      \"qty\": 1,\n      \"toppings\": [],\n      \"lineTotal\": 1\n    }\n  ]\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "3958a60d-add3-5dd9-b0ec-04ec14567ac0",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "768f4a1b-49db-5ba8-b4e7-7eed2f846fa3",
+      "name": "4.4 Kiểm tra thời hạn thanh toán",
+      "url": "{{baseUrl}}/checkout/status/{{orderId}}",
+      "method": "GET",
+      "sortNum": 42200,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.status",
+          "action": "equal",
+          "value": "PENDING"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "3c22a09f-8860-5a4b-b1f5-a6496fae1d26",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "2d527fe6-df6a-5b87-8467-5b69e6afa91d",
+      "name": "5.1 Thiếu Idempotency-Key",
+      "url": "{{baseUrl}}/checkout",
+      "method": "POST",
+      "sortNum": 52300,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "400"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"method\": \"CARD\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "b651a9c8-8469-50b7-bb8c-c041267e3174",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "2d527fe6-df6a-5b87-8467-5b69e6afa91d",
+      "name": "5.2 Xác nhận thanh toán CARD (key mới mỗi lần)",
+      "url": "{{baseUrl}}/checkout",
+      "method": "POST",
+      "sortNum": 52400,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{{#guid}}"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "201"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.success",
+          "action": "equal",
+          "value": "true"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"method\": \"CARD\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "65a6285b-833c-5f03-9a99-c2b3548a5d28",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "2d527fe6-df6a-5b87-8467-5b69e6afa91d",
+      "name": "5.3 Trạng thái PAID",
+      "url": "{{baseUrl}}/checkout/status/{{orderId}}",
+      "method": "GET",
+      "sortNum": 52500,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.status",
+          "action": "equal",
+          "value": "PAID"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "181c75bf-006a-5644-ad41-5d85cf1a32fa",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "2d527fe6-df6a-5b87-8467-5b69e6afa91d",
+      "name": "5.4 Lịch sử thanh toán",
+      "url": "{{baseUrl}}/checkout/order/{{orderId}}",
+      "method": "GET",
+      "sortNum": 52600,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "5d58b203-2d45-5155-b2df-200d676a3a1f",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "5220199a-6a2e-5685-b755-58bbce6835a8",
+      "name": "6.1 Admin danh sách đơn",
+      "url": "{{baseUrl}}/admin/orders?range=all",
+      "method": "GET",
+      "sortNum": 62700,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "d3941588-79d7-5f04-a1ef-445f8e70d891",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "5220199a-6a2e-5685-b755-58bbce6835a8",
+      "name": "6.2 Admin không tự đặt PAID",
+      "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+      "method": "PATCH",
+      "sortNum": 62800,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "400"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"status\": \"PAID\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "382b89ed-9a5f-5b05-881b-131c0bfddff2",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "5220199a-6a2e-5685-b755-58bbce6835a8",
+      "name": "6.3 PAID sang PREPARING",
+      "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+      "method": "PATCH",
+      "sortNum": 62900,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.data.status",
+          "action": "equal",
+          "value": "PREPARING"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"status\": \"PREPARING\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "8401fe84-3770-5045-ab19-59a76d0af579",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "5220199a-6a2e-5685-b755-58bbce6835a8",
+      "name": "6.5 PREPARING sang READY",
+      "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+      "method": "PATCH",
+      "sortNum": 63000,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.data.status",
+          "action": "equal",
+          "value": "READY"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"status\": \"READY\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "65f1118d-96f7-51df-ac6b-ee6618fdea80",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "5220199a-6a2e-5685-b755-58bbce6835a8",
+      "name": "6.6 READY sang COMPLETED",
+      "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+      "method": "PATCH",
+      "sortNum": 63100,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.data.status",
+          "action": "equal",
+          "value": "COMPLETED"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"status\": \"COMPLETED\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "fbb5b397-023a-56c1-b6d8-e0135d4ef0f3",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "5220199a-6a2e-5685-b755-58bbce6835a8",
+      "name": "6.7 Chi tiết đơn đã hoàn tất",
+      "url": "{{baseUrl}}/orders/{{orderId}}",
+      "method": "GET",
+      "sortNum": 63200,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "res-body",
+          "custom": "json.data.status",
+          "action": "equal",
+          "value": "COMPLETED"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    },
+    {
+      "_id": "58d063eb-9f15-5ab1-a3df-48f9002ad17b",
+      "colId": "9a8f4c20-7b31-4d1e-8e6f-1234567890ab",
+      "containerId": "5220199a-6a2e-5685-b755-58bbce6835a8",
+      "name": "6.8 Lịch sử đơn của tôi",
+      "url": "{{baseUrl}}/orders/me",
+      "method": "GET",
+      "sortNum": 63300,
+      "created": "2026-10-29T00:00:00Z",
+      "modified": "2026-10-29T00:00:00Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      }
+    }
+  ]
+}

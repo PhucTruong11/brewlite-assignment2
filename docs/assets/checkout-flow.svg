@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="586" viewBox="0 0 1120 586" role="img" aria-labelledby="title desc">
+<title id="title">BrewLite | Luồng đặt hàng cần đạt</title><desc id="desc">Luồng từ menu qua chọn tùy chọn, giỏ, đăng nhập, tạo đơn PENDING, thanh toán, xác nhận PAID và theo dõi nhận đồ. Nhánh lỗi thanh toán giữ thông tin để xử lý thử lại.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#315e50"/></marker></defs>
+<style>text{font-family:"Segoe UI",Arial,sans-serif;fill:#203b31}.title{font-size:29px;font-weight:700}.subtitle{font-size:17px;fill:#57675f}.node-title{font-size:21px;font-weight:650}.body{font-size:17px}.small{font-size:15px;fill:#57675f}.lane{font-size:16px;font-weight:700;letter-spacing:1px;fill:#315e50}.state{font-size:18px;font-weight:700}.edge{font-size:16px;fill:#57675f}</style>
+<rect width="1120" height="586" fill="#f8faf8"/>
+<text x="32" y="49" class="title" >BrewLite | Luồng đặt hàng cần đạt</text>
+<text x="32" y="79" class="subtitle" >Luồng mục tiêu để kiểm chứng integration/E2E; xác thực và checkout còn cần hoàn thiện.</text>
+<rect x="32" y="130" width="216" height="105" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="140" y="162" class="node-title" text-anchor="middle">01. Xem menu</text><text x="140" y="189" class="body" text-anchor="middle">Danh sách và chi tiết</text>
+<rect x="312" y="130" width="216" height="105" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="420" y="162" class="node-title" text-anchor="middle">02. Chọn tùy chọn</text><text x="420" y="189" class="body" text-anchor="middle">Size, topping, số phần</text>
+<rect x="592" y="130" width="216" height="105" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="700" y="162" class="node-title" text-anchor="middle">03. Giỏ hàng</text><text x="700" y="189" class="body" text-anchor="middle">Gộp dòng, giá, voucher</text>
+<rect x="872" y="130" width="216" height="105" rx="14" fill="#eef5f0" stroke="#cbd5d0" stroke-width="1.4"/><text x="980" y="162" class="node-title" text-anchor="middle">04. Đăng nhập</text><text x="980" y="189" class="body" text-anchor="middle">JWT, đúng tài khoản</text>
+<path d="M248 182 H312" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M528 182 H592" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M808 182 H872" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M980 235 V350" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="960" y="300" class="edge" text-anchor="end">Đã xác thực</text>
+<rect x="872" y="350" width="216" height="112" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="980" y="382" class="node-title" text-anchor="middle">05. Tạo đơn</text><text x="980" y="409" class="body" text-anchor="middle">PENDING</text><text x="980" y="432" class="body" text-anchor="middle">Giá tính lại từ DB</text>
+<rect x="592" y="350" width="216" height="112" rx="14" fill="#eef5f0" stroke="#cbd5d0" stroke-width="1.4"/><text x="700" y="382" class="node-title" text-anchor="middle">06. Thanh toán</text><text x="700" y="409" class="body" text-anchor="middle">Idempotency</text><text x="700" y="432" class="body" text-anchor="middle">Kho và điểm thưởng</text>
+<rect x="312" y="350" width="216" height="112" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="420" y="382" class="node-title" text-anchor="middle">07. Xác nhận</text><text x="420" y="409" class="body" text-anchor="middle">Đơn đã PAID</text>
+<rect x="32" y="350" width="216" height="112" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="140" y="382" class="node-title" text-anchor="middle">08. Theo dõi đơn</text><text x="140" y="409" class="body" text-anchor="middle">Lịch sử và nhận tại quầy</text>
+<path d="M872 406 H808" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M592 406 H528" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M312 406 H248" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<path d="M700 462 V494" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="592" y="494" width="496" height="59" rx="10" fill="#fff5e5" stroke="#dcc9a4" stroke-width="1.4"/>
+<text x="612" y="519" class="body" >Nếu thanh toán lỗi hoặc kết quả chưa rõ:</text>
+<text x="612" y="542" class="small" >giữ thông tin đơn/key, kiểm tra trạng thái trước khi thử lại.</text>
+<text x="32" y="547" class="small" >Mua thêm: quay lại menu.</text>
+<text x="32" y="570" class="small" >Giỏ vẫn giữ voucher khi còn đủ điều kiện.</text>
+</svg>

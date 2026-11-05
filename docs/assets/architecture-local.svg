@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="560" viewBox="0 0 1120 560" role="img" aria-labelledby="title desc">
+<title id="title">BrewLite | Kiến trúc local</title><desc id="desc">Frontend Next.js và backend NestJS chạy bằng Node trên host. PostgreSQL chạy trong Docker, cổng host 5433 ánh xạ cổng container 5432. Thanh toán mô phỏng nằm trong backend.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#315e50"/></marker></defs>
+<style>text{font-family:"Segoe UI",Arial,sans-serif;fill:#203b31}.title{font-size:29px;font-weight:700}.subtitle{font-size:17px;fill:#57675f}.node-title{font-size:21px;font-weight:650}.body{font-size:17px}.small{font-size:15px;fill:#57675f}.lane{font-size:16px;font-weight:700;letter-spacing:1px;fill:#315e50}.state{font-size:18px;font-weight:700}.edge{font-size:16px;fill:#57675f}</style>
+<rect width="1120" height="560" fill="#f8faf8"/>
+<text x="32" y="49" class="title" >BrewLite | Kiến trúc local</text>
+<text x="32" y="79" class="subtitle" >Hiện trạng: web và API chạy bằng Node; Docker chỉ chạy PostgreSQL.</text>
+<rect x="32" y="124" width="272" height="310" rx="14" fill="#eef5f0" stroke="#cbd5d0" stroke-width="1.4"/>
+<text x="56" y="159" class="node-title" >Trình duyệt / Web</text>
+<text x="56" y="191" class="body" >Next.js 16 · cổng 3000</text>
+<text x="56" y="224" class="body" >Menu, giỏ và checkout</text>
+<text x="56" y="250" class="body" >Tài khoản, đơn và admin</text>
+<rect x="52" y="281" width="232" height="117" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/><text x="168" y="313" class="node-title" text-anchor="middle">Zustand</text><text x="168" y="340" class="body" text-anchor="middle">Giỏ + voucher</text><text x="168" y="363" class="body" text-anchor="middle">localStorage theo user</text>
+<rect x="402" y="124" width="352" height="310" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/>
+<text x="426" y="159" class="node-title" >NestJS 12 · cổng 3001</text>
+<text x="426" y="191" class="body" >REST API · tiền tố /api</text>
+<text x="426" y="242" class="body" >Products · Auth · Orders</text>
+<text x="426" y="270" class="body" >Checkout · Promotions · Admin</text>
+<rect x="422" y="303" width="312" height="103" rx="14" fill="#eef5f0" stroke="#cbd5d0" stroke-width="1.4"/><text x="578" y="335" class="node-title" text-anchor="middle">Thanh toán mô phỏng</text><text x="578" y="362" class="body" text-anchor="middle">Hàm trong CheckoutService</text>
+<rect x="852" y="124" width="236" height="228" rx="14" fill="#ffffff" stroke="#cbd5d0" stroke-width="1.4"/>
+<text x="876" y="159" class="node-title" >Docker Compose</text>
+<text x="876" y="202" class="body" >PostgreSQL 16</text>
+<text x="876" y="236" class="body" >Host: localhost:5433</text>
+<text x="876" y="265" class="body" >Container: db:5432</text>
+<text x="876" y="315" class="small" >Dữ liệu qua Prisma</text>
+<rect x="852" y="374" width="236" height="60" rx="14" fill="#eef5f0" stroke="#cbd5d0" stroke-width="1.4"/><text x="970" y="406" class="node-title" text-anchor="middle">Volume lưu dữ liệu</text>
+<path d="M304 213 H402" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="353" y="188" class="small" text-anchor="middle">HTTP / JSON</text>
+<text x="353" y="242" class="small" text-anchor="middle">Cookie JWT</text>
+<path d="M754 213 H852" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<text x="803" y="188" class="small" text-anchor="middle">Prisma</text>
+<path d="M970 352 V374" fill="none" stroke="#315e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="32" y="478" width="1056" height="50" rx="10" fill="#edf2ef" stroke="#d7e1db" stroke-width="1.4"/>
+<text x="54" y="510" class="body" >Thanh toán chưa kết nối gateway bên ngoài; production và CD chưa được cấu hình.</text>
+</svg>
