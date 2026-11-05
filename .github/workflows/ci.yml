@@ -42,6 +42,10 @@ jobs:
       - name: Build Backend (Check TypeScript Errors)
         run: npm run build
 
+      - name: Test production target preflight
+        working-directory: .
+        run: node --test scripts/cd/preflight.test.mjs
+
   check-frontend:
     name: Build & Check Frontend
     runs-on: ubuntu-latest

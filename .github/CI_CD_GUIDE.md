@@ -10,11 +10,11 @@ Trong GitHub Settings → Rules → Rulesets hoặc Branch protection của `mai
 
 Workflow [cd.yml](workflows/cd.yml) chỉ chạy khi push tag `v*` hoặc bấm Run workflow. Nó gọi lại CI trên cùng commit, build hai Docker image gắn tag SHA và push GHCR, chạy `prisma migrate deploy` trên Supabase, gọi Render API deploy đúng SHA, triển khai web lên Vercel và smoke test URL HTTPS. Nếu rollout thất bại sau khi đã đổi ứng dụng, workflow thử rollback Render/Vercel; schema DB không được tự đảo ngược.
 
-Tạo GitHub Environment tên `production` và thêm sáu secret: `RENDER_API_KEY`, `RENDER_SERVICE_ID`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `PRODUCTION_DATABASE_URL`. Không đưa giá trị thật vào repo. Các URL production đã đặt trong workflow: web `https://brewlite-frontend.vercel.app/`, API `https://brewlite-api-omni.onrender.com`.
+Tạo GitHub Environment tên `production` và thêm sáu secret: `RENDER_API_KEY`, `RENDER_SERVICE_ID`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `PRODUCTION_DATABASE_URL`. Không đưa giá trị thật vào repo. `RENDER_SERVICE_ID` ứng với service đã chọn là `srv-dbksjsegekts73f2bsk0`. Các URL production đã đặt trong workflow: web `https://brewlite-frontend.vercel.app/`, API `https://brewlite-api-omni.onrender.com`.
 
 Render phải trỏ repo `PhucTruong11/brewlite-assignment2`, nhánh `main`, Root Directory `apps/api`; workflow từ chối deploy nếu khác. Vercel dùng project hiện có qua `VERCEL_ORG_ID` và `VERCEL_PROJECT_ID`, không cần tạo project mới. Tắt auto deploy production của hai nền tảng nếu muốn chỉ release theo tag sau CI. Chi tiết migration lần đầu, backup, cấu hình hosting, smoke test và rollback: [docs/deployment.md](../docs/deployment.md).
 
-Trước khi tạo tag đầu tiên, kiểm tra `_prisma_migrations` trên Supabase và backup. Migration dọn danh mục cũ có lệnh `DELETE`, nên không chạy thử CD vào DB thật. Nếu production trước đây dùng `prisma db push`, cần baseline migration đúng cách trước khi bật workflow. Chỉ khi CI xanh và migration đã được kiểm tra mới tạo tag release.
+Trước khi tạo tag đầu tiên, kiểm tra `_prisma_migrations` trên Supabase và backup. Migration dọn danh mục cũ có lệnh `DELETE`, nên không chạy thử CD vào DB thật. Nếu production trước đây dùng `prisma db push`, cần baseline migration đúng cách trước khi bật workflow. Sau khi xác minh baseline và backup, đặt Environment variable `PRODUCTION_MIGRATION_BASELINE_OK=true`. CD kiểm tra service Render và project Vercel trỏ đúng repo, branch, root directory trước khi chạm DB. Chỉ khi CI xanh và migration đã được kiểm tra mới tạo tag release.
 
 ## Bằng chứng cần lưu
 

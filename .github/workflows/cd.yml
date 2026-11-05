@@ -79,6 +79,7 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      PRODUCTION_MIGRATION_BASELINE_OK: ${{ vars.PRODUCTION_MIGRATION_BASELINE_OK }}
     steps:
       - uses: actions/checkout@v4
 
@@ -97,6 +98,19 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Verify production targets before touching the database
+        run: |
+          node scripts/cd/render-deploy.mjs preflight
+          node scripts/cd/vercel-preflight.mjs
+
+      - name: Require reviewed Supabase migration baseline and backup
+        shell: bash
+        run: |
+          if [[ "$PRODUCTION_MIGRATION_BASELINE_OK" != 'true' ]]; then
+            echo '::error::Chưa xác nhận baseline migration và backup Supabase (PRODUCTION_MIGRATION_BASELINE_OK=true)'
+            exit 1
+          fi
 
       - name: Install Prisma CLI
         working-directory: apps/api
