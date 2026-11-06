@@ -1,2 +1,72 @@
 \subsection{Task 1.3 -- Đặc tả use-case trọng tâm}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+\subsubsection{UC-01 -- Đặt và thanh toán đơn hàng}
+\textbf{Mục tiêu:} Khách chuyển giỏ đồ uống thành đơn có mã, thanh toán trong thời hạn và nhận biên nhận. Cửa hàng chỉ chuẩn bị đơn đã thanh toán; nguyên liệu được kiểm tra theo công thức để tránh bán vượt lượng có thể dùng.
+
+\textbf{Actor chính:} Khách hàng.\\
+\textbf{Actor hỗ trợ:} SePay thông báo giao dịch cho nhánh VietQR khi đã cấu hình. Nhánh thẻ dùng cổng mô phỏng trong ứng dụng, không thu tiền ngân hàng thật.\\
+\textbf{Trigger:} Khách bấm ``Tiến hành thanh toán'' ở giỏ hàng.\\
+\textbf{Tiền điều kiện:} Giỏ có ít nhất một món. Khách cần phiên đăng nhập hợp lệ trước khi gọi API tạo đơn. Sản phẩm, size, topping và công thức có dữ liệu trên máy chủ; đủ nguyên liệu và voucher hợp lệ được kiểm tra trong luồng.\\
+\textbf{Hậu điều kiện thành công:} Đơn có \texttt{orderId}, trạng thái \texttt{PAID}, một payment thành công; lượng nguyên liệu đã giữ được tiêu thụ đúng một lần, điểm/voucher được ghi theo quy tắc, khách xem được biên nhận và giỏ cục bộ được xóa.\\
+\textbf{Hậu điều kiện không thành công:} Giỏ sai hoặc thiếu nguyên liệu không tạo đơn. Đơn chờ/thanh toán lỗi vẫn giữ nguyên liệu đến hạn; hết hạn thì \texttt{CANCELLED} và trả lượng giữ. Đơn chưa trả tiền không được cộng điểm hoặc đưa vào pha chế.
+
+\subsubsection{Sơ đồ use-case của UC-01}
+Các hình elip là hành vi của BrewLite; hai actor nằm ngoài biên hệ thống. Thẻ mô phỏng và VietQR là hai lựa chọn của cùng use-case, không tạo hai khoản thu cho một đơn.
+\begin{center}
+\includegraphics[width=0.98\textwidth]{../../diagrams/uc01-order-checkout.png}
+\end{center}
+Sơ đồ được lưu riêng ở \texttt{docs/diagrams/uc01-order-checkout.puml} và xuất thành ảnh trước khi đưa vào báo cáo.
+\textbf{Ranh giới:} UC-01 gồm kiểm tra giỏ, tạo đơn, giữ/trả nguyên liệu, thanh toán và hiển thị kết quả. Nhập kho, sửa công thức, pha chế/giao đồ, giao tận nơi và hoàn tiền ngân hàng tự động nằm ngoài phạm vi. Việc mở QR hoặc bấm ``Đã chuyển tiền'' không tự xác nhận đã thanh toán.
+
+\subsubsection{Luồng chính -- thanh toán thành công}
+\begin{enumerate}[leftmargin=2.2em]
+  \item Khách xem giỏ, điều chỉnh món/số lượng rồi bấm ``Tiến hành thanh toán''.
+  \item Nếu đã đăng nhập, giao diện gọi \texttt{POST /api/cart/validate}. API đọc lại sản phẩm, size, topping, giá, công thức và nguyên liệu cho toàn bộ giỏ.
+  \item Khi giỏ hợp lệ, giao diện gọi \texttt{POST /api/orders}. Máy chủ tính lại tiền/voucher; trong một transaction kiểm tra lại tồn, giữ nguyên liệu và lưu đơn cùng các dòng món.
+  \item API trả \texttt{orderId}, \texttt{PENDING}, tổng tiền và thời hạn hai phút. Giao diện mở \texttt{/checkout?orderId=...}; đồng hồ dùng hạn do máy chủ trả về, không tính lại từ lúc mở trang.
+  \item Khách chọn một phương thức: thẻ mô phỏng gửi \texttt{POST /api/checkout} với \texttt{orderId}, \texttt{method=CARD} và \texttt{Idempotency-Key}; VietQR chờ thông báo SePay khớp mã đơn, nội dung và số tiền.
+  \item Khi thanh toán được xác nhận, máy chủ ghi payment, chuyển đơn thành \texttt{PAID}, tiêu thụ nguyên liệu đã giữ và xử lý điểm/voucher. Giao diện đọc trạng thái, hiện biên nhận và xóa giỏ cục bộ.
+\end{enumerate}
+
+\subsubsection{Luồng thay thế}
+\begin{description}[leftmargin=2.6em,style=nextline]
+  \item[A1 -- Chưa đăng nhập (bước 2)] Giao diện yêu cầu đăng nhập; API tạo đơn từ chối request không có phiên. Sau khi đăng nhập, khách tiếp tục với giỏ của mình; chưa có đơn hay nguyên liệu bị giữ.
+  \item[A2 -- Giỏ/voucher không hợp lệ (bước 2--3)] Giỏ rỗng, sản phẩm ngừng bán, size/topping/số lượng sai, công thức thiếu, voucher hết hiệu lực hoặc thiếu nguyên liệu được báo lỗi. Khách sửa và thử lại; \texttt{POST /api/orders} kiểm tra lại giá/tồn trước khi commit.
+  \item[A3 -- Chọn phương thức (bước 5)] Khách đổi giữa thẻ mô phỏng và VietQR khi đơn còn hạn. Việc đổi phương thức không tạo đơn mới hoặc payment thành công.
+  \item[A4 -- Thẻ mô phỏng thất bại (bước 5)] Payment ghi \texttt{FAILED}, đơn chuyển \texttt{PAYMENT\_FAILED}; nguyên liệu vẫn giữ đến hạn và khách được thử lại bằng khóa giao dịch mới.
+  \item[A5 -- Tạo lại sau hết hạn (bước 4--5)] Giao diện cho một lượt tạo lại: đơn cũ \texttt{CANCELLED} đã trả nguyên liệu; gọi lại \texttt{POST /api/orders}, kiểm tra tồn hiện tại và nhận \texttt{orderId} mới cùng hạn hai phút. Giới hạn một lượt hiện do giao diện thực hiện, chưa phải ràng buộc ở API.
+\end{description}
+
+\subsubsection{Luồng ngoại lệ}
+\begin{description}[leftmargin=2.6em,style=nextline]
+  \item[E1 -- Hết hạn] Sau hai phút mà đơn còn \texttt{PENDING}/\texttt{PAYMENT\_FAILED}, API hủy đơn và trả \texttt{reserved}; tác vụ nền cũng quét khi khách đóng trang. Đơn cũ không được trả tiền lại.
+  \item[E2 -- Gửi lặp] Cùng \texttt{Idempotency-Key} trả payment đã có, không trừ nguyên liệu/cộng điểm hai lần; dùng cùng khóa cho đơn khác bị từ chối.
+  \item[E3 -- Sai quyền hoặc trạng thái] Thiếu phiên, orderId của người khác, đơn đã \texttt{PAID}/\texttt{CANCELLED} hoặc quá hạn bị từ chối trước khi ghi nhận payment mới.
+  \item[E4 -- Lỗi giao dịch/tranh chấp tồn] Lỗi giữ nguyên liệu, ghi đơn hoặc ghi thanh toán làm rollback phần thay đổi của transaction; giao diện báo lỗi và giữ dữ liệu giỏ để thử lại.
+  \item[E5 -- Chưa có tín hiệu SePay] Trang tiếp tục hiển thị chờ; nút kiểm tra thủ công không tự đánh dấu \texttt{PAID}. Giao dịch đến sau khi đơn hết hạn cần quy trình đối soát riêng, ngoài nhánh thành công của UC-01.
+\end{description}
+
+\subsubsection{Liên kết yêu cầu và tiêu chí chấp nhận}
+\renewcommand{\arraystretch}{1.16}
+\begin{longtable}{@{}p{0.15\textwidth}p{0.58\textwidth}p{0.19\textwidth}@{}}
+\toprule
+\textbf{Mã} & \textbf{Điều kiện và kết quả cần kiểm tra} & \textbf{Yêu cầu nguồn} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Mã} & \textbf{Điều kiện và kết quả cần kiểm tra} & \textbf{Yêu cầu nguồn} \\
+\midrule
+\endhead
+\texttt{UC01-AC01} & Giỏ hợp lệ tạo một đơn \texttt{PENDING}, trả mã/tổng tiền/hạn hai phút; \texttt{reserved} tăng đúng công thức. & FR-03, FR-04, FR-08 \\
+\texttt{UC01-AC02} & Chưa đăng nhập, giỏ sai, voucher không hợp lệ hoặc thiếu nguyên liệu: báo lỗi, không lưu đơn/giữ nguyên liệu. & FR-04, FR-06, FR-08, FR-13 \\
+\texttt{UC01-AC03} & Sửa giá/tổng tiền ở client không đổi số tiền máy chủ tính và ghi trên đơn. & FR-08, NFR-02 \\
+\texttt{UC01-AC04} & Thẻ mô phỏng thành công trong hạn: một payment, đơn \texttt{PAID}, giảm \texttt{onHand}/\texttt{reserved}, hiện biên nhận. & FR-09, NFR-03 \\
+\texttt{UC01-AC05} & VietQR chỉ xác nhận khi có webhook khớp; mở QR hoặc bấm kiểm tra không tạo payment thành công. & FR-09, NFR-03 \\
+\texttt{UC01-AC06} & Gửi lại cùng khóa hoặc request đồng thời không trừ tồn/cộng điểm hai lần. & FR-09, FR-14, NFR-03 \\
+\texttt{UC01-AC07} & Thanh toán lỗi còn hạn được thử lại; hết hạn thì hủy, trả \texttt{reserved} đúng một lần và chặn trả tiền trên đơn cũ. & FR-09, FR-10 \\
+\texttt{UC01-AC08} & Lượt tạo lại sau hết hạn dùng \texttt{orderId} mới, chỉ thành công nếu tồn hiện tại đủ. & FR-04, FR-08, FR-10 \\
+\texttt{UC01-AC09} & Khách chỉ xem/thanh toán đơn của mình; khi thành công xem được biên nhận và lịch sử đúng trạng thái. & FR-09, FR-11, NFR-02 \\
+\bottomrule
+\end{longtable}
+
+\textbf{Giới hạn cần nghiệm thu riêng:} Quy tắc ``chỉ một lần tạo lại'' hiện được lưu ở trình duyệt; muốn chặn lách qua thiết bị khác hoặc API cần quan hệ giữa các lượt đơn và kiểm tra tại máy chủ. Giao dịch VietQR đến muộn sau khi hết hạn cần đối soát/hoàn tiền theo quy trình khác; đặc tả này không coi webhook đến muộn là bằng chứng đơn cũ được thanh toán hợp lệ.

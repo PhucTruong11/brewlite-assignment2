@@ -13,9 +13,7 @@ Khách cần biết món, giá theo size/topping và khả năng đáp ứng tr�
 | Khách hàng | Đặt đúng món, biết tổng tiền và trạng thái, dùng voucher/điểm đúng quy tắc. | Demo luồng mua, ca giỏ rỗng, hết nguyên liệu và thanh toán lỗi. |
 | Nhân viên quầy | Nhận đơn đã thanh toán, cập nhật pha chế, sẵn sàng và hoàn tất. | Demo danh sách đơn và chuyển trạng thái. |
 | Quản lý cửa hàng | Kiểm soát nguyên liệu, công thức, khuyến mãi và doanh thu; tránh thanh toán lặp. | Đối soát tồn, giao dịch, quyền admin. |
-| Giảng viên/khách hàng nghiệm thu | Có yêu cầu, sơ đồ, test, CI/CD và URL HTTPS; truy vết được bằng chứng. | Xem repository, pipeline và demo theo AC. |
 | Nhóm phát triển | Phân ranh frontend/API/DB, tích hợp và kiểm thử lặp lại. | Build/test CI, tài liệu triển khai, ma trận truy vết. |
-| Đơn vị thanh toán | Tích hợp thanh toán với định dạng và xác thực webhook hợp lệ, không ghi nhận trùng. | Test webhook hợp lệ, lặp và sai khóa trên môi trường phù hợp. |
 
 ## Mục tiêu và phạm vi
 
