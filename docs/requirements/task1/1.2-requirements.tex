@@ -1,0 +1,227 @@
+\subsection{Task 1.2 -- Yêu cầu chức năng và phi chức năng}
+Tài liệu SRS rút gọn này chuyển từ bản thảo \texttt{task1\_2.docx} của nhóm. Mỗi yêu cầu có mã định danh, mức ưu tiên MoSCoW và tiêu chí chấp nhận (AC) để truy vết sang thiết kế và kiểm thử. Đây là yêu cầu cần nghiệm thu, không phải tuyên bố tất cả đã được kiểm chứng.
+\textbf{Quy ước ưu tiên:} Must = bắt buộc; Should = nên có; Could = có thể có; Won\textquotesingle t = ngoài phạm vi phiên bản này.
+\textbf{Quy tắc nghiệp vụ:} Máy chủ tính lại giá, quyền và nhu cầu nguyên liệu toàn giỏ. Kiểm tra giỏ chỉ đọc; tạo đơn hợp lệ giữ nguyên liệu trong transaction; thanh toán thành công mới tiêu thụ. Đơn \texttt{PENDING} có hạn hai phút; hết hạn giải phóng nguyên liệu. Thanh toán thẻ là mô phỏng; QR SePay chỉ được xác nhận khi nhận webhook hợp lệ theo cấu hình.
+\subsubsection{Yêu cầu chức năng}
+\paragraph{FR-01 -- Xem danh sách menu}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Hệ thống cung cấp danh sách sản phẩm đang kinh doanh, có thông tin nhận diện và giá theo các size hợp lệ. Khách có thể lọc menu theo danh mục nếu chức năng lọc được bật.\\
+\noindent\texttt{AC-FR01.1}: Với dữ liệu sản phẩm, API menu trả về từng sản phẩm đang kinh doanh cùng ID, tên, hình ảnh (nếu có), danh mục và danh sách size/giá hiện hành.\par
+\noindent\texttt{AC-FR01.2}: Sản phẩm không kinh doanh không được trình bày như món có thể đặt; danh sách không có sản phẩm trả về trạng thái rỗng hợp lệ.\par
+\noindent\texttt{AC-FR01.3}: Trang menu hiển thị trạng thái tải trong khi chờ API, trạng thái rỗng khi không có món và thông báo có thể nhận biết khi API lỗi; không thay lỗi bằng dữ liệu giả.\par
+\noindent\texttt{AC-FR01.4}: Chọn một sản phẩm trên menu mở đúng trang chi tiết theo ID sản phẩm.\par
+
+\paragraph{FR-02 -- Xem chi tiết và tùy chỉnh sản phẩm}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Khách xem thông tin sản phẩm, chọn một size có giá và các topping hợp lệ trước khi thêm vào giỏ.\\
+\noindent\texttt{AC-FR02.1}: Trang chi tiết hiển thị thông tin của đúng sản phẩm, giá theo các size mà sản phẩm hỗ trợ và các topping hiện còn khả dụng.\par
+\noindent\texttt{AC-FR02.2}: Chọn size hoặc thay đổi số phần topping làm giá hiển thị được tính lại theo bảng giá hiện hành.\par
+\noindent\texttt{AC-FR02.3}: Không cho chọn size không có giá, topping không khả dụng hoặc topping cho sản phẩm không hỗ trợ topping.\par
+\noindent\texttt{AC-FR02.4}: ID sản phẩm không tồn tại hiển thị trạng thái không tìm thấy; lỗi tải dữ liệu được thông báo thay vì hiển thị một sản phẩm khác.\par
+
+\paragraph{FR-03 -- Quản lý giỏ hàng}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Khách thêm món đã chọn, điều chỉnh số lượng, xóa món và xem số lượng/tổng tiền của giỏ.\\
+\noindent\texttt{AC-FR03.1}: Hai món cùng sản phẩm, size và cấu hình/số phần topping được gộp thành một dòng; nếu một trong các thuộc tính này khác nhau, chúng nằm ở các dòng riêng.\par
+\noindent\texttt{AC-FR03.2}: Tăng, giảm hoặc xóa một dòng cập nhật số lượng dòng, tổng số món và tổng tiền ngay trên giao diện.\par
+\noindent\texttt{AC-FR03.3}: Giỏ được giữ khi tải lại trang trong cùng trình duyệt; dữ liệu giỏ không được coi là đơn đã tạo cho đến khi máy chủ xác nhận tạo đơn.\par
+\noindent\texttt{AC-FR03.4}: Khi khách đăng nhập, giỏ khách được hợp nhất với giỏ tài khoản theo quy tắc gộp ở AC-FR03.1; không làm mất hoặc nhân đôi món ngoài số lượng đã chọn.\par
+\noindent\texttt{AC-FR03.5}: Số lượng phải là số nguyên dương trong giới hạn nghiệp vụ; giá client tính chỉ để hiển thị và sẽ được máy chủ xác minh khi đặt đơn.\par
+
+\paragraph{FR-04 -- Kiểm tra giỏ và khả năng đáp ứng nguyên liệu}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Trước khi đặt hàng, hệ thống xác minh sản phẩm, size, topping, công thức, giá và nguyên liệu cho toàn bộ giỏ.\\
+\noindent\texttt{AC-FR04.1}: API từ chối sản phẩm không tồn tại/ngừng bán, size không hợp lệ, topping không khả dụng hoặc dữ liệu số lượng sai; phản hồi chỉ ra lỗi có thể xử lý.\par
+\noindent\texttt{AC-FR04.2}: Hệ thống cộng định lượng công thức của mọi dòng trong giỏ theo từng nguyên liệu rồi so sánh với tồn khả dụng; nếu thiếu, trả nguyên liệu/nhu cầu thiếu đủ để giao diện giải thích lý do không thể tiếp tục.\par
+\noindent\texttt{AC-FR04.3}: Khi giỏ hợp lệ, API trả kết quả kiểm tra và giá tham khảo được tính từ dữ liệu máy chủ.\par
+\noindent\texttt{AC-FR04.4}: Gọi kiểm tra giỏ không tạo đơn, không giữ nguyên liệu và không trừ tồn.\par
+
+\paragraph{FR-05 -- Đăng ký và xác minh tài khoản}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Người dùng đăng ký bằng thông tin hợp lệ và hoàn tất xác minh email nếu chính sách xác minh đang bật.\\
+\noindent\texttt{AC-FR05.1}: Đăng ký hợp lệ tạo tài khoản với email duy nhất; email đã được dùng bị từ chối bằng thông báo phù hợp.\par
+\noindent\texttt{AC-FR05.2}: Mật khẩu được băm trước khi lưu và không xuất hiện trong phản hồi API hoặc log ứng dụng.\par
+\noindent\texttt{AC-FR05.3}: Khi xác minh email được bật, mã xác minh có thời hạn và giới hạn thử; mã sai/hết hạn không xác minh tài khoản, mã đúng chỉ xác minh tài khoản dự kiến.\par
+\noindent\texttt{AC-FR05.4}: Người dùng có thể yêu cầu gửi lại mã theo giới hạn chống lạm dụng; phản hồi không tiết lộ thông tin nhạy cảm ngoài chính sách hệ thống.\par
+
+\paragraph{FR-06 -- Đăng nhập, đăng xuất và quản lý hồ sơ}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Khách đăng nhập, đăng xuất và xem/cập nhật thông tin hồ sơ của mình.\\
+\noindent\texttt{AC-FR06.1}: Thông tin đăng nhập hợp lệ tạo phiên xác thực; sai email/mật khẩu hoặc tài khoản không đáp ứng điều kiện xác thực bị từ chối.\par
+\noindent\texttt{AC-FR06.2}: Phiên xác thực được gửi bằng cookie bảo vệ phù hợp; endpoint cần đăng nhập từ chối yêu cầu thiếu phiên, sai phiên hoặc phiên hết hạn.\par
+\noindent\texttt{AC-FR06.3}: API xem hồ sơ chỉ trả thông tin tài khoản hiện tại; cập nhật hồ sơ chỉ tác động đến tài khoản đó và kiểm tra định dạng dữ liệu đầu vào.\par
+\noindent\texttt{AC-FR06.4}: Đăng xuất xóa cookie phiên trên trình duyệt; yêu cầu tiếp theo không còn được xác thực bằng cookie đã xóa.\par
+
+\paragraph{FR-07 -- Khôi phục và đổi mật khẩu}
+\textbf{Ưu tiên:} Should.\\
+\textbf{Mô tả:} Người dùng có thể yêu cầu khôi phục mật khẩu và thay mật khẩu trong phiên đã xác thực.\\
+\noindent\texttt{AC-FR07.1}: Yêu cầu quên mật khẩu không cho phép người không có quyền truy cập tài khoản thay mật khẩu nếu thiếu token/mã hợp lệ.\par
+\noindent\texttt{AC-FR07.2}: Mã hoặc liên kết đặt lại có thời hạn và chỉ được sử dụng theo quy tắc một lần; mã sai/hết hạn bị từ chối.\par
+\noindent\texttt{AC-FR07.3}: Mật khẩu mới đáp ứng chính sách mật khẩu, được băm khi lưu; mật khẩu cũ không được trả về.\par
+\noindent\texttt{AC-FR07.4}: Đổi mật khẩu yêu cầu xác thực tài khoản và thông tin bắt buộc theo chính sách hệ thống.\par
+
+\paragraph{FR-08 -- Tạo đơn hàng}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Khách đã đăng nhập gửi giỏ hợp lệ để tạo đơn chờ thanh toán.\\
+\noindent\texttt{AC-FR08.1}: API từ chối khách chưa đăng nhập, giỏ rỗng, số lượng không hợp lệ, món/size/topping không hợp lệ hoặc nguyên liệu không đủ; các trường hợp bị từ chối không để lại đơn dở dang.\par
+\noindent\texttt{AC-FR08.2}: Máy chủ tải lại giá và quy tắc khuyến mãi từ dữ liệu tin cậy, tự tính tổng tiền; chỉnh sửa giá/tổng tiền phía trình duyệt không làm thay đổi số tiền được ghi nhận.\par
+\noindent\texttt{AC-FR08.3}: Khi hợp lệ, đơn và các dòng món được lưu cùng việc giữ nguyên liệu trong một transaction; phản hồi có orderId, tổng tiền, trạng thái PENDING và thời điểm hết hạn giữ nguyên liệu.\par
+\noindent\texttt{AC-FR08.4}: Lỗi ở bất kỳ bước ghi nào làm rollback các thay đổi của transaction; không tạo đơn một phần hoặc giữ nguyên liệu một phần.\par
+\noindent\texttt{AC-FR08.5}: Chi tiết món, giá và snapshot công thức cần thiết được lưu để đơn đã tạo không bị thay đổi hồi tố khi sản phẩm/công thức được chỉnh sửa sau đó.\par
+
+\paragraph{FR-09 -- Thanh toán đơn hàng}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Khách thanh toán đơn thuộc sở hữu của mình qua mô hình thanh toán được cấu hình; trong phạm vi hiện tại, giao dịch có thể là mô phỏng.\\
+\noindent\texttt{AC-FR09.1}: Checkout hiển thị mã đơn, số tiền lấy từ máy chủ, phương thức được hỗ trợ và thời gian còn lại nếu đơn có thời hạn.\par
+\noindent\texttt{AC-FR09.2}: API thanh toán yêu cầu xác thực, kiểm tra quyền sở hữu đơn, trạng thái đơn, thời hạn và Idempotency-Key; yêu cầu thiếu khóa hoặc gửi đơn của người khác bị từ chối.\par
+\noindent\texttt{AC-FR09.3}: Kết quả thành công chỉ ghi nhận một thanh toán thành công, chuyển đơn sang PAID, tiêu thụ nguyên liệu đã giữ và phát sinh quyền lợi điểm/voucher theo quy tắc.\par
+\noindent\texttt{AC-FR09.4}: Kết quả thất bại được lưu/hiển thị là thất bại, không trừ tồn thực và chỉ cho thử lại khi đơn còn hạn, trạng thái cho phép.\par
+\noindent\texttt{AC-FR09.5}: Gửi lại cùng thao tác với cùng idempotency key không tạo thanh toán, không tiêu thụ tồn và không cộng điểm lần thứ hai.\par
+\noindent\texttt{AC-FR09.6}: Thanh toán thành công hiển thị biên nhận gồm mã đơn, các dòng món, tổng tiền, phương thức và trạng thái.\par
+
+\paragraph{FR-10 -- Hết hạn đơn chờ thanh toán và giải phóng nguyên liệu}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Hệ thống chấm dứt đơn chưa thanh toán đúng thời hạn và giải phóng phần nguyên liệu đang giữ.\\
+\noindent\texttt{AC-FR10.1}: Thời hạn giữ nguyên liệu cho đơn mới là 2 phút từ thời điểm tạo đơn, theo thời gian do máy chủ ghi nhận.\par
+\noindent\texttt{AC-FR10.2}: Sau khi hết hạn, thanh toán đơn đó bị từ chối; trạng thái đơn được chuyển theo quy tắc hết hạn và nguyên liệu được giải phóng đúng một lần.\par
+\noindent\texttt{AC-FR10.3}: Gọi lặp endpoint kiểm tra trạng thái hoặc tác vụ dọn đơn hết hạn không giải phóng nguyên liệu nhiều lần và không làm tồn khả dụng tăng sai.\par
+\noindent\texttt{AC-FR10.4}: Trước khi hết hạn, lỗi thanh toán không tự giải phóng nguyên liệu; khách có thể thử lại nếu đơn vẫn ở trạng thái cho phép.\par
+
+\paragraph{FR-11 -- Lịch sử, chi tiết và trạng thái đơn của khách}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} Khách đã đăng nhập xem lịch sử, chi tiết và trạng thái cập nhật của đơn thuộc tài khoản mình.\\
+\noindent\texttt{AC-FR11.1}: Danh sách lịch sử chỉ bao gồm đơn của user đang đăng nhập; tài khoản chưa có đơn nhận danh sách rỗng và thông báo phù hợp trên giao diện.\par
+\noindent\texttt{AC-FR11.2}: Khách xem được chi tiết gồm mã đơn, thời gian, món/size/topping, số lượng, tổng tiền và trạng thái.\par
+\noindent\texttt{AC-FR11.3}: Khách không thể đọc đơn của người khác bằng cách thay orderId; API từ chối truy cập mà không tiết lộ nội dung đơn.\par
+\noindent\texttt{AC-FR11.4}: Giao diện phản ánh trạng thái do máy chủ trả về và làm mới dữ liệu khi đơn còn đang xử lý.\par
+
+\paragraph{FR-12 -- Quản lý trạng thái đơn của cửa hàng}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Mô tả:} ADMIN xem các đơn cần xử lý và chuyển trạng thái theo luồng hợp lệ.\\
+\noindent\texttt{AC-FR12.1}: Endpoint quản trị yêu cầu phiên xác thực và vai trò ADMIN; user thường bị từ chối.\par
+\noindent\texttt{AC-FR12.2}: ADMIN xem danh sách đơn có lọc trạng thái/ngày/từ khóa và phân trang; kết quả đi kèm tổng số phù hợp với điều kiện lọc.\par
+\noindent\texttt{AC-FR12.3}: ADMIN xem số lượng đơn theo trạng thái và số liệu doanh thu theo phạm vi thời gian đã chọn; giá trị tính từ các trạng thái được tính là đã thanh toán.\par
+\noindent\texttt{AC-FR12.4}: Chuyển PAID → PREPARING → READY → COMPLETED được chấp nhận; chuyển trạng thái không hợp lệ hoặc cập nhật đơn không tồn tại bị từ chối và không làm thay đổi trạng thái.\par
+\noindent\texttt{AC-FR12.5}: Đơn PENDING chưa thanh toán không được đưa vào danh sách pha chế như đơn cần thực hiện.\par
+
+\paragraph{FR-13 -- Khuyến mãi và voucher}
+\textbf{Ưu tiên:} Should.\\
+\textbf{Mô tả:} Khách xem và áp dụng khuyến mãi/voucher hợp lệ; máy chủ kiểm tra điều kiện trước khi giảm giá và ghi đơn.\\
+\noindent\texttt{AC-FR13.1}: Khuyến mãi có thể được tìm/xem theo trạng thái công khai; dữ liệu trả về không bao gồm bí mật quản trị.\par
+\noindent\texttt{AC-FR13.2}: Mã không tồn tại, chưa bắt đầu, hết hạn, không hoạt động hoặc không đạt giá trị đơn tối thiểu bị từ chối với lý do phù hợp.\par
+\noindent\texttt{AC-FR13.3}: Máy chủ tính mức giảm và giới hạn giảm theo cấu hình; client không thể tự sửa số tiền giảm.\par
+\noindent\texttt{AC-FR13.4}: Điều kiện voucher được xác minh lại khi tạo đơn/thanh toán theo quy tắc nghiệp vụ, tránh áp dụng mã đã hết hiệu lực sau khi xem giỏ.\par
+\noindent\texttt{AC-FR13.5}: Voucher giới hạn lượt sử dụng không bị ghi nhận vượt giới hạn trong các yêu cầu đồng thời.\par
+
+\paragraph{FR-14 -- Điểm thưởng và đổi thưởng}
+\textbf{Ưu tiên:} Could.\\
+\textbf{Mô tả:} Khách hàng đã đăng nhập xem điểm và đổi điểm lấy phần thưởng nếu đủ điều kiện.\\
+\noindent\texttt{AC-FR14.1}: API điểm thưởng yêu cầu xác thực và chỉ trả số dư/lịch sử của user hiện tại.\par
+\noindent\texttt{AC-FR14.2}: Đổi thưởng yêu cầu phần thưởng còn hiệu lực và số dư đủ; nếu không đủ điều kiện, điểm không bị trừ.\par
+\noindent\texttt{AC-FR14.3}: Cộng, đổi hoặc hoàn điểm tạo giao dịch sổ điểm tương ứng; cùng một đơn/thao tác không phát sinh giao dịch trùng khi được gửi lại.\par
+\noindent\texttt{AC-FR14.4}: Điểm tích lũy từ mua hàng chỉ được cấp khi điều kiện thanh toán thành công được đáp ứng; hủy/hoàn theo nghiệp vụ không làm số dư sai lệch.\par
+
+\paragraph{FR-15 -- Quản lý nguyên liệu và công thức}
+\textbf{Ưu tiên:} Should.\\
+\textbf{Mô tả:} ADMIN xem và cập nhật nguyên liệu, nhập kho và công thức định lượng sản phẩm/topping.\\
+\noindent\texttt{AC-FR15.1}: Chỉ ADMIN truy cập API đọc/ghi nguyên liệu và công thức.\par
+\noindent\texttt{AC-FR15.2}: Nguyên liệu có mã duy nhất, tên, đơn vị, trạng thái theo dõi tồn và các trường số lượng hợp lệ; mã trùng hoặc số lượng âm bị từ chối.\par
+\noindent\texttt{AC-FR15.3}: Nhập kho ghi tăng số lượng thực có và không ghi đè lượng đang giữ; thao tác không làm tồn âm hoặc mất dữ liệu do cập nhật đồng thời.\par
+\noindent\texttt{AC-FR15.4}: Công thức sản phẩm gắn với một product và size; công thức topping gắn với topping; mỗi định lượng lớn hơn 0 và tham chiếu nguyên liệu hợp lệ.\par
+\noindent\texttt{AC-FR15.5}: Lưu/sửa công thức được phản ánh trong lần kiểm tra giỏ tiếp theo; đơn đã tạo giữ snapshot cần thiết để lịch sử không đổi.\par
+\noindent\texttt{AC-FR15.6}: Nguyên liệu không theo dõi tồn không bị coi là hết hàng chỉ vì không có số lượng tồn.\par
+
+\paragraph{FR-16 -- Quản lý sản phẩm và khuyến mãi ở vai trò ADMIN}
+\textbf{Ưu tiên:} Could.\\
+\textbf{Mô tả:} ADMIN quản lý trạng thái khả dụng sản phẩm và thông tin khuyến mãi theo quyền được phép.\\
+\noindent\texttt{AC-FR16.1}: Thay đổi trạng thái khả dụng sản phẩm cập nhật khả năng xuất hiện/được đặt trên luồng khách hàng sau khi dữ liệu được làm mới.\par
+\noindent\texttt{AC-FR16.2}: ADMIN có thể xem, tạo hoặc bật/tắt khuyến mãi theo trường dữ liệu bắt buộc; dữ liệu sai bị từ chối.\par
+\noindent\texttt{AC-FR16.3}: Thay đổi admin được ghi vào cơ sở dữ liệu và có kết quả thành công/lỗi rõ ràng; lỗi không trả phản hồi thành công giả.\par
+
+\subsubsection{Yêu cầu phi chức năng}
+Các ngưỡng hiệu năng và vận hành là mục tiêu nghiệm thu đề xuất; nhóm cần ghi cấu hình môi trường và dữ liệu kiểm thử khi đo.
+\paragraph{NFR-01 -- Hiệu năng}
+\textbf{Ưu tiên:} Should.\\
+\textbf{Yêu cầu:} Các thao tác phổ biến phải phản hồi trong thời gian chấp nhận được ở tải mục tiêu.\\
+\noindent\texttt{AC-NFR01.1}: Với 100 phiên người dùng đồng thời trên môi trường kiểm thử đã ghi cấu hình, ít nhất 95\% yêu cầu đọc menu/chi tiết/lịch sử hoàn tất trong 2 giây.\par
+\noindent\texttt{AC-NFR01.2}: Trong cùng điều kiện, ít nhất 95\% yêu cầu ghi giỏ/đơn/thanh toán hoàn tất trong 3 giây, không tính thời gian người dùng chờ tương tác ngoài hệ thống.\par
+\noindent\texttt{AC-NFR01.3}: Báo cáo kiểm thử ghi cấu hình máy, kích thước dữ liệu, số phiên đồng thời, số mẫu, p50/p95/p99 và lỗi; không nghiệm thu chỉ dựa trên một lần đo thủ công.\par
+
+\paragraph{NFR-02 -- Bảo mật và quyền riêng tư}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Yêu cầu:} Xác thực, phân quyền và bảo vệ dữ liệu phải được áp dụng nhất quán ở giao diện và API; kiểm tra quyền phải được thực hiện ở phía máy chủ.\\
+\noindent\texttt{AC-NFR02.1}: Mật khẩu được lưu bằng thuật toán băm mật khẩu phù hợp; mật khẩu, token bí mật và thông tin nhạy cảm không xuất hiện trong phản hồi API hoặc log.\par
+\noindent\texttt{AC-NFR02.2}: Cookie phiên có HttpOnly; production bật Secure và thiết lập SameSite phù hợp với cách triển khai.\par
+\noindent\texttt{AC-NFR02.3}: API yêu cầu đăng nhập từ chối request không có phiên hợp lệ; endpoint admin từ chối user không có vai trò ADMIN.\par
+\noindent\texttt{AC-NFR02.4}: Kiểm thử phân quyền chứng minh user A không đọc/sửa đơn, hồ sơ hoặc dữ liệu riêng của user B bằng cách thay ID trong request.\par
+\noindent\texttt{AC-NFR02.5}: Mọi đầu vào được kiểm tra kiểu, định dạng, miền giá trị và quyền sở hữu; giá/giảm giá/trạng thái không được tin từ client.\par
+\noindent\texttt{AC-NFR02.6}: Môi trường production chỉ truyền dữ liệu xác thực qua HTTPS; secret triển khai được cung cấp qua cấu hình bí mật, không commit vào repository.\par
+
+\paragraph{NFR-03 -- Tính toàn vẹn và nhất quán dữ liệu}
+\textbf{Ưu tiên:} Must.\\
+\textbf{Yêu cầu:} Giao dịch tạo đơn, giữ tồn, thanh toán, tiêu thụ tồn, voucher và điểm không được để lại trạng thái một phần.\\
+\noindent\texttt{AC-NFR03.1}: Kiểm thử nhiều đơn đồng thời với nhu cầu nguyên liệu vượt tồn không làm tồn khả dụng âm và không chấp nhận lượng bán vượt nguyên liệu có thể dùng.\par
+\noindent\texttt{AC-NFR03.2}: Khi lỗi xảy ra giữa một giao dịch tạo đơn/thanh toán, các thay đổi liên quan được rollback hoặc phục hồi theo cùng một trạng thái nhất quán.\par
+\noindent\texttt{AC-NFR03.3}: Gửi lại cùng idempotency key không tạo thêm payment, không trừ tồn hoặc cộng/đổi điểm lần nữa.\par
+\noindent\texttt{AC-NFR03.4}: Mọi chuyển trạng thái đơn không hợp lệ bị từ chối ở API, kể cả khi gửi request trực tiếp không qua giao diện.\par
+
+\paragraph{NFR-04 -- Khả dụng và phục hồi dịch vụ}
+\textbf{Ưu tiên:} Should.\\
+\textbf{Yêu cầu:} Lỗi phụ thuộc hoặc sự cố triển khai cần được phát hiện; quy trình khôi phục không được âm thầm báo thành công.\\
+\noindent\texttt{AC-NFR04.1}: Mục tiêu production đề xuất là khả dụng ít nhất 99\% mỗi tháng, không tính thời gian bảo trì đã thông báo; tính theo log/monitoring có thời điểm và mẫu số rõ ràng.\par
+\noindent\texttt{AC-NFR04.2}: Health check phải phát hiện API không sẵn sàng và, nếu được cấu hình, không thể kết nối cơ sở dữ liệu.\par
+\noindent\texttt{AC-NFR04.3}: Một lần phát hành chỉ được đánh dấu thành công sau 5 lần kiểm tra health liên tiếp đạt yêu cầu; nếu thất bại phải báo lỗi và cung cấp bước xử lý/rollback.\par
+\noindent\texttt{AC-NFR04.4}: Đơn, payment và tồn kho đã commit phải còn tồn tại sau khi restart tiến trình ứng dụng.\par
+
+\paragraph{NFR-05 -- Khả năng mở rộng}
+\textbf{Ưu tiên:} Should.\\
+\textbf{Yêu cầu:} Web/API có thể tăng tải mà không phụ thuộc dữ liệu nghiệp vụ trong bộ nhớ của một tiến trình.\\
+\noindent\texttt{AC-NFR05.1}: Có thể chạy nhiều bản sao web/API cùng dùng cơ sở dữ liệu chung mà không nhân đôi đơn, thanh toán, giữ tồn hoặc điểm trong các kiểm thử lặp/đồng thời.\par
+\noindent\texttt{AC-NFR05.2}: Dữ liệu giỏ trên trình duyệt không được dùng làm nguồn dữ liệu duy nhất cho đơn, thanh toán hoặc tồn kho.\par
+\noindent\texttt{AC-NFR05.3}: Kết quả kiểm thử tăng tải được so sánh với các ngưỡng NFR-01; mọi giới hạn tài nguyên hoặc suy giảm hiệu năng phải được nêu trong báo cáo.\par
+
+\paragraph{NFR-06 -- Khả dụng giao diện và khả năng tiếp cận}
+\textbf{Ưu tiên:} Should.\\
+\textbf{Yêu cầu:} Luồng chính phải dễ nhận biết và sử dụng trên thiết bị di động, bàn phím và các trạng thái lỗi.\\
+\noindent\texttt{AC-NFR06.1}: Các màn hình menu, chi tiết, giỏ, đăng nhập, checkout và lịch sử không tràn ngang ở viewport rộng 360 CSS px.\par
+\noindent\texttt{AC-NFR06.2}: Các thao tác chính có thể thực hiện bằng bàn phím; focus nhìn thấy được; trường nhập có nhãn; ảnh chức năng có văn bản thay thế phù hợp.\par
+\noindent\texttt{AC-NFR06.3}: Trạng thái loading, empty, error, success và lỗi nghiệp vụ được thông báo bằng nội dung, không chỉ khác màu sắc.\par
+\noindent\texttt{AC-NFR06.4}: Lỗi nhập liệu chỉ rõ trường hoặc hành động cần sửa; thông báo không làm mất dữ liệu người dùng đã nhập nếu không cần thiết.\par
+
+\paragraph{NFR-07 -- Bảo trì và kiểm thử}
+\textbf{Ưu tiên:} Should.\\
+\textbf{Yêu cầu:} Thay đổi phải có thể kiểm tra lặp lại và pipeline cần chặn thay đổi làm hỏng chất lượng đã thống nhất.\\
+\noindent\texttt{AC-NFR07.1}: Mỗi pull request chạy lint, build và unit test cho ứng dụng liên quan; API chạy Prisma generate trước bước cần Prisma Client.\par
+\noindent\texttt{AC-NFR07.2}: Nghiệp vụ quan trọng gồm phân quyền, tính giá, chuyển trạng thái, idempotency và xử lý tồn có test tự động cho trường hợp thành công và thất bại.\par
+\noindent\texttt{AC-NFR07.3}: Test lỗi phải trả exit code thất bại để CI chặn merge; không được chuyển lỗi thành cảnh báo hoặc kết quả thành công.\par
+\noindent\texttt{AC-NFR07.4}: Hướng dẫn cài đặt, cấu hình môi trường và chạy test phải khớp cấu trúc repository hiện hành.\par
+
+\paragraph{NFR-08 -- Sao lưu và khôi phục dữ liệu}
+\textbf{Ưu tiên:} Could.\\
+\textbf{Yêu cầu:} Dữ liệu nghiệp vụ quan trọng phải có quy trình sao lưu và kiểm tra khả năng khôi phục trước khi triển khai môi trường sử dụng thật.\\
+\noindent\texttt{AC-NFR08.1}: Tài liệu vận hành nêu cách tạo backup PostgreSQL, nơi lưu an toàn, thời hạn lưu và người phụ trách; backup không chứa trong Git.\par
+\noindent\texttt{AC-NFR08.2}: Trước migration phá hủy dữ liệu, có backup được xác minh và hướng dẫn phục hồi.\par
+\noindent\texttt{AC-NFR08.3}: Ít nhất một lần kiểm thử khôi phục trên môi trường không production xác nhận có thể đọc lại dữ liệu đã backup; ghi thời gian và kết quả kiểm thử.\par
+\subsubsection{Sơ đồ use-case tổng quát}
+Hình dưới biểu diễn các nhóm chức năng và actor ở mức tổng quát. Đặc tả luồng chính, thay thế và ngoại lệ của use-case trọng tâm thuộc Task 1.3.
+\begin{center}
+\begin{tikzpicture}[font=\small, actor/.style={draw,rounded corners,minimum width=3.0cm,minimum height=1.0cm,align=center}, action/.style={draw,ellipse,minimum width=5.8cm,minimum height=0.8cm,align=center}, >=stealth]
+\node[actor] (guest) at (0,5) {Khách vãng lai};
+\node[actor] (customer) at (0,2.7) {Khách hàng};
+\node[actor] (admin) at (0,-1.2) {Nhân viên / quản lý};
+\draw[rounded corners] (2.75,-1.75) rectangle (9.25,5.75);
+\node[anchor=south] at (6,5.75) {Hệ thống BrewLite};
+\node[action] (menu) at (6,5) {Xem menu và chi tiết món};
+\node[action] (cart) at (6,3.8) {Chọn tùy chọn và quản lý giỏ};
+\node[action] (auth) at (6,2.6) {Đăng ký và đăng nhập};
+\node[action] (order) at (6,1.4) {Kiểm tra giỏ và tạo đơn};
+\node[action] (payment) at (6,0.2) {Thanh toán và theo dõi đơn};
+\node[action] (manage) at (6,-1.2) {Xử lý đơn và quản lý nguyên liệu};
+\draw (guest) -- (menu); \draw (guest) -- (cart); \draw (guest) -- (auth);
+\draw (customer) -- (menu); \draw (customer) -- (cart); \draw (customer) -- (order); \draw (customer) -- (payment);
+\draw (admin) -- (manage);
+\end{tikzpicture}
+\end{center}
+\textbf{Ràng buộc actor:} Xem menu và chuẩn bị giỏ không cần đăng nhập. Tạo đơn, thanh toán và xem lịch sử cần xác thực; quản trị yêu cầu vai trò \texttt{ADMIN}. Dịch vụ email và SePay là hệ thống ngoài được gọi khi cấu hình tương ứng đã bật.
+\subsubsection{Các giả định cần nhóm xác nhận}
+Ngưỡng tải, thời gian phản hồi và mục tiêu khả dụng trong các NFR là mục tiêu đề xuất; quy tắc voucher/điểm và chính sách hủy/hoàn cần được thống nhất trước khi nghiệm thu. Secret, webhook key và thông tin kết nối production không nằm trong tài liệu hoặc repository.

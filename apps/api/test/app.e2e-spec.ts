@@ -22,9 +22,11 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
 
   beforeAll(async () => {
     // Chặn bài test có ghi dữ liệu chạy nhầm trên production.
-    const databaseName = new URL(process.env.DATABASE_URL ?? '').pathname.slice(1);
-    if (process.env.E2E_DATABASE !== '1' || databaseName !== 'brewlite_test') {
-      throw new Error('E2E chỉ được chạy với E2E_DATABASE=1 và database brewlite_test');
+    const databaseUrl = new URL(process.env.DATABASE_URL ?? 'postgresql://invalid/');
+    const databaseName = databaseUrl.pathname.slice(1);
+    if (process.env.E2E_DATABASE !== '1' || databaseName !== 'brewlite_test' ||
+      !['localhost', '127.0.0.1'].includes(databaseUrl.hostname)) {
+      throw new Error('E2E chỉ được chạy với E2E_DATABASE=1 và database brewlite_test trên localhost');
     }
 
     const module = await Test.createTestingModule({ imports: [AppModule] }).compile();

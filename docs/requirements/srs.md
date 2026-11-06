@@ -1,23 +1,7 @@
-# SRS rút gọn (Task 1.2)
+# Task 1.2 — SRS rút gọn
 
-> Bản khung. Mã và nội dung yêu cầu phải được nhóm chốt trước khi điền ma trận truy vết.
+Bản đầy đủ của **16 yêu cầu chức năng (FR-01–FR-16)** và **8 yêu cầu phi chức năng (NFR-01–NFR-08)**, gồm mức ưu tiên MoSCoW, mô tả, tiêu chí chấp nhận có mã riêng và sơ đồ use-case tổng quát, được chuyển từ `task1_2.docx` sang LaTeX tại [task1/1.2-requirements.tex](task1/1.2-requirements.tex). Biên dịch từ [task1/main.tex](task1/main.tex).
 
-## Yêu cầu chức năng
+Một số câu trong DOCX về thanh toán chỉ mô tả mock đã được cập nhật theo mã hiện tại: CARD mô phỏng, QR SePay khi cấu hình và webhook hợp lệ. Mã yêu cầu và tiêu chí chấp nhận giữ nguyên để phục vụ truy vết.
 
-| Mã FR | Mô tả có thể kiểm thử | MoSCoW | Tiêu chí chấp nhận | Test ID |
-| --- | --- | --- | --- | --- |
-| FR-01 | TODO: xem danh sách/chi tiết món | Must | TODO | TODO |
-
-Bao phủ tối thiểu: menu, tùy chọn size/topping, giỏ, xác thực, đặt đơn, thanh toán, lịch sử đơn và quản lý trạng thái đơn.
-
-## Yêu cầu phi chức năng
-
-| Mã NFR | Mô tả có thể đo | MoSCoW | Cách kiểm chứng | Test ID |
-| --- | --- | --- | --- | --- |
-| NFR-01 | TODO: hiệu năng | TODO | TODO | TODO |
-
-Bao phủ tối thiểu: hiệu năng, bảo mật, tính khả dụng, khả năng triển khai và vận hành.
-
-## Use-case diagram tổng quát
-
-TODO: liên kết file nguồn và bản xuất trong `../diagrams/`.
+Các AC là yêu cầu để nghiệm thu, không phải kết quả test đã đạt. Chỉ tiêu tải và khả dụng là mục tiêu đề xuất, cần đo trên môi trường và dữ liệu đã ghi rõ.

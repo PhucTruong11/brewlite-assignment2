@@ -54,25 +54,27 @@ npm test
 npm run build
 ```
 
-CI chạy tự động cho pull request và `main`: lint, unit test, build của hai app và bài E2E API với PostgreSQL 16 tạm. Bài E2E đi qua menu → đăng nhập → tạo đơn → thanh toán CARD mô phỏng → xác nhận trạng thái `PAID`; còn kiểm tra thiếu nguyên liệu, hết hạn, idempotency và health. Chạy riêng trên máy chỉ khi đã tạo DB **`brewlite_test`**:
+CI chạy tự động cho pull request và `main`: lint, unit test, build của hai app, test tích hợp API và E2E API với PostgreSQL 16 tạm. E2E đi qua menu → đăng nhập → tạo đơn → thanh toán CARD mô phỏng → xác nhận trạng thái `PAID`; test tích hợp kiểm tra thêm dữ liệu sai, quyền truy cập, tranh chấp nguyên liệu, thanh toán thất bại và thử lại. Ma trận ca kiểm thử nằm trong [tests/README.md](tests/README.md). Chạy riêng trên máy chỉ khi đã tạo DB **`brewlite_test`**:
 
 ```powershell
 cd apps/api
-$env:DATABASE_URL = 'postgresql://brewlite:brewlite_test@localhost:5432/brewlite_test'
+$env:DATABASE_URL = 'postgresql://<user>:<password>@127.0.0.1:<port>/brewlite_test'
 $env:E2E_DATABASE = '1'
 $env:JWT_SECRET = 'local-test-only'
+$env:NODE_ENV = 'test'
 npx prisma migrate deploy
+npm run test:integration
 npm run test:e2e
 ```
 
-Bài test từ chối chạy nếu tên DB không phải `brewlite_test`; tuyệt đối không đặt `E2E_DATABASE=1` với DB thật. CI tạo DB tạm tự động, nên nhóm có thể xem kết quả trên GitHub Actions mà không chạy local. Đường dẫn lệnh này chỉ dành cho kiểm thử, không phải cách chạy bản Assignment 2 để demo.
+Bài test chỉ chạy nếu tên DB là `brewlite_test` và host là `localhost` hoặc `127.0.0.1`; tuyệt đối không đặt `E2E_DATABASE=1` với DB thật. CI tạo DB tạm tự động, nên nhóm có thể xem kết quả trên GitHub Actions mà không chạy local. Đường dẫn lệnh này chỉ dành cho kiểm thử, không phải cách chạy bản Assignment 2 để demo.
 
 Test API thủ công trong `tests/` chỉ gửi đến URL được chọn trong environment của Thunder/Postman. Đừng để mặc định `localhost` khi kiểm tra production; các request `POST /api/orders` và thanh toán có thể ghi **DB production**. Dùng tài khoản và dữ liệu demo riêng, tránh chạy ca thay đổi stock trên DB thật.
 
 ## Trạng thái Assignment 2
 
 - **Đã sắp cấu trúc:** `apps/web`, `apps/api`, `docs`, `tests`, `.github/workflows`, Dockerfile/Compose và Prisma migration được sao chép; CI đã cập nhật đường dẫn mới.
-- **Cần làm Task 1–3:** SRS, use-case, ba loại sơ đồ UML, deployment diagram đúng nền tảng thật, ADR được nhóm duyệt và ma trận truy vết hoàn chỉnh. Xem README trong từng thư mục `docs/`.
+- **Task 1:** Bối cảnh/phạm vi và SRS rút gọn đã được viết tại `docs/requirements/`, có bản LaTeX cho Task 1.1–1.2. Task 1.3 còn cần hoàn thiện đặc tả use-case trọng tâm; các sơ đồ Task 2, deployment diagram Task 3, ADR được nhóm duyệt và ma trận truy vết vẫn cần hoàn thiện.
 - **Task 4–5:** Workflow CI và CD, E2E API với DB test riêng và `GET /api/health` đã có trong mã nguồn. CD chỉ chạy khi tạo tag `v*` hoặc gọi thủ công; cần cấu hình secrets, chuyển source Render sang repo mới, kiểm tra migration production và ghi bằng chứng run thành công. Branch protection, release notes, Sprint Review/Retrospective và video demo vẫn cần nhóm thực hiện trên GitHub/tài liệu.
 
 ## Git và bàn giao

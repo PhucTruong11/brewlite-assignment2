@@ -1,0 +1,53 @@
+\section{Task 1 -- Khai thác và đặc tả yêu cầu}
+\subsection{Task 1.1 -- Bối cảnh, stakeholder và phạm vi}
+
+\subsubsection{Vấn đề nghiệp vụ}
+Khách mua đồ uống cần biết món nào còn bán, giá theo size và topping, và liệu cửa hàng có đủ nguyên liệu trước khi đặt. Nếu giá hoặc tồn kho chỉ được tính trên trình duyệt, đơn có thể sai tiền hoặc bán vượt lượng nguyên liệu sẵn có. Cửa hàng cần nhận đơn đã thanh toán, theo dõi pha chế và đối chiếu trạng thái đơn; khách cần nhận mã đơn và theo dõi tiến độ để lấy đồ tại quầy. BrewLite giải quyết luồng từ xem menu, chọn món, giỏ hàng, tạo đơn, thanh toán đến theo dõi và hoàn tất đơn trên một hệ thống web.
+
+\subsubsection{Stakeholder và kỳ vọng}
+\renewcommand{\arraystretch}{1.25}
+\begin{longtable}{@{}p{0.19\textwidth}p{0.46\textwidth}p{0.27\textwidth}@{}}
+\toprule
+\textbf{Đối tượng} & \textbf{Mục tiêu và kỳ vọng} & \textbf{Cách xác nhận} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Đối tượng} & \textbf{Mục tiêu và kỳ vọng} & \textbf{Cách xác nhận} \\
+\midrule
+\endhead
+Khách hàng & Xem món, tùy chọn, giá và khả năng đáp ứng; đặt, thanh toán, nhận mã và theo dõi đơn; dùng voucher/điểm đúng quy tắc. & Demo luồng mua và các ca giỏ rỗng, hết nguyên liệu, thanh toán lỗi. \\
+Nhân viên quầy & Chỉ nhận đơn đã thanh toán; cập nhật pha chế, sẵn sàng và hoàn thành đơn kịp thời. & Demo danh sách đơn và các bước chuyển trạng thái hợp lệ. \\
+Quản lý cửa hàng & Kiểm soát nguyên liệu, công thức, chương trình ưu đãi và doanh thu; tránh bán vượt tồn hoặc ghi nhận thanh toán lặp. & Đối soát tồn, trạng thái đơn, giao dịch và quyền quản trị. \\
+Giảng viên/khách hàng nghiệm thu & Có yêu cầu, sơ đồ, mã nguồn, kiểm thử và hệ thống production truy cập được; truy vết được từ yêu cầu đến bằng chứng. & Xem repository, CI/CD, URL HTTPS và demo theo tiêu chí chấp nhận. \\
+Nhóm phát triển & Có yêu cầu rõ, phân ranh frontend/API/DB, quy trình tích hợp và kiểm thử lặp lại. & Build/test qua CI, tài liệu triển khai và ma trận truy vết. \\
+Đơn vị thanh toán & Nhận yêu cầu thanh toán/đối soát theo định dạng tích hợp; webhook hợp lệ, không ghi nhận trùng. & Kiểm tra cấu hình SePay và ca webhook lặp/sai khóa trên môi trường phù hợp. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Mục tiêu và phạm vi}
+\textbf{Mục tiêu MVP:} Khách hoàn tất luồng xem menu $\rightarrow$ chọn size/topping $\rightarrow$ giỏ $\rightarrow$ tạo đơn $\rightarrow$ thanh toán $\rightarrow$ theo dõi đơn; nhân viên xử lý đơn đã thanh toán. Giá, quyền và lượng nguyên liệu được máy chủ kiểm tra; đơn và thanh toán được ghi nhất quán.
+
+\textbf{Trong phạm vi MVP:}
+\begin{itemize}
+  \item Menu, chi tiết món, giá theo size/topping, giỏ và kiểm tra khả năng đáp ứng theo công thức nguyên liệu.
+  \item Đăng ký/đăng nhập, tạo đơn có mã và thời hạn thanh toán; thanh toán thẻ mô phỏng và luồng QR SePay khi đã cấu hình; lịch sử và trạng thái đơn.
+  \item Quản trị đơn sau thanh toán; quản lý nguyên liệu, công thức và các khuyến mãi đang sử dụng.
+  \item Next.js, NestJS, PostgreSQL, CI/CD và URL production qua HTTPS theo yêu cầu Assignment 2.
+\end{itemize}
+
+\textbf{Phạm vi mở rộng:} điểm thưởng, đổi voucher, báo cáo quản trị chi tiết, PWA/cải thiện trải nghiệm di động và kiểm thử tải ở quy mô lớn hơn dữ liệu demo.
+
+\textbf{Ngoài phạm vi:} giao tận nơi, theo dõi tài xế, nhiều chi nhánh độc lập, tự đối soát mọi ngân hàng/ví và hoàn tiền ngân hàng tự động. Nút thanh toán thẻ phục vụ mô phỏng; QR SePay chỉ xác nhận giao dịch thật khi webhook và tài khoản nhận tiền được cấu hình hợp lệ.
+
+\subsubsection{Giả định, ràng buộc và rủi ro ban đầu}
+\textbf{Giả định:} Khách nhận đồ tại quầy; sản phẩm có công thức theo size; nguyên liệu theo dõi tồn có lượng khả dụng bằng \texttt{onHand - reserved}; thời hạn giữ nguyên liệu của đơn chờ thanh toán là hai phút. Lượt tạo đơn thay thế sau hết hạn là quy tắc giao diện hiện tại và cần được nghiệm thu riêng.
+
+\textbf{Ràng buộc:} Ba thành phần bắt buộc của đề là Next.js, NestJS và PostgreSQL. Web chạy trên Vercel, API trên Render, DB trên Supabase; secret chỉ đặt ở môi trường triển khai. API là nguồn tin cậy cho giá, quyền, tồn và trạng thái. Dữ liệu sản xuất không được dùng làm dữ liệu thử phá hủy.
+
+\textbf{Rủi ro:}
+\begin{itemize}
+  \item Tài nguyên free tier có thể ngủ hoặc giới hạn kết nối, khiến phản hồi đầu tiên chậm và webhook đến trễ.
+  \item Webhook SePay phụ thuộc URL công khai, tài khoản nhận tiền và khóa cấu hình; bản demo cần phân biệt thanh toán mô phỏng với tiền thật.
+  \item Đặt đồng thời có thể tranh chấp nguyên liệu; tạo đơn và giữ tồn phải nằm trong transaction, có kiểm thử cạnh tranh.
+  \item Sai lệch giữa cấu hình production, schema migration và mã nguồn có thể làm deploy lỗi; cần health check và phương án rollback.
+\end{itemize}

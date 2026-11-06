@@ -121,5 +121,8 @@ jobs:
       - name: Apply migrations to disposable PostgreSQL
         run: npx prisma migrate deploy
 
-      - name: Test menu, orders, payment and confirmation
+      - name: Test order and payment API integration
+        run: npm run test:integration
+
+      - name: Test menu to order confirmation E2E
         run: npm run test:e2e
