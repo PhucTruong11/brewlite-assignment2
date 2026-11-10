@@ -18,7 +18,9 @@ CI GitHub dùng cùng thư mục và các lệnh trên. Bộ kiểm thử tích 
 
 ## Cấu hình môi trường
 
-`apps/api/.env.example` dành cho local; `apps/api/.env.production.example` liệt kê biến cần đặt trong Render Environment. Không commit `.env` thật, `DATABASE_URL`, JWT, khóa Brevo hoặc SePay.
+`apps/api/.env.example` dành cho local. `apps/api/.env.production.example` liệt kê các biến cần đặt trong Render Environment. Giữ `.env` thật, `DATABASE_URL`, JWT và khóa Brevo/PayOS trong môi trường máy chủ.
+
+VietQR dùng `PAYOS_CLIENT_ID`, `PAYOS_API_KEY` và `PAYOS_CHECKSUM_KEY` từ kênh thanh toán PayOS. Chạy `npx prisma migrate deploy` trong `apps/api` để tạo bảng lưu link, rồi đăng ký `https://<api-host>/api/payments/payos-webhook` trong dashboard PayOS. Nếu chạy hai bản Assignment đồng thời, dùng một kênh thanh toán riêng cho mỗi bản để webhook về đúng API.
 
 Trong production, Render dùng repo `PhucTruong11/brewlite-assignment2`, nhánh `main`, Root Directory `apps/api`, Dockerfile Path `./Dockerfile`, Docker Build Context `./`. API kết nối Supabase bằng `DATABASE_URL`; `FRONTEND_URL=https://brewlite-frontend.vercel.app` cho web Vercel. Web gọi `/api` trên cùng domain rồi Next.js proxy tới Render. Chi tiết chuyển nguồn deploy và kiểm tra xem [docs/deployment.md](../../docs/deployment.md).
 

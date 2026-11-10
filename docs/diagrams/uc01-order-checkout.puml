@@ -23,21 +23,21 @@ skinparam rectangle {
 }
 
 actor "Khách hàng" as Customer
-actor "SePay\n(webhook)" as Sepay
+actor "PayOS\n(webhook)" as PayOS
 
 rectangle "BrewLite — UC-01: Đặt và thanh toán đơn hàng" {
   usecase "Đặt và thanh toán\nđơn hàng" as UC
   usecase "Kiểm tra giỏ, giá\nvà nguyên liệu" as Validate
   usecase "Tạo đơn PENDING\nvà giữ nguyên liệu" as Create
   usecase "Thanh toán thẻ\n(mô phỏng)" as Card
-  usecase "Xác nhận VietQR\nqua SePay" as QR
+  usecase "Xác nhận VietQR\nqua PayOS" as QR
   usecase "Hủy đơn hết hạn\nvà trả nguyên liệu" as Expire
   usecase "Xem trạng thái\nvà biên nhận" as Receipt
 }
 
 Customer -- UC
 Customer -- Receipt
-Sepay -- QR
+PayOS -- QR
 
 UC ..> Validate : <<include>>
 UC ..> Create : <<include>>

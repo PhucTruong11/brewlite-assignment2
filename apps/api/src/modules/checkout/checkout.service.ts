@@ -5,17 +5,23 @@ import {
   NotFoundException,
   UnauthorizedException,
   Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import { randomInt } from 'node:crypto';
 import { Cron } from '@nestjs/schedule';
+import { PayOS, type Webhook } from '@payos/node';
+import QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { InventoryState, PaymentMethod, OrderStatus, PaymentStatus } from '@prisma/client';
+import { InventoryState, PaymentMethod, OrderStatus, PaymentStatus, type Order, type Prisma } from '@prisma/client';
 import { RewardsService } from '../rewards/rewards.service.js';
 import { InventoryService, RESERVATION_DURATION_MS } from '../inventory/inventory.service.js';
 import { PaymentGatewayService } from './payment-gateway.service.js';
-import { SepayWebhookDto } from './dto/sepay-webhook.dto.js';
 
 // Thời hạn thanh toán cho mỗi đơn hàng: 2 phút (120,000 ms)
 export const PAYMENT_TIMEOUT_MS = RESERVATION_DURATION_MS;
+const PAYABLE_STATUSES: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.PAYMENT_FAILED];
+const PAYMENT_ITEMS = { items: { include: { product: true } } } satisfies Prisma.OrderInclude;
+const PAYOS_LINK = { payosPaymentLink: true } satisfies Prisma.OrderInclude;
 
 // ============================================================
 // Danh mục mã giảm giá hợp lệ trong hệ thống.
@@ -90,12 +96,18 @@ export const VALID_VOUCHERS: Record<string, VoucherRule> = {
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
+  private readonly payos?: PayOS;
 
   constructor(private readonly prisma: PrismaService,
     private readonly rewardsService: RewardsService,
     private readonly inventory: InventoryService,
     private readonly gateway: PaymentGatewayService,
-  ) { }
+  ) {
+    const { PAYOS_CLIENT_ID: clientId, PAYOS_API_KEY: apiKey, PAYOS_CHECKSUM_KEY: checksumKey } = process.env;
+    if (clientId && apiKey && checksumKey) {
+      this.payos = new PayOS({ clientId, apiKey, checksumKey, timeout: 4000, maxRetries: 0, logLevel: 'off' });
+    }
+  }
 
   /** Đơn mới dùng hạn giữ nguyên liệu; đơn cũ dùng thời điểm tạo cộng hai phút. */
   private deadline(order: { createdAt: Date; reservationExpiresAt: Date | null }) {
@@ -122,6 +134,7 @@ export class CheckoutService {
     }
     const order = await this.prisma.order.findUnique({
       where: { id: orderId, userId },
+      include: PAYOS_LINK,
     });
     if (!order) {
       throw new NotFoundException(`Không tìm thấy đơn hàng: ${orderId}`);
@@ -207,14 +220,19 @@ export class CheckoutService {
     discountAmount = Math.min(discountAmount, baseTotal);
     const finalTotal = Math.max(0, baseTotal - discountAmount);
 
-    // Cập nhật lại đơn hàng
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        promoCode: cleanCode,
-        discount: discountAmount,
-        total: finalTotal,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      const current = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: PAYOS_LINK });
+      if (current.status !== OrderStatus.PENDING || this.deadline(current).getTime() <= Date.now()) {
+        throw new ConflictException('Đơn hàng không còn chờ thanh toán');
+      }
+      if (current.payosPaymentLink) {
+        throw new ConflictException('Mã ưu đãi phải được áp dụng trước khi tạo mã VietQR');
+      }
+      await tx.order.update({
+        where: { id: orderId },
+        data: { promoCode: cleanCode, discount: discountAmount, total: finalTotal },
+      });
     });
 
     return {
@@ -290,13 +308,7 @@ export class CheckoutService {
     }
 
     // ── Bước 3: Kiểm tra trạng thái hợp lệ của đơn hàng. ──
-    // Cho phép thanh toán khi đơn đang ở trạng thái PENDING hoặc PAYMENT_FAILED (khách thử lại theo PDF)
-    const ALLOWED_STATUSES: OrderStatus[] = [
-      OrderStatus.PENDING,
-      OrderStatus.PAYMENT_FAILED,
-    ];
-
-    if (!ALLOWED_STATUSES.includes(order.status)) {
+    if (!PAYABLE_STATUSES.includes(order.status)) {
       const statusMessages: Record<string, string> = {
         PAID: 'Đơn hàng đã được thanh toán rồi',
         CANCELLED: 'Đơn hàng đã bị hủy hoặc hết hạn thanh toán, không thể thanh toán',
@@ -322,7 +334,7 @@ export class CheckoutService {
       // Kiểm tra lại trạng thái sau khi khóa vì yêu cầu trước có thể vừa cập nhật đơn.
       const lockedOrder = await tx.order.findUnique({
         where: { id: orderId },
-        include: { items: { include: { product: true } } },
+        include: { ...PAYMENT_ITEMS, ...PAYOS_LINK },
       });
 
       if (!lockedOrder || lockedOrder.userId !== userId) {
@@ -336,7 +348,7 @@ export class CheckoutService {
         }
         return { duplicate: true as const, payment: paymentAfterLock };
       }
-      if (!ALLOWED_STATUSES.includes(lockedOrder.status)) {
+      if (!PAYABLE_STATUSES.includes(lockedOrder.status)) {
         throw new ConflictException('Đơn hàng đã được xử lý bởi một phiên giao dịch khác');
       }
       if (this.deadline(lockedOrder).getTime() <= Date.now()) {
@@ -349,95 +361,24 @@ export class CheckoutService {
         throw new BadRequestException('Số tiền thanh toán không hợp lệ');
       }
 
-      // ── Bước 5: Gọi cổng thanh toán mô phỏng với số tiền đã xác minh. ──
-      // Đơn 0đ do mã giảm toàn bộ được hoàn tất mà không gọi cổng thanh toán.
-      const gatewayResult =
-        lockedOrder.total === 0
-          ? { success: true, gatewayRef: `FREE-VOUCHER-${Date.now()}` }
-          : await this.gateway.charge(lockedOrder.total, method);
-
-      const pointsEarned = gatewayResult.success
-        ? Math.floor(lockedOrder.total / 10_000)
-        : 0;
-
-      // Chỉ thanh toán thành công mới chuyển lượng đã giữ thành lượng đã bán.
-      if (gatewayResult.success) {
-        if (lockedOrder.inventoryState === InventoryState.RESERVED) {
-          await this.inventory.consume(tx, lockedOrder);
-        } else if (lockedOrder.inventoryState === InventoryState.LEGACY) {
-          // Đơn được tạo trước khi chuyển sang kho nguyên liệu vẫn dùng tồn kho sản phẩm cũ.
-          const stockItems = new Map<string, (typeof lockedOrder.items)[number]>();
-          for (const item of lockedOrder.items) {
-            if (!item.productId || !item.product) {
-              throw new ConflictException('Sản phẩm của đơn cũ không còn trong danh mục');
-            }
-            const existing = stockItems.get(item.productId);
-            stockItems.set(item.productId, existing ? { ...existing, qty: existing.qty + item.qty } : item);
-          }
-          for (const item of [...stockItems.values()].sort((a, b) => a.productId!.localeCompare(b.productId!))) {
-            const changed = await tx.product.updateMany({
-              where: { id: item.productId!, stock: { gte: item.qty }, version: item.product!.version },
-              data: { stock: { decrement: item.qty }, version: { increment: 1 } },
-            });
-            if (changed.count === 0) throw new ConflictException(`Sản phẩm "${item.product!.name}" không còn đủ hàng`);
-          }
-        } else {
-          throw new ConflictException('Nguyên liệu giữ cho đơn hàng này không còn hiệu lực');
+      if (lockedOrder.total > 0 && method === PaymentMethod.EWALLET) {
+        throw new BadRequestException('Vui lòng thanh toán VietQR qua PayOS');
+      }
+      const success = lockedOrder.total === 0 || (await this.gateway.charge(lockedOrder.total, method)).success;
+      if (success) {
+        if (lockedOrder.payosPaymentLink) {
+          await this.cancelPayosLink(lockedOrder.payosPaymentLink.id);
         }
+        const { payment, pointsEarned } = await this.completePayment(tx, lockedOrder, method, idempotencyKey);
+        return { expired: false as const, payment, success, pointsEarned };
       }
 
-      // Tạo bản ghi thanh toán.
-      const newPayment = await tx.payment.create({
-        data: {
-          orderId,
-          idempotencyKey,
-          amount: lockedOrder.total,
-          method,
-          status: gatewayResult.success
-            ? PaymentStatus.SUCCESS
-            : PaymentStatus.FAILED,
-        },
+      const payment = await tx.payment.create({
+        data: { orderId, idempotencyKey, amount: lockedOrder.total, method, status: PaymentStatus.FAILED },
       });
-
-      if (gatewayResult.success) {
-        // Cập nhật đơn hàng sang trạng thái đã thanh toán.
-        await tx.order.update({
-          where: { id: orderId },
-          data: {
-            status: OrderStatus.PAID,
-            loyaltyPointsEarned: pointsEarned,
-          },
-        });
-
-        // Cộng điểm và ghi lịch sử; ràng buộc duy nhất theo đơn ngăn cộng trùng.
-        await this.rewardsService.earnPoints(tx, {
-          id: orderId,
-          userId: lockedOrder.userId,
-          total: lockedOrder.total,
-        });
-
-        // Đánh dấu mã đổi điểm đã dùng trong cùng giao dịch.
-        await this.rewardsService.consumeVoucher(
-          tx,
-          lockedOrder.userId,
-          lockedOrder.promoCode,
-          orderId,
-        );
-      } else {
-        // Giữ nguyên liệu đến hết hạn để khách có thể thử thanh toán lại.
-        await tx.order.update({
-          where: { id: orderId },
-          data: { status: OrderStatus.PAYMENT_FAILED },
-        });
-      }
-
-      return {
-        expired: false as const,
-        payment: newPayment,
-        success: gatewayResult.success,
-        pointsEarned,
-      };
-    });
+      await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.PAYMENT_FAILED } });
+      return { expired: false as const, payment, success, pointsEarned: 0 };
+    }, { timeout: 8000 });
 
     if (transactionResult.expired) {
       throw new BadRequestException('Đơn hàng đã hết hạn thanh toán và nguyên liệu đã được trả kho');
@@ -458,6 +399,60 @@ export class CheckoutService {
     };
   }
 
+  private async completePayment(
+    tx: Prisma.TransactionClient,
+    order: Prisma.OrderGetPayload<{ include: typeof PAYMENT_ITEMS }>,
+    method: PaymentMethod,
+    idempotencyKey: string,
+  ) {
+    if (order.inventoryState === InventoryState.RESERVED) {
+      await this.inventory.consume(tx, order);
+    } else if (order.inventoryState === InventoryState.LEGACY) {
+      // Đơn được tạo trước khi chuyển sang kho nguyên liệu vẫn dùng tồn kho sản phẩm cũ.
+      const stockItems = new Map<string, (typeof order.items)[number]>();
+      for (const item of order.items) {
+        if (!item.productId || !item.product) {
+          throw new ConflictException('Sản phẩm của đơn cũ không còn trong danh mục');
+        }
+        const existing = stockItems.get(item.productId);
+        stockItems.set(item.productId, existing ? { ...existing, qty: existing.qty + item.qty } : item);
+      }
+      for (const item of [...stockItems.values()].sort((a, b) => a.productId!.localeCompare(b.productId!))) {
+        const changed = await tx.product.updateMany({
+          where: { id: item.productId!, stock: { gte: item.qty }, version: item.product!.version },
+          data: { stock: { decrement: item.qty }, version: { increment: 1 } },
+        });
+        if (changed.count === 0) throw new ConflictException(`Sản phẩm "${item.product!.name}" không còn đủ hàng`);
+      }
+    } else {
+      throw new ConflictException('Nguyên liệu giữ cho đơn hàng này không còn hiệu lực');
+    }
+
+    const payment = await tx.payment.create({
+      data: { orderId: order.id, idempotencyKey, amount: order.total, method, status: PaymentStatus.SUCCESS },
+    });
+    const pointsEarned = Math.floor(order.total / 10_000);
+    await tx.order.update({
+      where: { id: order.id },
+      data: { status: OrderStatus.PAID, loyaltyPointsEarned: pointsEarned },
+    });
+    await this.rewardsService.earnPoints(tx, order);
+    await this.rewardsService.consumeVoucher(tx, order.userId, order.promoCode, order.id);
+    return { payment, pointsEarned };
+  }
+
+  private async cancelPayosLink(linkId: string) {
+    if (!this.payos) throw new ServiceUnavailableException('PayOS chưa được cấu hình');
+    try {
+      const requests = this.payos.paymentRequests;
+      const result = await requests.cancel(linkId, 'Khách chọn thanh toán bằng thẻ').catch(() => requests.get(linkId));
+      if ((result.status === 'CANCELLED' || result.status === 'EXPIRED') && result.amountPaid === 0) return;
+    } catch {
+      this.logger.warn(`Không thể hủy link PayOS ${linkId}`);
+    }
+    throw new ConflictException('Chưa thể đổi phương thức. Vui lòng kiểm tra giao dịch PayOS.');
+  }
+
   // ----------------------------------------------------------
   // Lấy lịch sử thanh toán của một đơn hàng.
   // ----------------------------------------------------------
@@ -473,41 +468,48 @@ export class CheckoutService {
   // Lấy trạng thái và thời gian còn lại; nếu quá hạn thì hủy đơn và trả nguyên liệu.
   // ----------------------------------------------------------
   async getOrderCheckoutStatus(orderId: string, userId: string) {
-    const order = await this.findOwnedOrder(orderId, userId);
-    const payments = await this.prisma.payment.findMany({ where: { orderId } });
+    let order = await this.findOwnedOrder(orderId, userId);
+    let payosError: string | undefined;
 
-    const expiresAt = this.deadline(order);
-    const remainingSeconds = Math.max(
-      0,
-      Math.floor((expiresAt.getTime() - Date.now()) / 1000),
-    );
-
-    if (remainingSeconds === 0 && (order.status === OrderStatus.PENDING || order.status === OrderStatus.PAYMENT_FAILED)) {
-      if (await this.cancelExpiredOrder(orderId)) order.status = OrderStatus.CANCELLED;
+    if (PAYABLE_STATUSES.includes(order.status) && this.deadline(order).getTime() <= Date.now()) {
+      await this.cancelExpiredOrder(orderId);
+      order = await this.findOwnedOrder(orderId, userId);
     }
 
-    const originalTotal = order.total + order.discount;
-    const cleanOrderId = order.id.replace(/-/g, '').slice(0, 8).toUpperCase();
-    const bankName = process.env.SEPAY_BANK_NAME || 'Vietcombank';
-    const accountNo = process.env.SEPAY_ACCOUNT_NO || '0000000001';
-    const accountName = process.env.SEPAY_ACCOUNT_NAME || 'Che Van Nam';
-    const transferContent = `BL${cleanOrderId}`;
-    const qrCodeUrl = `https://qr.sepay.vn/img?acc=${accountNo}&bank=${bankName}&amount=${order.total}&des=${transferContent}&template=compact`;
+    if (this.canCreatePayosLink(order) && !order.payosPaymentLink) {
+      if (!this.payos) {
+        payosError = 'Thanh toán PayOS chưa được cấu hình.';
+      } else {
+        try {
+          order = await this.getOrCreatePayosLink(orderId, this.payos);
+        } catch {
+          this.logger.warn(`Không thể tạo mã PayOS cho đơn ${orderId}`);
+          payosError = 'Chưa lấy được mã VietQR từ PayOS. Hệ thống sẽ thử lại.';
+        }
+      }
+    }
+
+    const expiresAt = this.deadline(order);
+    const remainingSeconds = Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 1000));
+    const link = remainingSeconds > 0 && PAYABLE_STATUSES.includes(order.status) ? order.payosPaymentLink : null;
+    const payments = await this.prisma.payment.findMany({ where: { orderId }, orderBy: { createdAt: 'desc' } });
 
     return {
       orderId: order.id,
       status: order.status,
-      originalTotal,
+      originalTotal: order.total + order.discount,
       discount: order.discount,
       promoCode: order.promoCode,
       total: order.total,
-      qrCodeUrl,
-      bankInfo: {
-        bankName,
-        accountNo,
-        accountName,
-        transferContent,
-      },
+      qrCodeUrl: link?.qrCodeUrl ?? '',
+      checkoutUrl: link?.checkoutUrl,
+      payosError,
+      bankInfo: link ? {
+        bankBin: link.bankBin,
+        accountNo: link.accountNo,
+        accountName: link.accountName,
+        transferContent: link.transferContent,
+      } : undefined,
       createdAt: order.createdAt,
       expiresAt,
       remainingSeconds,
@@ -516,165 +518,80 @@ export class CheckoutService {
     };
   }
 
-  // ----------------------------------------------------------
-  // Xử lý thông báo chuyển khoản tự động từ cổng SePay (IPN / Webhook)
-  // ----------------------------------------------------------
-  async processSepayWebhook(payload: SepayWebhookDto, rawAuthHeader?: string) {
-    this.logger.log(`[SePay Webhook] Nhận dữ liệu webhook: ${JSON.stringify(payload)}`);
+  private canCreatePayosLink(order: Order) {
+    return order.total > 0 && PAYABLE_STATUSES.includes(order.status) && this.deadline(order).getTime() > Date.now();
+  }
 
-    // 1. Kiểm tra API Key bảo mật từ SePay
-    const expectedApiKey = process.env.SEPAY_API_KEY;
-    if (expectedApiKey && rawAuthHeader) {
-      const cleanHeader = rawAuthHeader.replace(/^(Apikey|Bearer)\s+/i, '').trim();
-      const isValid =
-        cleanHeader === expectedApiKey ||
-        rawAuthHeader.includes(expectedApiKey) ||
-        cleanHeader === 'BrewLite-SWE-Payment' ||
-        cleanHeader.toLowerCase().includes('brewlite');
+  private async getOrCreatePayosLink(orderId: string, payos: PayOS) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      const order = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: PAYOS_LINK });
+      if (order.payosPaymentLink || !this.canCreatePayosLink(order)) return order;
 
-      if (!isValid) {
-        this.logger.warn(`[SePay Webhook] Xác thực thất bại, API Key không khớp: ${rawAuthHeader}`);
-        throw new UnauthorizedException('API Key không hợp lệ');
-      }
-    }
-
-    // 2. Chỉ xử lý biến động số dư tiền vào (transferType === 'in')
-    if (payload.transferType && payload.transferType.toLowerCase() !== 'in') {
-      this.logger.log(`[SePay Webhook] Bỏ qua vì không phải giao dịch nhận tiền: transferType=${payload.transferType}`);
-      return { success: true, message: 'Bỏ qua giao dịch không phải tiền vào' };
-    }
-
-    const content = `${payload.content || ''} ${payload.description || ''}`.trim();
-    if (!content) {
-      this.logger.warn('[SePay Webhook] Nội dung chuyển khoản rỗng');
-      return { success: false, message: 'Nội dung chuyển khoản rỗng' };
-    }
-
-    this.logger.log(`[SePay Webhook] Đang phân tích nội dung chuyển khoản: "${content}"`);
-
-    // 3. Tìm các đơn hàng (bao gồm PENDING, PAYMENT_FAILED hoặc CANCELLED gần đây)
-    const pendingOrders = await this.prisma.order.findMany({
-      where: {
-        status: { in: [OrderStatus.PENDING, OrderStatus.PAYMENT_FAILED, OrderStatus.CANCELLED] },
-        createdAt: { gte: new Date(Date.now() - 30 * 60 * 1000) },
-      },
-      include: {
-        items: { include: { product: true } },
-        user: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const cleanContentUpper = content.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    const matchedOrder = pendingOrders.find((ord) => {
-      const cleanId = ord.id.replace(/-/g, '').slice(0, 8).toUpperCase();
-      return (
-        cleanContentUpper.includes(`BL${cleanId}`) ||
-        cleanContentUpper.includes(cleanId) ||
-        content.toUpperCase().includes(ord.id.toUpperCase())
-      );
-    });
-
-    if (!matchedOrder) {
-      this.logger.warn(`[SePay Webhook] Không tìm thấy đơn hàng tương ứng với nội dung: "${content}"`);
-      return {
-        success: true,
-        message: 'Đã nhận webhook nhưng không tìm thấy đơn hàng tương ứng',
-      };
-    }
-
-    // 4. Kiểm tra số tiền chuyển
-    const transferAmount = Number(payload.transferAmount || 0);
-    if (transferAmount > 0 && transferAmount < matchedOrder.total) {
-      this.logger.warn(
-        `[SePay Webhook] Số tiền ${transferAmount}đ nhỏ hơn tổng tiền đơn hàng #${matchedOrder.id} (${matchedOrder.total}đ)`,
-      );
-      return {
-        success: false,
-        message: `Số tiền chuyển (${transferAmount}đ) không đủ cho đơn hàng #${matchedOrder.id} (${matchedOrder.total}đ)`,
-      };
-    }
-
-    // 5. Thực hiện giao dịch đổi trạng thái sang PAID, trừ kho, tích điểm
-    const idempotencyKey = `SEPAY-${matchedOrder.id}-${payload.referenceCode || payload.id || Date.now()}`;
-
-    const transactionResult = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${matchedOrder.id} FOR UPDATE`;
-
-      const existingPayment = await tx.payment.findFirst({
-        where: { orderId: matchedOrder.id, status: PaymentStatus.SUCCESS },
+      const checkoutPage = new URL('/checkout', process.env.FRONTEND_URL || 'http://localhost:3000');
+      checkoutPage.searchParams.set('orderId', orderId);
+      const link = await payos.paymentRequests.create({
+        orderCode: randomInt(1_000_000_000, 2_147_483_647),
+        amount: order.total,
+        description: `BL${orderId.replace(/-/g, '').slice(0, 8).toUpperCase()}`,
+        returnUrl: checkoutPage.href,
+        cancelUrl: checkoutPage.href,
+        expiredAt: Math.floor(this.deadline(order).getTime() / 1000),
       });
-      if (existingPayment) {
-        return { duplicate: true, payment: existingPayment };
+      if (link.status !== 'PENDING' || link.amount !== order.total || !link.paymentLinkId || !link.qrCode) {
+        throw new Error('Dữ liệu link thanh toán PayOS không hợp lệ');
       }
 
-      // Trừ kho nguyên liệu
-      if (matchedOrder.inventoryState === InventoryState.RESERVED) {
-        await this.inventory.consume(tx, matchedOrder);
-      } else if (matchedOrder.inventoryState === InventoryState.RELEASED) {
-        await tx.order.update({ where: { id: matchedOrder.id }, data: { inventoryState: InventoryState.CONSUMED } });
-      } else if (matchedOrder.inventoryState === InventoryState.LEGACY) {
-        for (const item of matchedOrder.items) {
-          if (item.productId && item.product) {
-            await tx.product.updateMany({
-              where: { id: item.productId, stock: { gte: item.qty } },
-              data: { stock: { decrement: item.qty }, version: { increment: 1 } },
-            });
-          }
-        }
-      }
-
-      // Tạo bản ghi Payment
-      const payment = await tx.payment.create({
+      const payosPaymentLink = await tx.payosPaymentLink.create({
         data: {
-          orderId: matchedOrder.id,
-          idempotencyKey,
-          amount: matchedOrder.total,
-          method: PaymentMethod.EWALLET,
-          status: PaymentStatus.SUCCESS,
+          id: link.paymentLinkId,
+          orderId,
+          checkoutUrl: link.checkoutUrl,
+          qrCodeUrl: await QRCode.toDataURL(link.qrCode, { margin: 2, width: 320 }),
+          bankBin: link.bin,
+          accountNo: link.accountNumber,
+          accountName: link.accountName,
+          transferContent: link.description,
         },
       });
+      return { ...order, payosPaymentLink };
+    }, { timeout: 8000 });
+  }
 
-      const pointsEarned = Math.floor(matchedOrder.total / 10_000);
+  async processPayosWebhook(body: Webhook) {
+    if (!this.payos) throw new ServiceUnavailableException('PayOS chưa được cấu hình');
 
-      // Cập nhật trạng thái đơn hàng sang PAID
-      const updatedOrder = await tx.order.update({
-        where: { id: matchedOrder.id },
-        data: {
-          status: OrderStatus.PAID,
-          loyaltyPointsEarned: pointsEarned,
-        },
-      });
+    let data;
+    try {
+      data = await this.payos.webhooks.verify(body);
+    } catch {
+      throw new BadRequestException('Chữ ký webhook PayOS không hợp lệ');
+    }
 
-      // Cộng điểm tích lũy cho người dùng
-      if (pointsEarned > 0 && matchedOrder.userId) {
-        await this.rewardsService.earnPoints(tx, {
-          id: matchedOrder.id,
-          userId: matchedOrder.userId,
-          total: matchedOrder.total,
-        });
+    if (body.success !== true || body.code !== '00' || data.code !== '00' || data.currency !== 'VND' || !data.reference) {
+      return { success: true };
+    }
+
+    const link = await this.prisma.payosPaymentLink.findUnique({ where: { id: data.paymentLinkId } });
+    // PayOS dùng dữ liệu mẫu có chữ ký để xác minh URL webhook.
+    if (!link) return { success: true };
+    const idempotencyKey = `PAYOS-${link.id}-${data.reference}`;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${link.orderId} FOR UPDATE`;
+      const order = await tx.order.findUnique({ where: { id: link.orderId }, include: PAYMENT_ITEMS });
+      if (!order) return;
+
+      const paid = await tx.payment.findFirst({ where: { orderId: order.id, status: PaymentStatus.SUCCESS } });
+      if (paid?.idempotencyKey === idempotencyKey) return;
+
+      if (paid || !PAYABLE_STATUSES.includes(order.status) || data.amount !== order.total || data.amount <= 0) {
+        this.logger.warn(`Cần đối soát giao dịch PayOS cho đơn ${order.id}, link ${link.id}`);
+        return;
       }
-
-      // Đánh dấu mã giảm giá đã dùng (nếu có)
-      if (matchedOrder.promoCode && matchedOrder.userId) {
-        await this.rewardsService.consumeVoucher(
-          tx,
-          matchedOrder.userId,
-          matchedOrder.promoCode,
-          matchedOrder.id,
-        );
-      }
-
-      return { duplicate: false, payment, order: updatedOrder, pointsEarned };
+      await this.completePayment(tx, order, PaymentMethod.EWALLET, idempotencyKey);
     });
-
-    this.logger.log(`[SePay Webhook] Đơn hàng #${matchedOrder.id} đã thanh toán thành công qua SePay!`);
-    return {
-      success: true,
-      message: 'Thanh toán thành công',
-      orderId: matchedOrder.id,
-      ...transactionResult,
-    };
+    return { success: true };
   }
 
   // ----------------------------------------------------------

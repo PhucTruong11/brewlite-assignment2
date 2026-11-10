@@ -18,7 +18,7 @@ export interface CardFormErrors {
 }
 
 export interface BankInfo {
-  bankName: string;
+  bankBin: string;
   accountNo: string;
   accountName: string;
   transferContent: string;
@@ -29,6 +29,8 @@ export interface CheckoutMethodsProps {
   onMethodChange: (method: 'EWALLET' | 'CARD') => void;
   finalTotal: number;
   qrUrl: string;
+  checkoutUrl?: string;
+  qrUnavailableMessage?: string;
   bankInfo?: BankInfo;
   cardInfo: CardFormData;
   onCardInfoChange: (data: CardFormData) => void;
@@ -59,6 +61,8 @@ export function CheckoutMethods({
   onMethodChange,
   finalTotal,
   qrUrl,
+  checkoutUrl,
+  qrUnavailableMessage,
   bankInfo,
   cardInfo,
   onCardInfoChange,
@@ -93,7 +97,7 @@ export function CheckoutMethods({
               : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
           }`}
         >
-          <span className="text-sm">VietQR (SePay) / MoMo</span>
+          <span className="text-sm">VietQR Pro / MoMo</span>
         </button>
 
         <button
@@ -105,12 +109,15 @@ export function CheckoutMethods({
               : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
           }`}
         >
-          <span className="text-sm">Thẻ ngân hàng</span>
+          <span className="text-sm">Thẻ ngân hàng (mô phỏng)</span>
         </button>
       </div>
 
-      {/* Chi tiết cho Tab Ví MoMo / VietQR */}
-      {method === 'EWALLET' && (
+      {method === 'EWALLET' && finalTotal > 0 && !qrUrl && qrUnavailableMessage && (
+        <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">{qrUnavailableMessage}</p>
+      )}
+
+      {method === 'EWALLET' && qrUrl && (
         <div className="flex flex-col items-center rounded-xl bg-emerald-50/40 p-6 border border-emerald-100 text-center">
           <p className="text-xs uppercase tracking-wider font-extrabold text-primary mb-3">
             Quét mã VietQR chuyển khoản tự động
@@ -120,7 +127,7 @@ export function CheckoutMethods({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrUrl}
-              alt="Mã QR thanh toán SePay"
+              alt="Mã VietQR thanh toán qua PayOS"
               className="h-52 w-52 object-contain rounded-lg"
             />
             <div className="mt-2 text-[12px] font-semibold text-gray-700">
@@ -128,12 +135,11 @@ export function CheckoutMethods({
             </div>
           </div>
 
-          {/* Khung chi tiết tài khoản ngân hàng SePay */}
           {bankInfo && (
             <div className="mt-4 w-full max-w-sm rounded-xl bg-white p-3.5 text-left border border-emerald-200/80 shadow-sm text-xs space-y-2">
               <div className="flex justify-between items-center text-gray-600">
-                <span className="font-medium">Ngân hàng:</span>
-                <strong className="text-gray-900 font-bold">{bankInfo.bankName}</strong>
+                <span className="font-medium">Mã ngân hàng:</span>
+                <strong className="text-gray-900 font-bold">{bankInfo.bankBin}</strong>
               </div>
               <div className="flex justify-between items-center text-gray-600">
                 <span className="font-medium">Số tài khoản:</span>
@@ -162,13 +168,18 @@ export function CheckoutMethods({
           )}
 
           <p className="text-xs text-gray-600 mt-4 max-w-xs">
-            Mở bất kỳ <strong>App Ngân Hàng</strong> hoặc <strong>MoMo</strong> quét mã QR trên để chuyển khoản. Hệ thống SePay sẽ tự động ghi nhận tiền về trong 3 - 5 giây!
+            Mở ứng dụng ngân hàng hoặc MoMo và quét mã để chuyển khoản. Hệ thống sẽ tự động ghi nhận giao dịch.
           </p>
+          {checkoutUrl && (
+            <a href={checkoutUrl} className="mt-3 text-sm font-semibold text-primary underline">
+              Mở trang thanh toán
+            </a>
+          )}
         </div>
       )}
 
       {/* Chi tiết cho Tab Thẻ ngân hàng */}
-      {method === 'CARD' && (
+      {method === 'CARD' && finalTotal > 0 && (
         <div className="flex flex-col gap-4">
           {/* Thẻ ATM/Visa mô phỏng */}
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-tr from-[#004d33] via-[#006241] to-[#1E5631] p-5 text-white shadow-lg">

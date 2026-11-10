@@ -1,7 +1,7 @@
 \subsection{Task 1.2 -- Yêu cầu chức năng và phi chức năng}
 Tài liệu SRS rút gọn này chuyển từ bản thảo \texttt{task1\_2.docx} của nhóm. Mỗi yêu cầu có mã định danh, mức ưu tiên MoSCoW và tiêu chí chấp nhận (AC) để truy vết sang thiết kế và kiểm thử. Đây là yêu cầu cần nghiệm thu, không phải tuyên bố tất cả đã được kiểm chứng.
 \textbf{Quy ước ưu tiên:} Must = bắt buộc; Should = nên có; Could = có thể có; Won\textquotesingle t = ngoài phạm vi phiên bản này.
-\textbf{Quy tắc nghiệp vụ:} Máy chủ tính lại giá, quyền và nhu cầu nguyên liệu toàn giỏ. Kiểm tra giỏ chỉ đọc; tạo đơn hợp lệ giữ nguyên liệu trong transaction; thanh toán thành công mới tiêu thụ. Đơn \texttt{PENDING} có hạn hai phút; hết hạn giải phóng nguyên liệu. Thanh toán thẻ là mô phỏng; QR SePay chỉ được xác nhận khi nhận webhook hợp lệ theo cấu hình.
+\textbf{Quy tắc nghiệp vụ:} Máy chủ tính lại giá, quyền và nhu cầu nguyên liệu toàn giỏ. Bước kiểm tra giỏ chỉ đọc dữ liệu. Máy chủ giữ nguyên liệu trong transaction khi tạo đơn hợp lệ và tiêu thụ khi thanh toán thành công. Đơn \texttt{PENDING} có hạn hai phút. Hết hạn, máy chủ giải phóng nguyên liệu. Thanh toán thẻ dùng cổng mô phỏng. VietQR qua PayOS yêu cầu webhook có chữ ký hợp lệ và số tiền khớp đơn.
 \subsubsection{Yêu cầu chức năng}
 \paragraph{FR-01 -- Xem danh sách menu}
 \textbf{Ưu tiên:} Must.\\
@@ -222,6 +222,6 @@ Hình dưới biểu diễn các nhóm chức năng và actor ở mức tổng q
 \draw (admin) -- (manage);
 \end{tikzpicture}
 \end{center}
-\textbf{Ràng buộc actor:} Xem menu và chuẩn bị giỏ không cần đăng nhập. Tạo đơn, thanh toán và xem lịch sử cần xác thực; quản trị yêu cầu vai trò \texttt{ADMIN}. Dịch vụ email và SePay là hệ thống ngoài được gọi khi cấu hình tương ứng đã bật.
+\textbf{Ràng buộc actor:} Xem menu và chuẩn bị giỏ không cần đăng nhập. Tạo đơn, thanh toán và xem lịch sử cần xác thực. Quản trị yêu cầu vai trò \texttt{ADMIN}. Hệ thống kết nối dịch vụ email và PayOS khi có cấu hình tương ứng.
 \subsubsection{Các giả định cần nhóm xác nhận}
 Ngưỡng tải, thời gian phản hồi và mục tiêu khả dụng trong các NFR là mục tiêu đề xuất; quy tắc voucher/điểm và chính sách hủy/hoàn cần được thống nhất trước khi nghiệm thu. Secret, webhook key và thông tin kết nối production không nằm trong tài liệu hoặc repository.

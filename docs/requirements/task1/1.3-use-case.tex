@@ -4,7 +4,7 @@
 \textbf{Mục tiêu:} Khách chuyển giỏ đồ uống thành đơn có mã, thanh toán trong thời hạn và nhận biên nhận. Cửa hàng chỉ chuẩn bị đơn đã thanh toán; nguyên liệu được kiểm tra theo công thức để tránh bán vượt lượng có thể dùng.
 
 \textbf{Actor chính:} Khách hàng.\\
-\textbf{Actor hỗ trợ:} SePay thông báo giao dịch cho nhánh VietQR khi đã cấu hình. Nhánh thẻ dùng cổng mô phỏng trong ứng dụng, không thu tiền ngân hàng thật.\\
+\textbf{Actor hỗ trợ:} PayOS tạo link VietQR và gửi webhook xác nhận giao dịch. Nhánh thẻ dùng cổng mô phỏng trong ứng dụng.\\
 \textbf{Trigger:} Khách bấm ``Tiến hành thanh toán'' ở giỏ hàng.\\
 \textbf{Tiền điều kiện:} Giỏ có ít nhất một món. Khách cần phiên đăng nhập hợp lệ trước khi gọi API tạo đơn. Sản phẩm, size, topping và công thức có dữ liệu trên máy chủ; đủ nguyên liệu và voucher hợp lệ được kiểm tra trong luồng.\\
 \textbf{Hậu điều kiện thành công:} Đơn có \texttt{orderId}, trạng thái \texttt{PAID}, một payment thành công; lượng nguyên liệu đã giữ được tiêu thụ đúng một lần, điểm/voucher được ghi theo quy tắc, khách xem được biên nhận và giỏ cục bộ được xóa.\\
@@ -24,7 +24,7 @@ Sơ đồ được lưu riêng ở \texttt{docs/diagrams/uc01-order-checkout.pum
   \item Nếu đã đăng nhập, giao diện gọi \texttt{POST /api/cart/validate}. API đọc lại sản phẩm, size, topping, giá, công thức và nguyên liệu cho toàn bộ giỏ.
   \item Khi giỏ hợp lệ, giao diện gọi \texttt{POST /api/orders}. Máy chủ tính lại tiền/voucher; trong một transaction kiểm tra lại tồn, giữ nguyên liệu và lưu đơn cùng các dòng món.
   \item API trả \texttt{orderId}, \texttt{PENDING}, tổng tiền và thời hạn hai phút. Giao diện mở \texttt{/checkout?orderId=...}; đồng hồ dùng hạn do máy chủ trả về, không tính lại từ lúc mở trang.
-  \item Khách chọn một phương thức: thẻ mô phỏng gửi \texttt{POST /api/checkout} với \texttt{orderId}, \texttt{method=CARD} và \texttt{Idempotency-Key}; VietQR chờ thông báo SePay khớp mã đơn, nội dung và số tiền.
+  \item Với thẻ mô phỏng, ứng dụng gửi \texttt{POST /api/checkout} với \texttt{orderId}, \texttt{method=CARD} và \texttt{Idempotency-Key}. Với VietQR, khách quét mã PayOS. API xác minh chữ ký webhook, mã link và số tiền trước khi hoàn tất đơn.
   \item Khi thanh toán được xác nhận, máy chủ ghi payment, chuyển đơn thành \texttt{PAID}, tiêu thụ nguyên liệu đã giữ và xử lý điểm/voucher. Giao diện đọc trạng thái, hiện biên nhận và xóa giỏ cục bộ.
 \end{enumerate}
 
@@ -43,7 +43,7 @@ Sơ đồ được lưu riêng ở \texttt{docs/diagrams/uc01-order-checkout.pum
   \item[E2 -- Gửi lặp] Cùng \texttt{Idempotency-Key} trả payment đã có, không trừ nguyên liệu/cộng điểm hai lần; dùng cùng khóa cho đơn khác bị từ chối.
   \item[E3 -- Sai quyền hoặc trạng thái] Thiếu phiên, orderId của người khác, đơn đã \texttt{PAID}/\texttt{CANCELLED} hoặc quá hạn bị từ chối trước khi ghi nhận payment mới.
   \item[E4 -- Lỗi giao dịch/tranh chấp tồn] Lỗi giữ nguyên liệu, ghi đơn hoặc ghi thanh toán làm rollback phần thay đổi của transaction; giao diện báo lỗi và giữ dữ liệu giỏ để thử lại.
-  \item[E5 -- Chưa có tín hiệu SePay] Trang tiếp tục hiển thị chờ; nút kiểm tra thủ công không tự đánh dấu \texttt{PAID}. Giao dịch đến sau khi đơn hết hạn cần quy trình đối soát riêng, ngoài nhánh thành công của UC-01.
+  \item[E5 -- Chưa có tín hiệu PayOS] Trang tiếp tục chờ xác nhận từ webhook. Nút kiểm tra thủ công đọc trạng thái hiện tại của đơn. Giao dịch được thông báo sau khi đơn đã hủy cần đối soát riêng.
 \end{description}
 
 \subsubsection{Liên kết yêu cầu và tiêu chí chấp nhận}

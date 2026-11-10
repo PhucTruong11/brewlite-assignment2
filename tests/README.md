@@ -12,4 +12,4 @@ CI chạy `lint → unit test → build` cho web và API. Job tích hợp tạo 
 
 Hai lệnh tích hợp/E2E yêu cầu `DATABASE_URL` trỏ tới PostgreSQL test tên `brewlite_test` trên `localhost` hoặc `127.0.0.1` và `E2E_DATABASE=1`. Chạy `npx prisma migrate deploy` trên DB test trước. CI tự tạo DB này. Các test tạo fixture riêng và xóa sau khi chạy.
 
-E2E hiện kiểm tra luồng HTTP của API bằng Supertest và gateway CARD mô phỏng. Nó chưa tự động điều khiển trình duyệt hoặc xác nhận webhook SePay thật. Khi demo production, cần kiểm tra giao diện và SePay trên tài khoản thử nghiệm riêng, không dùng bộ test tự động để ghi lên Supabase production.
+E2E kiểm tra luồng HTTP bằng Supertest, gateway CARD mô phỏng và link PayOS giả lập. Ca VietQR kiểm tra chữ ký webhook, số tiền và thông báo trùng. Giao dịch PayOS thật cần kiểm tra riêng trên kênh thanh toán đã cấu hình.

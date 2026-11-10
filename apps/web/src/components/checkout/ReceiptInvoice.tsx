@@ -125,7 +125,7 @@ export function ReceiptInvoice({ data, onReset }: ReceiptInvoiceProps) {
           <div className="flex justify-between">
             <span className="text-gray-600">Phương thức thanh toán:</span>
             <strong className="text-primary font-bold">
-              {data.method === 'EWALLET' ? 'Ví điện tử MoMo / VietQR' : 'Thẻ ngân hàng (ATM/Visa)'}
+              {data.finalTotal === 0 ? 'Đơn miễn phí' : data.method === 'EWALLET' ? 'Chuyển khoản VietQR' : 'Thẻ ngân hàng (mô phỏng)'}
             </strong>
           </div>
           <div className="flex justify-between">

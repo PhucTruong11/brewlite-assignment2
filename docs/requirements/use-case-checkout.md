@@ -12,7 +12,7 @@ Bản nháp này chưa được đưa vào [báo cáo tổng hợp](task1/main.t
 | --- | --- |
 | Mục tiêu | Tạo đơn từ giỏ hợp lệ, thanh toán trong hạn, nhận biên nhận; đơn chưa thanh toán không đi vào pha chế. |
 | Actor chính | Khách hàng. |
-| Actor hỗ trợ | SePay gửi thông báo giao dịch VietQR khi được cấu hình. Thanh toán thẻ trong ứng dụng là mô phỏng. |
+| Actor hỗ trợ | PayOS tạo link VietQR và gửi webhook xác nhận giao dịch. Thanh toán thẻ trong ứng dụng là mô phỏng. |
 | Trigger | Khách bấm **Tiến hành thanh toán** ở giỏ. |
 | Tiền điều kiện | Giỏ có ít nhất một món; cần đăng nhập trước khi gọi API tạo đơn. Giá, công thức, nguyên liệu và voucher được xác minh trong luồng. |
 | Thành công | Đơn `PAID`, một payment thành công, nguyên liệu đã giữ được tiêu thụ một lần, điểm/voucher được ghi theo quy tắc, khách thấy biên nhận. |
@@ -26,7 +26,7 @@ Bản nháp này chưa được đưa vào [báo cáo tổng hợp](task1/main.t
 2. Giao diện kiểm tra phiên và gọi `POST /api/cart/validate`; máy chủ đọc lại món, size, topping, giá, công thức và nguyên liệu.
 3. Khi giỏ hợp lệ, giao diện gọi `POST /api/orders`. Máy chủ tính lại tiền/voucher; trong một transaction kiểm tra lại tồn, giữ nguyên liệu và lưu đơn cùng các dòng món.
 4. API trả `orderId`, trạng thái `PENDING`, tổng tiền và hạn hai phút. Giao diện mở `/checkout?orderId=...`, lấy hạn từ máy chủ.
-5. Khách chọn **thẻ mô phỏng** rồi gửi `POST /api/checkout` với `Idempotency-Key`, hoặc chọn **VietQR** và chờ webhook SePay khớp mã đơn/nội dung/số tiền.
+5. Khách chọn **thẻ mô phỏng** rồi gửi `POST /api/checkout` với `Idempotency-Key`, hoặc quét **VietQR PayOS**. API xác minh chữ ký webhook và đối chiếu mã link cùng số tiền trước khi hoàn tất đơn.
 6. Khi thanh toán thành công, máy chủ ghi payment, chuyển đơn `PAID`, tiêu thụ nguyên liệu đã giữ, ghi điểm/voucher. Giao diện hiện biên nhận và xóa giỏ cục bộ.
 
 ## Luồng thay thế
@@ -43,7 +43,7 @@ Bản nháp này chưa được đưa vào [báo cáo tổng hợp](task1/main.t
 - **E2 — Gửi lặp:** cùng `Idempotency-Key` nhận kết quả cũ; không ghi payment, trừ tồn hay cộng điểm lần hai. Khóa đã dùng cho đơn khác bị từ chối.
 - **E3 — Sai quyền/trạng thái:** thiếu phiên, orderId của người khác, đơn đã trả/hủy/quá hạn bị từ chối.
 - **E4 — Lỗi transaction/tranh chấp tồn:** thay đổi DB trong transaction được rollback; giỏ vẫn còn để thử lại.
-- **E5 — Chưa có tín hiệu SePay:** giao diện tiếp tục chờ. Giao dịch đến sau khi đơn hết hạn cần đối soát riêng; không được coi là thành công mặc định của UC-01.
+- **E5 — Chưa có tín hiệu PayOS:** giao diện tiếp tục chờ. Giao dịch được thông báo sau khi đơn đã hủy cần đối soát riêng.
 
 ## Tiêu chí nghiệm thu và truy vết
 
@@ -59,4 +59,4 @@ Bản nháp này chưa được đưa vào [báo cáo tổng hợp](task1/main.t
 | UC01-AC08 | Lượt tạo lại dùng mã đơn mới và kiểm tra tồn tại thời điểm mới. | FR-04, FR-08, FR-10 |
 | UC01-AC09 | Khách chỉ xem/thanh toán đơn của mình và xem được biên nhận sau khi trả thành công. | FR-09, FR-11, NFR-02 |
 
-**Cần nghiệm thu riêng:** Quy tắc một lần tạo lại hiện chỉ được lưu trên trình duyệt, nên API chưa ngăn thao tác từ thiết bị khác. SePay đến muộn sau khi đơn đã hủy cần quy trình đối soát/hoàn tiền riêng.
+**Cần nghiệm thu riêng:** Quy tắc một lần tạo lại hiện chỉ được lưu trên trình duyệt, nên API chưa ngăn thao tác từ thiết bị khác. Giao dịch PayOS được thông báo sau khi đơn đã hủy cần quy trình đối soát riêng.
