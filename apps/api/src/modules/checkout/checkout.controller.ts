@@ -9,13 +9,11 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
+import type { Webhook } from '@payos/node';
 import { CheckoutService } from './checkout.service.js';
 import { CreateCheckoutDto } from './dto/create-checkout.dto.js';
 import { ApplyVoucherDto } from './dto/apply-voucher.dto.js';
-import { SepayWebhookDto } from './dto/sepay-webhook.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
@@ -84,17 +82,9 @@ export class CheckoutController {
     return this.checkoutService.getOrderCheckoutStatus(orderId, user.id);
   }
 
-  // ----------------------------------------------------------
-  // POST /api/checkout/sepay-webhook (và /api/payments/sepay-webhook)
-  // Nhận thông báo biến động số dư từ cổng SePay (IPN / Webhook)
-  // ----------------------------------------------------------
-  @Post('sepay-webhook')
+  @Post('payos-webhook')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false, transform: true }))
-  async handleSepayWebhook(
-    @Body() dto: SepayWebhookDto,
-    @Headers('authorization') authHeader?: string,
-  ) {
-    return this.checkoutService.processSepayWebhook(dto, authHeader);
+  async handlePayosWebhook(@Body() body: Webhook) {
+    return this.checkoutService.processPayosWebhook(body);
   }
 }

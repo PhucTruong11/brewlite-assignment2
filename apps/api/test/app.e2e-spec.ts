@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { PayOS, PaymentRequests, type WebhookData } from '@payos/node';
 import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/modules/prisma/prisma.service.js';
 
@@ -19,6 +20,7 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
   const ingredientId = randomUUID();
   const password = 'TestPass123!';
   const email = `e2e-${userId}@example.test`;
+  const checksumKey = 'payos-e2e-checksum-key';
 
   beforeAll(async () => {
     // Chặn bài test có ghi dữ liệu chạy nhầm trên production.
@@ -29,6 +31,9 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
       throw new Error('E2E chỉ được chạy với E2E_DATABASE=1 và database brewlite_test trên localhost');
     }
 
+    vi.stubEnv('PAYOS_CLIENT_ID', 'payos-e2e-client-id');
+    vi.stubEnv('PAYOS_API_KEY', 'payos-e2e-api-key');
+    vi.stubEnv('PAYOS_CHECKSUM_KEY', checksumKey);
     const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = module.createNestApplication();
     app.use(cookieParser());
@@ -73,6 +78,7 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
   }, 30_000);
 
   afterAll(async () => {
+    vi.unstubAllEnvs();
     if (!prisma) return;
     await prisma.pointTransaction.deleteMany({ where: { userId } });
     await prisma.payment.deleteMany({ where: { order: { userId } } });
@@ -178,5 +184,60 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
     const ingredient = await prisma.ingredient.findUniqueOrThrow({ where: { id: ingredientId } });
     expect(ingredient.onHand?.toNumber()).toBe(5);
     expect(ingredient.reserved?.toNumber()).toBe(0);
+  });
+
+  it('VietQR dùng link PayOS và chỉ hoàn tất một lần khi webhook hợp lệ', async () => {
+    const paymentLinkId = randomUUID();
+    const checkoutUrl = `https://pay.payos.vn/web/${paymentLinkId}`;
+    const createLink = vi.spyOn(PaymentRequests.prototype, 'create').mockImplementation(async (input) => ({
+      ...input, paymentLinkId, checkoutUrl, qrCode: 'VietQR fixture', status: 'PENDING',
+      bin: '970416', accountNumber: '1234567890', accountName: 'BREWLITE TEST', currency: 'VND',
+    }));
+
+    try {
+      const created = await request(app.getHttpServer())
+        .post('/api/orders').set('Authorization', `Bearer ${token}`)
+        .send({ items: [{ productId, size: 'S', qty: 1, toppings: [], lineTotal: 1 }] })
+        .expect(201);
+      const payosOrderId = created.body.data.id as string;
+      const getStatus = () => request(app.getHttpServer())
+        .get(`/api/checkout/status/${payosOrderId}`).set('Authorization', `Bearer ${token}`).expect(200);
+      const [first, second] = await Promise.all([getStatus(), getStatus()]);
+      expect(first.body.qrCodeUrl).toMatch(/^data:image\/png;base64,/);
+      expect(first.body.checkoutUrl).toBe(checkoutUrl);
+      expect(second.body.qrCodeUrl).toBe(first.body.qrCodeUrl);
+      expect(createLink).toHaveBeenCalledTimes(1);
+
+      await request(app.getHttpServer()).post('/api/checkout').set('Authorization', `Bearer ${token}`)
+        .set('Idempotency-Key', randomUUID()).send({ orderId: payosOrderId, method: 'EWALLET' }).expect(400);
+
+      const payos = new PayOS({ clientId: 'test', apiKey: 'test', checksumKey });
+      const linkRequest = createLink.mock.calls[0][0];
+      const data: WebhookData = {
+        orderCode: linkRequest.orderCode, amount: linkRequest.amount, description: linkRequest.description,
+        accountNumber: '1234567890', reference: 'transaction-e2e', transactionDateTime: '2026-11-10 09:00:00',
+        currency: 'VND', paymentLinkId, code: '00', desc: 'Success',
+      };
+      const sendWebhook = (data: WebhookData, signature: string) => request(app.getHttpServer())
+        .post('/api/payments/payos-webhook').send({ code: '00', success: true, desc: 'Success', data, signature });
+      const sign = async (data: WebhookData) => (await payos.crypto.createSignatureFromObj(data, checksumKey))!;
+      await sendWebhook(data, 'invalid').expect(400);
+      const wrongAmount = { ...data, amount: data.amount - 1 };
+      await sendWebhook(wrongAmount, await sign(wrongAmount)).expect(200);
+      expect((await getStatus()).body.status).toBe('PENDING');
+
+      const signature = await sign(data);
+      await Promise.all([sendWebhook(data, signature).expect(200), sendWebhook(data, signature).expect(200)]);
+      const paid = await getStatus();
+      expect(paid.body.status).toBe('PAID');
+      expect(paid.body.payments).toHaveLength(1);
+      expect(paid.body.payments[0]).toMatchObject({ amount: 29_000, method: 'EWALLET', status: 'SUCCESS' });
+      const ingredient = await prisma.ingredient.findUniqueOrThrow({ where: { id: ingredientId } });
+      expect(ingredient.onHand?.toNumber()).toBe(0);
+      expect(ingredient.reserved?.toNumber()).toBe(0);
+      expect(await prisma.pointTransaction.count({ where: { orderId: payosOrderId } })).toBe(1);
+    } finally {
+      createLink.mockRestore();
+    }
   });
 });

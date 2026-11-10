@@ -212,6 +212,7 @@ model Order {
   user     User        @relation(fields: [userId], references: [id])
   items    OrderItem[]
   payments Payment[]
+  payosPaymentLink PayosPaymentLink?
 
   userVoucher       UserVoucher?
   pointTransactions PointTransaction[]
@@ -252,6 +253,21 @@ model Payment {
 
   @@index([orderId])
   @@map("payments")
+}
+
+model PayosPaymentLink {
+  id              String @id // Mã link do PayOS cấp.
+  orderId         String @unique
+  checkoutUrl     String
+  qrCodeUrl       String
+  bankBin         String
+  accountNo       String
+  accountName     String
+  transferContent String
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payos_payment_links")
 }
 
 model Promotion {

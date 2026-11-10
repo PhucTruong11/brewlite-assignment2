@@ -16,7 +16,7 @@ Nhóm đã chọn **dùng lại** các project Vercel/Render và DB Supabase hi�
 
 Vercel, trong project web: `NEXT_PUBLIC_API_URL=/api`, `API_INTERNAL_URL=https://brewlite-api-omni.onrender.com`. Giá trị phải có tại **build time**; đổi biến xong cần redeploy. Browser gọi cùng domain Vercel; Next.js proxy `/api/*` sang Render.
 
-Render, trong project API: `NODE_ENV=production`, `FRONTEND_URL=https://brewlite-frontend.vercel.app`, `DATABASE_URL` lấy từ Supabase Session pooler với TLS, `JWT_SECRET` đủ mạnh; cấu hình mail (Brevo HTTPS) và SePay theo dịch vụ đã đăng ký. Chỉ lưu các giá trị thật trong Environment/Secret của nhà cung cấp. Không đưa `DATABASE_URL`, JWT, Brevo hoặc SePay key vào repo, Docker build args hay client.
+Trong project API trên Render, đặt `NODE_ENV=production`, `FRONTEND_URL=https://brewlite-frontend.vercel.app`, `DATABASE_URL` từ Supabase Session pooler với TLS và `JWT_SECRET` đủ mạnh. Cấu hình mail Brevo HTTPS và đặt `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` trong Render Environment.
 
 Supabase: chỉ API truy cập DB bằng credentials production. Quyền và network của Supabase cần kiểm tra theo cấu hình dự án; frontend không kết nối DB trực tiếp. Cần backup trước migration có thay đổi dữ liệu.
 
@@ -26,7 +26,7 @@ Supabase: chỉ API truy cập DB bằng credentials production. Quyền và net
 2. Trên **project Vercel hiện có**, đổi Git repository sang `PhucTruong11/brewlite-assignment2`, branch `main`, Root Directory `apps/web`, preset Next.js. Giữ các biến web production ở trên và kiểm tra lại trước khi deploy.
 3. Trên **service Render hiện có**, đổi Git repository sang cùng repo/branch, Root Directory `apps/api`, Dockerfile Path `./Dockerfile` và Docker Build Context `./` (các đường dẫn tính từ Root Directory). Giữ nguyên URL, environment và secret đang có. Kiểm tra lại Start Command/health check theo cấu hình service. Render có thể tự khởi chạy deploy ngay khi đổi source.
 4. Kiểm tra schema Supabase và danh sách migration trước khi rollout. Nếu có migration mới, backup DB rồi chạy `prisma migrate deploy` từ `apps/api` theo quy trình triển khai của Render. Không dùng `db push`, không seed lại DB đang có dữ liệu.
-5. Deploy API trước, kiểm tra health và `GET /api/products`; sau đó deploy web, kiểm tra HTTPS, đăng nhập, giỏ, tạo đơn và thanh toán bằng dữ liệu demo thích hợp. URL webhook SePay giữ nguyên nếu API URL không đổi, nhưng cần kiểm tra callback sau deploy.
+5. Deploy API trước và kiểm tra health cùng `GET /api/products`. Đăng ký `https://<api-host>/api/payments/payos-webhook` trên dashboard PayOS. Sau khi deploy web, kiểm tra HTTPS, đăng nhập, tạo đơn và xác nhận thanh toán qua webhook bằng kênh PayOS đã cấu hình.
 6. Sau khi kiểm tra target và migration, gắn release tag `v*` trên commit đã qua CI. Workflow `.github/workflows/cd.yml` sẽ build/push image có tag SHA lên GHCR, xác minh target Render/Vercel, chạy migration, triển khai đúng commit đó lên Render, triển khai web lên Vercel và smoke test. Lưu release notes, bằng chứng CI/CD và kết quả smoke test.
 
 ## Thiết lập GitHub Actions trước release
@@ -37,7 +37,7 @@ Render phải trỏ đúng GitHub repo `PhucTruong11/brewlite-assignment2`, bran
 
 **Trước lần đầu chạy CD:** kiểm tra bảng `_prisma_migrations` trên Supabase, chụp backup và đối chiếu migration `20261029000100_prune_legacy_catalog` vì migration này xóa sản phẩm/topping cũ. Nếu DB production trước đây chỉ dùng `prisma db push`, phải baseline migration đúng cách; không bấm chạy CD để thử. Sau khi đã xác minh migration và backup, đặt GitHub Environment **variable** `PRODUCTION_MIGRATION_BASELINE_OK=true`; đây là cổng chặn trước bước đụng DB. Sau đó có thể tạo tag `v2.0.0` hoặc chạy workflow thủ công. Workflow dừng nếu thiếu secret, target Vercel/Render sai hoặc chưa xác nhận baseline. Không chạy seed trên production.
 
-CI dùng PostgreSQL 16 tạm, chạy `prisma migrate deploy`, `npm run test:integration` và `npm run test:e2e` với DB `brewlite_test`; các bài test tạo rồi dọn dữ liệu fixture, chỉ dùng thanh toán CARD mô phỏng. CD build hai Docker image có tag commit SHA và lưu trên GHCR; Render và Vercel hiện xây dựng từ cùng source commit, không kéo trực tiếp GHCR image. Sau deploy, smoke test gọi API `/api/health`, `/api/products`, web HTTPS và proxy web `/api/health`. Trước rollout đầu tiên ngày 05/11/2026, web và API products trả HTTP 200, còn `/api/health` trả HTTP 404; đây là dấu hiệu bản Assignment 2 có health endpoint chưa được xác nhận đang chạy trên production.
+CI dùng PostgreSQL 16 tạm, chạy `prisma migrate deploy`, `npm run test:integration` và `npm run test:e2e` với DB `brewlite_test`; các bài test tạo rồi dọn dữ liệu fixture, dùng CARD mô phỏng và webhook PayOS có chữ ký với link giả lập. CD build hai Docker image có tag commit SHA và lưu trên GHCR; Render và Vercel hiện xây dựng từ cùng source commit, không kéo trực tiếp GHCR image. Sau deploy, smoke test gọi API `/api/health`, `/api/products`, web HTTPS và proxy web `/api/health`. Trước rollout đầu tiên ngày 05/11/2026, web và API products trả HTTP 200, còn `/api/health` trả HTTP 404; đây là dấu hiệu bản Assignment 2 có health endpoint chưa được xác nhận đang chạy trên production.
 
 ## Rollback
 

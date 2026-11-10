@@ -28,7 +28,7 @@ interface OrderSummaryProps {
     type: 'success' | 'warning' | 'error';
     message: string;
   } | null;
-  onQuickTest?: () => void;
+  hasPayosLink?: boolean;
 }
 
 export function OrderSummary({
@@ -50,7 +50,7 @@ export function OrderSummary({
   onCheckPaymentStatus,
   isCheckingStatus = false,
   statusFeedback,
-  onQuickTest,
+  hasPayosLink = false,
 }: OrderSummaryProps) {
   const durationLabel = durationSeconds >= 60 ? `${Math.floor(durationSeconds / 60)} phút` : `${durationSeconds} giây`;
   const triggerCheckout = onCheckout || onPayment;
@@ -184,7 +184,7 @@ export function OrderSummary({
             )}
           </div>
         )
-      ) : method === 'EWALLET' && finalTotal > 0 ? (
+      ) : method === 'EWALLET' && finalTotal > 0 ? hasPayosLink && (
         <div className="mt-5 space-y-3">
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-center">
             <div className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-800">
@@ -195,7 +195,7 @@ export function OrderSummary({
               <span>Đang chờ chuyển khoản VietQR...</span>
             </div>
             <p className="mt-1.5 text-[11px] text-gray-600 leading-relaxed">
-              Mở App Ngân hàng quét mã bên trái và chuyển đúng <strong className="text-emerald-700 font-bold">{formatVND(finalTotal)}</strong>. Hệ thống sẽ tự động xuất hóa đơn khi SePay xác nhận.
+              Quét mã bằng ứng dụng ngân hàng và chuyển đúng <strong className="text-emerald-700 font-bold">{formatVND(finalTotal)}</strong>. Hệ thống sẽ tự động xuất hóa đơn khi nhận được thanh toán.
             </p>
           </div>
 
@@ -228,7 +228,7 @@ export function OrderSummary({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
-                <span>Đang kiểm tra SePay...</span>
+                <span>Đang kiểm tra giao dịch...</span>
               </>
             ) : (
               <>
@@ -239,19 +239,6 @@ export function OrderSummary({
               </>
             )}
           </button>
-
-          {onQuickTest && (
-            <div className="pt-1 text-center">
-              <button
-                type="button"
-                onClick={onQuickTest}
-                disabled={isSubmitting || isCheckingStatus}
-                className="text-xs text-gray-400 hover:text-gray-600 font-medium transition-colors hover:underline"
-              >
-                Test nhanh
-              </button>
-            </div>
-          )}
         </div>
       ) : (
         <button

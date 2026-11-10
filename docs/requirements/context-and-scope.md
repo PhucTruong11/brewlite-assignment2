@@ -17,12 +17,12 @@ Khách cần biết món, giá theo size/topping và khả năng đáp ứng tr�
 
 ## Mục tiêu và phạm vi
 
-- **MVP, trong phạm vi:** menu, tùy chọn size/topping, giỏ, kiểm tra nguyên liệu theo công thức; xác thực; tạo đơn và giữ nguyên liệu 2 phút; thanh toán thẻ mô phỏng, QR SePay khi cấu hình hợp lệ; lịch sử/trạng thái đơn; quản trị đơn đã thanh toán, nguyên liệu, công thức và khuyến mãi. Web Next.js, API NestJS, PostgreSQL, CI/CD và URL production HTTPS thuộc sản phẩm giao nộp.
+- **MVP, trong phạm vi:** menu, tùy chọn size/topping, giỏ, kiểm tra nguyên liệu theo công thức; xác thực; tạo đơn và giữ nguyên liệu 2 phút; thanh toán thẻ mô phỏng, QR PayOS khi cấu hình hợp lệ; lịch sử/trạng thái đơn; quản trị đơn đã thanh toán, nguyên liệu, công thức và khuyến mãi. Web Next.js, API NestJS, PostgreSQL, CI/CD và URL production HTTPS thuộc sản phẩm giao nộp.
 - **Mở rộng:** điểm thưởng, đổi voucher, báo cáo quản trị chi tiết, PWA và kiểm thử tải quy mô lớn hơn dữ liệu demo.
-- **Ngoài phạm vi:** giao tận nơi, theo dõi tài xế, nhiều chi nhánh độc lập, tự đối soát mọi ngân hàng/ví và hoàn tiền ngân hàng tự động. QR SePay chỉ chứng minh tiền thật khi tài khoản và webhook đã được cấu hình; nút CARD là mô phỏng.
+- **Ngoài phạm vi:** giao tận nơi, theo dõi tài xế, nhiều chi nhánh độc lập, tự đối soát mọi ngân hàng/ví và hoàn tiền ngân hàng tự động. QR PayOS chỉ chứng minh tiền thật khi tài khoản và webhook đã được cấu hình; nút CARD là mô phỏng.
 
 ## Giả định, ràng buộc và rủi ro
 
 - **Giả định:** Khách nhận đồ tại quầy. Sản phẩm có công thức theo size. Nguyên liệu theo dõi tồn có `available = onHand - reserved`. Đơn chờ thanh toán giữ nguyên liệu 2 phút. Việc tạo đơn mới sau lần hết hạn đầu là quy tắc giao diện cần nghiệm thu riêng.
 - **Ràng buộc:** Đề bắt buộc Next.js, NestJS, PostgreSQL. Web trên Vercel, API trên Render, DB trên Supabase. API là nguồn tin cậy cho giá, quyền, tồn và trạng thái. Secret chỉ nằm trong cấu hình môi trường; test phá hủy không dùng DB production.
-- **Rủi ro ban đầu:** Free tier ngủ/giới hạn kết nối làm phản hồi đầu chậm; webhook SePay đến trễ hoặc sai cấu hình; đặt đồng thời tranh chấp nguyên liệu; migration hoặc biến môi trường khác giữa mã nguồn và production gây deploy lỗi. Cần transaction, test cạnh tranh, health check và rollback.
+- **Rủi ro ban đầu:** Free tier ngủ/giới hạn kết nối làm phản hồi đầu chậm; webhook PayOS đến trễ hoặc sai cấu hình; đặt đồng thời tranh chấp nguyên liệu; migration hoặc biến môi trường khác giữa mã nguồn và production gây deploy lỗi. Cần transaction, test cạnh tranh, health check và rollback.

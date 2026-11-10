@@ -54,7 +54,7 @@ npm test
 npm run build
 ```
 
-CI chạy tự động cho pull request và `main`: lint, unit test, build của hai app, test tích hợp API và E2E API với PostgreSQL 16 tạm. E2E đi qua menu → đăng nhập → tạo đơn → thanh toán CARD mô phỏng → xác nhận trạng thái `PAID`; test tích hợp kiểm tra thêm dữ liệu sai, quyền truy cập, tranh chấp nguyên liệu, thanh toán thất bại và thử lại. Ma trận ca kiểm thử nằm trong [tests/README.md](tests/README.md). Chạy riêng trên máy chỉ khi đã tạo DB **`brewlite_test`**:
+CI chạy tự động cho pull request và `main`: lint, unit test, build của hai app, test tích hợp API và E2E API với PostgreSQL 16 tạm. E2E đi qua menu → đăng nhập → tạo đơn → xác nhận trạng thái `PAID` qua CARD mô phỏng hoặc webhook PayOS ký bằng khóa test; test tích hợp kiểm tra thêm dữ liệu sai, quyền truy cập, tranh chấp nguyên liệu, thanh toán thất bại và thử lại. Ma trận ca kiểm thử nằm trong [tests/README.md](tests/README.md). Chạy riêng trên máy chỉ khi đã tạo DB **`brewlite_test`**:
 
 ```powershell
 cd apps/api

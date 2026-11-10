@@ -28,14 +28,14 @@ Nhóm phát triển & Có yêu cầu rõ, phân ranh frontend/API/DB, quy trình
 \textbf{Trong phạm vi MVP:}
 \begin{itemize}
   \item Menu, chi tiết món, giá theo size/topping, giỏ và kiểm tra khả năng đáp ứng theo công thức nguyên liệu.
-  \item Đăng ký/đăng nhập, tạo đơn có mã và thời hạn thanh toán; thanh toán thẻ mô phỏng và luồng QR SePay khi đã cấu hình; lịch sử và trạng thái đơn.
+  \item Đăng ký/đăng nhập, tạo đơn có mã và thời hạn thanh toán; thanh toán thẻ mô phỏng và luồng VietQR qua PayOS khi đã cấu hình; lịch sử và trạng thái đơn.
   \item Quản trị đơn sau thanh toán; quản lý nguyên liệu, công thức và các khuyến mãi đang sử dụng.
   \item Next.js, NestJS, PostgreSQL, CI/CD và URL production qua HTTPS theo yêu cầu Assignment 2.
 \end{itemize}
 
 \textbf{Phạm vi mở rộng:} điểm thưởng, đổi voucher, báo cáo quản trị chi tiết, PWA/cải thiện trải nghiệm di động và kiểm thử tải ở quy mô lớn hơn dữ liệu demo.
 
-\textbf{Ngoài phạm vi:} giao tận nơi, theo dõi tài xế, nhiều chi nhánh độc lập, tự đối soát mọi ngân hàng/ví và hoàn tiền ngân hàng tự động. Nút thanh toán thẻ phục vụ mô phỏng; QR SePay chỉ xác nhận giao dịch thật khi webhook và tài khoản nhận tiền được cấu hình hợp lệ.
+\textbf{Ngoài phạm vi:} giao tận nơi, theo dõi tài xế, nhiều chi nhánh độc lập, tự đối soát mọi ngân hàng/ví và hoàn tiền ngân hàng tự động. Thanh toán thẻ dùng cổng mô phỏng. VietQR qua PayOS xác nhận giao dịch thật khi kênh thanh toán và webhook được cấu hình hợp lệ.
 
 \subsubsection{Giả định, ràng buộc và rủi ro ban đầu}
 \textbf{Giả định:} Khách nhận đồ tại quầy; sản phẩm có công thức theo size; nguyên liệu theo dõi tồn có lượng khả dụng bằng \texttt{onHand - reserved}; thời hạn giữ nguyên liệu của đơn chờ thanh toán là hai phút. Lượt tạo đơn thay thế sau hết hạn là quy tắc giao diện hiện tại và cần được nghiệm thu riêng.
@@ -45,7 +45,7 @@ Nhóm phát triển & Có yêu cầu rõ, phân ranh frontend/API/DB, quy trình
 \textbf{Rủi ro:}
 \begin{itemize}
   \item Tài nguyên free tier có thể ngủ hoặc giới hạn kết nối, khiến phản hồi đầu tiên chậm và webhook đến trễ.
-  \item Webhook SePay phụ thuộc URL công khai, tài khoản nhận tiền và khóa cấu hình; bản demo cần phân biệt thanh toán mô phỏng với tiền thật.
+  \item Webhook PayOS cần URL công khai và khóa xác minh của kênh thanh toán. Bản demo phân biệt thanh toán thẻ mô phỏng với giao dịch VietQR thật.
   \item Đặt đồng thời có thể tranh chấp nguyên liệu; tạo đơn và giữ tồn phải nằm trong transaction, có kiểm thử cạnh tranh.
   \item Sai lệch giữa cấu hình production, schema migration và mã nguồn có thể làm deploy lỗi; cần health check và phương án rollback.
 \end{itemize}
