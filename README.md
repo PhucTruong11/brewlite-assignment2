@@ -54,7 +54,7 @@ npm test
 npm run build
 ```
 
-CI chạy tự động cho pull request và `main`: lint, unit test, build của hai app, test tích hợp API và E2E API với PostgreSQL 16 tạm. E2E đi qua menu → đăng nhập → tạo đơn → xác nhận trạng thái `PAID` qua CARD mô phỏng hoặc webhook PayOS ký bằng khóa test; test tích hợp kiểm tra thêm dữ liệu sai, quyền truy cập, tranh chấp nguyên liệu, thanh toán thất bại và thử lại. Ma trận ca kiểm thử nằm trong [tests/README.md](tests/README.md). Chạy riêng trên máy chỉ khi đã tạo DB **`brewlite_test`**:
+CI chạy tự động cho pull request. Khi merge hoặc push vào `main`, workflow `BrewLite production release` gọi lại CI trên commit đó, rồi build image, chạy migration, deploy API lên Render và web lên Vercel khi tất cả job kiểm tra thành công. CI gồm lint, unit test, build của hai app, test tích hợp API và E2E API với PostgreSQL 16 tạm. E2E đi qua menu → đăng nhập → tạo đơn → xác nhận trạng thái `PAID` qua CARD mô phỏng hoặc webhook PayOS ký bằng khóa test; test tích hợp kiểm tra thêm dữ liệu sai, quyền truy cập, tranh chấp nguyên liệu, thanh toán thất bại và thử lại. Ma trận ca kiểm thử nằm trong [tests/README.md](tests/README.md). Chạy riêng trên máy chỉ khi đã tạo DB **`brewlite_test`**:
 
 ```powershell
 cd apps/api
@@ -75,7 +75,7 @@ Test API thủ công trong `tests/` chỉ gửi đến URL được chọn trong
 
 - **Đã sắp cấu trúc:** `apps/web`, `apps/api`, `docs`, `tests`, `.github/workflows`, Dockerfile/Compose và Prisma migration được sao chép; CI đã cập nhật đường dẫn mới.
 - **Task 1:** Bối cảnh/phạm vi và SRS rút gọn đã được viết tại `docs/requirements/`, có bản LaTeX cho Task 1.1–1.2. Task 1.3 còn cần hoàn thiện đặc tả use-case trọng tâm; các sơ đồ Task 2, deployment diagram Task 3, ADR được nhóm duyệt và ma trận truy vết vẫn cần hoàn thiện.
-- **Task 4–5:** Workflow CI và CD, E2E API với DB test riêng và `GET /api/health` đã có trong mã nguồn. CD chỉ chạy khi tạo tag `v*` hoặc gọi thủ công; cần cấu hình secrets, chuyển source Render sang repo mới, kiểm tra migration production và ghi bằng chứng run thành công. Branch protection, release notes, Sprint Review/Retrospective và video demo vẫn cần nhóm thực hiện trên GitHub/tài liệu.
+- **Task 4–5:** Workflow CI và CD, E2E API với DB test riêng và `GET /api/health` đã có trong mã nguồn. CD tự chạy sau mỗi lần merge/push vào `main`, đồng thời hỗ trợ tag `v*` và chạy thủ công. CI phải pass trước khi chạy migration và deploy. Các secrets nằm trong environment `production`; xem [hướng dẫn deploy](docs/deployment.md) để cấu hình và theo dõi release. Branch protection, release notes, Sprint Review/Retrospective và video demo vẫn cần nhóm thực hiện trên GitHub/tài liệu.
 
 ## Git và bàn giao
 
