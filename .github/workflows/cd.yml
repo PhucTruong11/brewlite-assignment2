@@ -144,12 +144,12 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull production web settings
-        working-directory: apps/web
+
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Deploy web to Vercel
         id: web
-        working-directory: apps/web
+
         run: vercel deploy --prod --yes --token="$VERCEL_TOKEN"
 
       - name: Smoke test HTTPS web and its API proxy
@@ -164,7 +164,7 @@ jobs:
       - name: Restore previous Vercel deployment after failed smoke test
         if: failure() && steps.web.outcome == 'success'
         continue-on-error: true
-        working-directory: apps/web
+
         run: vercel rollback --token="$VERCEL_TOKEN"
 
       - name: Restore previous Render commit after failed rollout
