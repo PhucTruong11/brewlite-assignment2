@@ -193,6 +193,9 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
       ...input, paymentLinkId, checkoutUrl, qrCode: 'VietQR fixture', status: 'PENDING',
       bin: '970416', accountNumber: '1234567890', accountName: 'BREWLITE TEST', currency: 'VND',
     }));
+    const lookupLink = vi.spyOn(PaymentRequests.prototype, 'get').mockResolvedValue({
+      id: paymentLinkId, amount: 29_000, amountPaid: 0, amountRemaining: 29_000, status: 'PENDING',
+    } as never);
 
     try {
       const created = await request(app.getHttpServer())
@@ -238,6 +241,7 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
       expect(await prisma.pointTransaction.count({ where: { orderId: payosOrderId } })).toBe(1);
     } finally {
       createLink.mockRestore();
+      lookupLink.mockRestore();
     }
   });
 });

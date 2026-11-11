@@ -13,3 +13,5 @@ CI chạy `lint → unit test → build` cho web và API. Job tích hợp tạo 
 Hai lệnh tích hợp/E2E yêu cầu `DATABASE_URL` trỏ tới PostgreSQL test tên `brewlite_test` trên `localhost` hoặc `127.0.0.1` và `E2E_DATABASE=1`. Chạy `npx prisma migrate deploy` trên DB test trước. CI tự tạo DB này. Các test tạo fixture riêng và xóa sau khi chạy.
 
 E2E kiểm tra luồng HTTP bằng Supertest, gateway CARD mô phỏng và link PayOS giả lập. Ca VietQR kiểm tra chữ ký webhook, số tiền và thông báo trùng. Giao dịch PayOS thật cần kiểm tra riêng trên kênh thanh toán đã cấu hình.
+
+`payos-reconciliation.integration-spec.ts` kiểm tra polling thấy PAID khi mất webhook; hết hạn nhưng đã nhận tiền; PayOS timeout; chỉ trả kho sau khi link được xác nhận đóng và chưa nhận tiền; nhận tiền đúng lúc cancel; thanh toán thiếu/sai link; đơn cũ đã trả kho cần đối soát; polling và webhook đồng thời không cộng điểm/trừ kho lặp. Các ca này chạy trong `npm run test:integration` của CI.

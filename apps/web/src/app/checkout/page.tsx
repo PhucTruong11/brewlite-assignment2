@@ -27,6 +27,7 @@ type CheckoutStatus = {
   qrCodeUrl: string;
   checkoutUrl?: string;
   payosError?: string;
+  paymentReviewRequired?: boolean;
   payments: Array<{
     id: string;
     createdAt: string;
@@ -129,7 +130,8 @@ function CheckoutContent() {
   const orderId = searchParams.get('orderId');
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus | null>(null);
   const [orderItems, setOrderItems] = useState<CartItem[] | null>(null);
-  const isExpired = orderId !== null && (timeLeft <= 0 || checkoutStatus?.status === 'CANCELLED');
+  const isExpired = checkoutStatus?.status === 'CANCELLED';
+  const isReconciling = timeLeft <= 0 && !!checkoutStatus && ['PENDING', 'PAYMENT_FAILED'].includes(checkoutStatus.status);
   const paymentAttemptRef = useRef<string | null>(null);
   const renewalAttemptRef = useRef(false);
   const serverDeadlineRef = useRef<number | null>(null);
@@ -149,7 +151,8 @@ function CheckoutContent() {
       try {
         const response = await api.get<CheckoutStatus>(`/checkout/status/${orderId}`);
         if (!active) return;
-        paid = response.data.status === 'PAID';
+        paid = response.data.payments.some(p => p.status === 'SUCCESS') &&
+          ['PAID', 'PREPARING', 'READY', 'COMPLETED'].includes(response.data.status);
         setCheckoutStatus((previous) => previous?.status === 'PAID' ? previous : response.data);
         serverDeadlineRef.current = new Date(response.data.expiresAt).getTime();
         setTimeLeft(response.data.status === 'CANCELLED'
@@ -266,6 +269,7 @@ function CheckoutContent() {
     try {
       // API trạng thái hủy đơn quá hạn và giải phóng lượng nguyên liệu đã giữ.
       const oldStatus = await api.get<CheckoutStatus>(`/checkout/status/${orderId}`);
+      if (oldStatus.data.paymentReviewRequired) throw new Error('PayOS đã nhận tiền. Vui lòng đối soát đơn cũ, không tạo đơn mới.');
       if (oldStatus.data.status !== 'CANCELLED') {
         throw new Error('Đơn cũ chưa được hủy. Vui lòng kiểm tra trạng thái đơn trước khi tạo lại.');
       }
@@ -521,7 +525,8 @@ function CheckoutContent() {
   }
 
   // 1. NẾU ĐÃ THANH TOÁN THÀNH CÔNG → HIỂN THỊ HÓA ĐƠN ĐIỆN TỬ
-  const confirmedReceipt = orderId && orderItems && checkoutStatus?.status === 'PAID'
+  const confirmedReceipt = orderId && orderItems && checkoutStatus &&
+    ['PAID', 'PREPARING', 'READY', 'COMPLETED'].includes(checkoutStatus.status)
     ? createPaidReceipt(orderId, checkoutStatus, orderItems)
     : null;
   const invoice = receiptData ?? confirmedReceipt;
@@ -575,6 +580,17 @@ function CheckoutContent() {
     return <EmptyCheckout />;
   }
 
+  if (checkoutStatus.paymentReviewRequired) {
+    return (
+      <main className="mx-auto flex max-w-xl flex-col gap-4 px-4 py-12">
+        <h1 className="text-xl font-bold text-amber-900">Giao dịch cần đối soát</h1>
+        <p role="alert">PayOS ghi nhận đã nhận tiền nhưng đơn chưa thể hoàn tất. Vui lòng không chuyển thêm tiền hoặc tạo lại đơn.</p>
+        <p>Mã đơn: {orderId}</p>
+        <button type="button" onClick={() => router.push(`/orders/${orderId}`)} className="rounded-full bg-primary px-6 py-3 font-bold text-white">Xem đơn hàng</button>
+      </main>
+    );
+  }
+
   // 3. GIAO DIỆN THANH TOÁN CHÍNH.
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 pb-20 lg:px-8">
@@ -582,10 +598,12 @@ function CheckoutContent() {
       <CountdownTimer
         timeLeft={timeLeft}
         isExpired={isExpired}
+        isReconciling={isReconciling}
         canRenew={canRenew}
         attempt={renewCount + 1}
         showUI
       />
+      {checkoutStatus.payosError && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{checkoutStatus.payosError}</p>}
 
       {errorMessage && (
         <div className="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-700 border border-red-200">
@@ -619,7 +637,7 @@ function CheckoutContent() {
             subtotal={subtotal}
             finalTotal={finalTotal}
             pointsEarned={pointsEarned}
-            isSubmitting={isSubmitting}
+            isSubmitting={isSubmitting || isReconciling}
             isExpired={isExpired}
             canRenew={canRenew}
             durationSeconds={CHECKOUT_DURATION_SECONDS}

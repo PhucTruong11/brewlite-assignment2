@@ -19,7 +19,7 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:integration": "vitest run --config ./vitest.config.e2e.ts test/order-payment.integration-spec.ts",
+    "test:integration": "vitest run --config ./vitest.config.e2e.ts test/order-payment.integration-spec.ts test/payos-reconciliation.integration-spec.ts",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts test/app.e2e-spec.ts",
     "catalog:bootstrap": "tsx prisma/bootstrap-ingredient-catalog.ts",
     "inventory:demo-stock": "tsx prisma/load-demo-ingredient-stock.ts",

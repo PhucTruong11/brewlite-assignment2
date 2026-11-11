@@ -5,6 +5,7 @@ import React from 'react';
 export interface CountdownTimerProps {
   timeLeft?: number; // số giây còn lại
   isExpired?: boolean;
+  isReconciling?: boolean;
   canRenew?: boolean;
   attempt?: number;
   showUI?: boolean;
@@ -14,6 +15,7 @@ export interface CountdownTimerProps {
 export function CountdownTimer({
   timeLeft = 0,
   isExpired = false,
+  isReconciling = false,
   canRenew = false,
   attempt = 1,
   showUI = false,
@@ -30,9 +32,9 @@ export function CountdownTimer({
   return (
     <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border px-5 py-4 shadow-sm ${isExpired ? 'border-red-200 bg-red-50 text-red-800' : remaining <= 30 ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}`}>
       <div>
-        <p className="font-bold">{isExpired ? 'Đã hết thời gian thanh toán' : 'Thời gian thanh toán còn lại'}</p>
+        <p className="font-bold">{isReconciling ? 'Đang đối soát thanh toán' : isExpired ? 'Đã hết thời gian thanh toán' : 'Thời gian thanh toán còn lại'}</p>
         <p className="mt-1 text-sm">
-          {isExpired
+          {isReconciling ? 'Đang kiểm tra PayOS trước khi đóng đơn. Nếu đã chuyển tiền, bạn không cần chuyển lại.' : isExpired
             ? canRenew ? 'Bạn có thể gia hạn thêm 2 phút một lần.' : 'Đã dùng hết lượt gia hạn. Vui lòng quay lại giỏ hàng.'
             : `Lượt ${attempt}/2 · ${canRenew ? 'Có thể gia hạn thêm 1 lần' : 'Lượt gia hạn cuối cùng'}`}
         </p>

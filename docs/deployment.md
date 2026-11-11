@@ -39,7 +39,15 @@ Render phải trỏ đúng GitHub repo `PhucTruong11/brewlite-assignment2`, bran
 
 CI dùng PostgreSQL 16 tạm, chạy `prisma migrate deploy`, `npm run test:integration` và `npm run test:e2e` với DB `brewlite_test`; các bài test tạo rồi dọn dữ liệu fixture, dùng CARD mô phỏng và webhook PayOS có chữ ký với link giả lập. CD build hai Docker image có tag commit SHA và lưu trên GHCR; Render và Vercel hiện xây dựng từ cùng source commit, không kéo trực tiếp GHCR image. Sau deploy, smoke test gọi API `/api/health`, `/api/products`, web HTTPS và proxy web `/api/health`. Trước rollout đầu tiên ngày 05/11/2026, web và API products trả HTTP 200, còn `/api/health` trả HTTP 404; đây là dấu hiệu bản Assignment 2 có health endpoint chưa được xác nhận đang chạy trên production.
 
-## Rollback
+## Đối soát PayOS khi khách đã chuyển tiền nhưng checkout chưa hoàn tất
+
+Ba biến `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` cho phép API gọi PayOS; chủ kênh vẫn cần cấu hình Webhook URL của đúng kênh tại `my.payos.vn` thành `https://brewlite-api-omni.onrender.com/api/payments/payos-webhook`. Return URL đưa trình duyệt về web, không thay thế webhook xác nhận tiền. Xác minh webhook trên dashboard PayOS và kiểm tra Render có nhận request thành công, không đưa key vào URL hay frontend. Tài liệu gốc: https://payos.vn/docs/api/.
+
+API đối soát link PayOS khi checkout polling (tối đa một lần mỗi 5 giây cho cùng đơn), và luôn đối soát trước khi hủy do hết hạn. PAID, số tiền link và số tiền đã nhận phải khớp đơn mới hoàn tất kho/điểm trong transaction có khóa đơn. Nếu cổng không phản hồi, giữ nguyên đơn và reservation; giao diện báo đang đối soát, chưa cho gia hạn tạo đơn khác. Chỉ hủy/trả kho khi xác nhận link CANCELLED/EXPIRED và chưa nhận tiền.
+
+Nếu đơn từ bản cũ đã CANCELLED/RELEASED nhưng PayOS có tiền, hiển thị yêu cầu đối soát, không tự phục hồi đơn hoặc trừ kho đã cấp cho đơn khác. Đối chiếu mã đơn, link, số tiền, thời điểm và giao dịch trên PayOS/Supabase trước khi xử lý thủ công. Không đánh dấu PAID chỉ dựa trên return URL, ảnh chuyển khoản hoặc đổi status trực tiếp.
+
+## Rollback ứng dụng
 
 Workflow thử rollback về deployment Vercel trước và commit Render trước nếu rollout/smoke test thất bại. Render rollback cần commit cũ vẫn còn trong repo đang kết nối; lần đầu chuyển repo có thể phải thao tác thủ công trong dashboard. Vercel Hobby chỉ cho rollback về deployment production ngay trước. Sau khi rollback, kiểm tra lại URL web/API và trạng thái rollback trên dashboard. **Rollback ứng dụng không tự rollback schema hoặc dữ liệu PostgreSQL**; migration phải tương thích ngược hoặc khôi phục DB từ backup theo quy trình riêng.
 

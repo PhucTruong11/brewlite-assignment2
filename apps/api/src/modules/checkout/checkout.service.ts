@@ -22,6 +22,7 @@ export const PAYMENT_TIMEOUT_MS = RESERVATION_DURATION_MS;
 const PAYABLE_STATUSES: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.PAYMENT_FAILED];
 const PAYMENT_ITEMS = { items: { include: { product: true } } } satisfies Prisma.OrderInclude;
 const PAYOS_LINK = { payosPaymentLink: true } satisfies Prisma.OrderInclude;
+type PayosOrder = Prisma.OrderGetPayload<{ include: typeof PAYMENT_ITEMS & typeof PAYOS_LINK }>;
 
 // ============================================================
 // Danh mục mã giảm giá hợp lệ trong hệ thống.
@@ -97,6 +98,7 @@ export const VALID_VOUCHERS: Record<string, VoucherRule> = {
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
   private readonly payos?: PayOS;
+  private readonly payosChecks = new Map<string, { at: number; requiresReview: boolean }>();
 
   constructor(private readonly prisma: PrismaService,
     private readonly rewardsService: RewardsService,
@@ -118,13 +120,62 @@ export class CheckoutService {
   private async cancelExpiredOrder(orderId: string) {
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
-      const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
+      const order = await tx.order.findUnique({ where: { id: orderId }, include: { ...PAYMENT_ITEMS, ...PAYOS_LINK } });
       if (!order || (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.PAYMENT_FAILED)) return false;
       if (this.deadline(order).getTime() > Date.now()) return false;
-      await this.inventory.release(tx, order);
-      await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.CANCELLED } });
-      return true;
-    });
+      return this.expireLockedOrder(tx, order);
+    }, { timeout: 15000 });
+  }
+
+  /** Chỉ hủy sau khi PayOS xác nhận chưa nhận tiền và link đã đóng. */
+  private async expireLockedOrder(tx: Prisma.TransactionClient, order: PayosOrder) {
+    if (order.payosPaymentLink) {
+      const state = await this.reconcileLockedPayos(tx, order, true);
+      if (state !== 'unpaid') return false;
+    }
+    await this.inventory.release(tx, order);
+    await tx.order.update({ where: { id: order.id }, data: { status: OrderStatus.CANCELLED } });
+    return true;
+  }
+
+  private async reconcileLockedPayos(tx: Prisma.TransactionClient, order: PayosOrder, expire = false) {
+    if (!this.payos || !order.payosPaymentLink) throw new ServiceUnavailableException('Chưa đối soát được PayOS');
+    const id = order.payosPaymentLink.id;
+    let remote = await this.payos.paymentRequests.get(id);
+    if (remote.id !== id || remote.amount !== order.total) throw new ConflictException('Dữ liệu PayOS không khớp đơn hàng');
+    if (expire && remote.status === 'PENDING' && remote.amountPaid === 0) {
+      remote = await this.payos.paymentRequests.cancel(id, 'Hết thời gian thanh toán').catch(() => this.payos!.paymentRequests.get(id));
+    }
+    if (remote.id !== id || remote.amount !== order.total) throw new ConflictException('Dữ liệu PayOS không khớp đơn hàng');
+    if (remote.status === 'PAID' && remote.amountPaid === order.total && remote.amountRemaining === 0) {
+      if (!PAYABLE_STATUSES.includes(order.status) ||
+        (order.inventoryState !== InventoryState.RESERVED && order.inventoryState !== InventoryState.LEGACY)) {
+        this.logger.error(`PayOS đã nhận tiền nhưng đơn ${order.id} không còn giữ kho; cần đối soát thủ công`);
+        return 'review' as const;
+      }
+      await this.completePayment(tx, order, PaymentMethod.EWALLET, `PAYOS-RECONCILE-${id}`);
+      return 'paid' as const;
+    }
+    if (remote.amountPaid > 0) return 'review' as const;
+    if (expire && !['CANCELLED', 'EXPIRED'].includes(remote.status)) throw new ConflictException('PayOS chưa xác nhận đóng link');
+    return 'unpaid' as const;
+  }
+
+  private async reconcilePayosOrder(orderId: string) {
+    const cached = this.payosChecks.get(orderId);
+    if (cached && Date.now() - cached.at < 5000) return cached.requiresReview;
+    const requiresReview = await this.prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      const order = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { ...PAYMENT_ITEMS, ...PAYOS_LINK } });
+      if (!order.payosPaymentLink || (!PAYABLE_STATUSES.includes(order.status) && order.status !== OrderStatus.CANCELLED)) return false;
+      // Tránh nhiều tab hỏi cổng liên tiếp sau khi đã đợi khóa của cùng đơn.
+      const latest = this.payosChecks.get(orderId);
+      if (latest && Date.now() - latest.at < 5000) return latest.requiresReview;
+      return (await this.reconcileLockedPayos(tx, order)) === 'review';
+    }, { timeout: 10000 });
+    if (this.payosChecks.size > 2000) this.payosChecks.clear();
+    this.payosChecks.set(orderId, { at: Date.now(), requiresReview });
+    return requiresReview;
   }
 
   /** Chỉ cho chủ đơn xem hoặc thao tác thanh toán trên đơn của mình. */
@@ -155,7 +206,13 @@ export class CheckoutService {
     }
     if (this.deadline(order).getTime() <= Date.now()) {
       await this.cancelExpiredOrder(orderId);
-      throw new BadRequestException('Đơn hàng đã hết hạn thanh toán');
+      const reconciled = await this.prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: { payments: true } });
+      const payment = reconciled.payments.find(p => p.status === PaymentStatus.SUCCESS);
+      if (payment && reconciled.status === OrderStatus.PAID) {
+        return { isDuplicate: true, success: true, payment, pointsEarned: reconciled.loyaltyPointsEarned, message: 'PayOS đã xác nhận thanh toán' };
+      }
+      throw new BadRequestException(reconciled.status === OrderStatus.CANCELLED
+        ? 'Đơn hàng đã hết hạn thanh toán' : 'Đang đối soát PayOS, chưa thể thanh toán lại');
     }
 
     const cleanCode = promoCode.trim().toUpperCase();
@@ -352,9 +409,10 @@ export class CheckoutService {
         throw new ConflictException('Đơn hàng đã được xử lý bởi một phiên giao dịch khác');
       }
       if (this.deadline(lockedOrder).getTime() <= Date.now()) {
-        await this.inventory.release(tx, lockedOrder);
-        await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.CANCELLED } });
-        return { expired: true as const };
+        if (await this.expireLockedOrder(tx, lockedOrder)) return { expired: true as const };
+        const payment = await tx.payment.findFirst({ where: { orderId, status: PaymentStatus.SUCCESS } });
+        if (!payment) throw new ConflictException('Đang đối soát giao dịch PayOS. Chưa thể thanh toán lại.');
+        return { expired: false as const, payment, success: true, pointsEarned: Math.floor(lockedOrder.total / 10000) };
       }
 
       if (!Number.isSafeInteger(lockedOrder.total) || lockedOrder.total < 0) {
@@ -378,7 +436,7 @@ export class CheckoutService {
       });
       await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.PAYMENT_FAILED } });
       return { expired: false as const, payment, success, pointsEarned: 0 };
-    }, { timeout: 8000 });
+    }, { timeout: 15000 });
 
     if (transactionResult.expired) {
       throw new BadRequestException('Đơn hàng đã hết hạn thanh toán và nguyên liệu đã được trả kho');
@@ -470,10 +528,20 @@ export class CheckoutService {
   async getOrderCheckoutStatus(orderId: string, userId: string) {
     let order = await this.findOwnedOrder(orderId, userId);
     let payosError: string | undefined;
+    let paymentReviewRequired = false;
 
-    if (PAYABLE_STATUSES.includes(order.status) && this.deadline(order).getTime() <= Date.now()) {
-      await this.cancelExpiredOrder(orderId);
+    try {
+      if (PAYABLE_STATUSES.includes(order.status) && this.deadline(order).getTime() <= Date.now()) {
+        await this.cancelExpiredOrder(orderId);
+      }
       order = await this.findOwnedOrder(orderId, userId);
+      if (order.payosPaymentLink && (PAYABLE_STATUSES.includes(order.status) || order.status === OrderStatus.CANCELLED)) {
+        paymentReviewRequired = await this.reconcilePayosOrder(orderId);
+        order = await this.findOwnedOrder(orderId, userId);
+      }
+    } catch {
+      this.logger.warn(`Chưa đối soát được PayOS cho đơn ${orderId}; không tự hủy hoặc trả kho`);
+      payosError = 'Đang đối soát PayOS. Nếu bạn đã chuyển tiền, không chuyển lại hoặc tạo đơn khác.';
     }
 
     if (this.canCreatePayosLink(order) && !order.payosPaymentLink) {
@@ -504,6 +572,7 @@ export class CheckoutService {
       qrCodeUrl: link?.qrCodeUrl ?? '',
       checkoutUrl: link?.checkoutUrl,
       payosError,
+      paymentReviewRequired,
       bankInfo: link ? {
         bankBin: link.bankBin,
         accountNo: link.accountNo,
@@ -614,7 +683,11 @@ export class CheckoutService {
     });
     let cancelled = 0;
     for (const order of expiredOrders) {
-      if (await this.cancelExpiredOrder(order.id)) cancelled++;
+      try {
+        if (await this.cancelExpiredOrder(order.id)) cancelled++;
+      } catch {
+        this.logger.warn(`Chưa đối soát được đơn ${order.id}; giữ nguyên đơn và nguyên liệu`);
+      }
     }
     if (cancelled > 0) {
       this.logger.warn(
