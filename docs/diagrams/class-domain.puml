@@ -1,0 +1,250 @@
+@startuml class-domain
+!pragma layout smetana
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam roundcorner 4
+skinparam classAttributeIconSize 0
+scale 1.1
+
+package "Domain Model (BrewLite)" {
+
+  class User {
+    + id: String
+    + email: String
+    + fullName: String
+    + phone: String
+    + passwordHash: String
+    + role: Role
+    + loyaltyPoints: Int
+    + emailVerifiedAt: DateTime
+    + createdAt: DateTime
+    + register()
+    + login()
+    + earnPoints(amount: Int)
+    + redeemPoints(cost: Int)
+  }
+
+  class Order {
+    + id: String
+    + userId: String
+    + status: OrderStatus
+    + total: Int
+    + discount: Int
+    + promoCode: String
+    + loyaltyPointsEarned: Int
+    + inventoryState: InventoryState
+    + reservationExpiresAt: DateTime
+    + createdAt: DateTime
+    + calculateTotal(): Int
+    + applyVoucher(code: String)
+    + cancelOrder()
+    + markAsPaid()
+  }
+
+  class OrderItem {
+    + id: String
+    + orderId: String
+    + productId: String
+    + productName: String
+    + size: ProductSize
+    + toppings: List<String>
+    + qty: Int
+    + lineTotal: Int
+    + recipeSnapshot: JSON
+    + calculateLineTotal(): Int
+  }
+
+  class Product {
+    + id: String
+    + name: String
+    + description: String
+    + imageUrl: String
+    + category: String
+    + allowToppings: Boolean
+    + stock: Int
+    + isAvailable: Boolean
+    + getPriceForSize(size: ProductSize): Int
+  }
+
+  class ProductPrice {
+    + id: String
+    + productId: String
+    + size: ProductSize
+    + price: Int
+  }
+
+  class Topping {
+    + id: String
+    + name: String
+    + price: Int
+    + isAvailable: Boolean
+  }
+
+  class Ingredient {
+    + id: String
+    + code: String
+    + name: String
+    + unit: IngredientUnit
+    + trackStock: Boolean
+    + onHand: Decimal
+    + reserved: Decimal
+    + isAvailable(qty: Decimal): Boolean
+    + reserve(qty: Decimal)
+    + release(qty: Decimal)
+    + consume(qty: Decimal)
+  }
+
+  class Recipe {
+    + id: String
+    + productId: String
+    + size: ProductSize
+    + toppingId: String
+    + ingredientId: String
+    + quantity: Decimal
+  }
+
+  class Payment {
+    + id: String
+    + orderId: String
+    + idempotencyKey: String
+    + amount: Int
+    + method: PaymentMethod
+    + status: PaymentStatus
+    + createdAt: DateTime
+    + processPayment(): Boolean
+  }
+
+  class PayosPaymentLink {
+    + id: String
+    + orderId: String
+    + checkoutUrl: String
+    + qrCodeUrl: String
+    + transferContent: String
+  }
+
+  class Promotion {
+    + id: String
+    + code: String
+    + description: String
+    + discountType: String
+    + discountValue: Float
+    + minOrderValue: Float
+    + maxDiscount: Float
+    + isActive: Boolean
+    + isValidForOrder(orderTotal: Int): Boolean
+  }
+
+  class RewardItem {
+    + id: String
+    + name: String
+    + pointsCost: Int
+    + promotionId: String
+    + isActive: Boolean
+  }
+
+  class UserVoucher {
+    + id: String
+    + userId: String
+    + promotionId: String
+    + rewardItemId: String
+    + usedAt: DateTime
+    + usedOrderId: String
+  }
+
+  class "LoyaltyTransaction\n(Prisma: PointTransaction)" as LoyaltyTransaction {
+    + id: String
+    + userId: String
+    + orderId: String
+    + type: PointTransactionType
+    + points: Int
+    + balanceAfter: Int
+    + createdAt: DateTime
+  }
+
+  enum OrderStatus {
+    PENDING
+    PAID
+    PREPARING
+    READY
+    COMPLETED
+    PAYMENT_FAILED
+    CANCELLED
+  }
+
+  enum InventoryState {
+    LEGACY
+    RESERVED
+    CONSUMED
+    RELEASED
+  }
+
+  enum PaymentStatus {
+    PENDING
+    SUCCESS
+    FAILED
+  }
+
+  enum PaymentMethod {
+    EWALLET
+    CARD
+  }
+
+  enum ProductSize {
+    S
+    M
+    L
+  }
+
+  enum IngredientUnit {
+    G
+    ML
+    PIECE
+  }
+
+  enum Role {
+    USER
+    ADMIN
+  }
+
+  enum PointTransactionType {
+    EARN
+    REDEEM
+    REFUND
+  }
+}
+
+' --- Mối quan hệ và Multiplicity ---
+
+User "1" --> "0..*" Order : places
+Order "1" *-- "1..*" OrderItem : contains
+Product "0..1" --> "0..*" OrderItem : referenced by
+
+Product "1" *-- "1..3" ProductPrice : priced at
+Product "0..1" --> "0..*" Recipe : requires
+Topping "0..1" --> "0..*" Recipe : requires
+Ingredient "1" --> "0..*" Recipe : used in
+
+Order "1" --> "0..*" Payment : settled by
+Order "1" -- "0..1" PayosPaymentLink : VietQR
+Order "0..1" --> "0..1" UserVoucher : applies
+Promotion "1" --> "0..*" UserVoucher : grants
+Promotion "1" --> "0..*" RewardItem : configures
+RewardItem "1" --> "0..*" UserVoucher : redeemed as
+
+User "1" --> "0..*" UserVoucher : owns
+User "1" --> "0..*" LoyaltyTransaction : records
+Order "0..1" --> "0..*" LoyaltyTransaction : triggers
+
+' Quan hệ Enum
+Order ..> OrderStatus
+Order ..> InventoryState
+Payment ..> PaymentStatus
+Payment ..> PaymentMethod
+ProductPrice ..> ProductSize
+OrderItem ..> ProductSize
+Ingredient ..> IngredientUnit
+LoyaltyTransaction ..> PointTransactionType
+User ..> Role
+
+@enduml

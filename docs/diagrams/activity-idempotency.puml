@@ -1,0 +1,32 @@
+@startuml activity-idempotency
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+|Next.js UI|
+start
+:Gửi POST /api/checkout\n(method CARD, Idempotency-Key);
+|NestJS API|
+:Xác thực, kiểm tra quyền và khóa;
+:Tra Payment theo idempotencyKey;\nnếu chưa có, khóa transaction và kiểm tra lại;
+if (Đã có Payment?) then (Có)
+  if (Cùng đơn?) then (Có)
+    :Trả kết quả Payment đã lưu;
+  else (Không)
+    :Từ chối dùng khóa cho đơn khác;
+  endif
+else (Chưa)
+  if (Đơn được phép trả và còn hạn?) then (Có)
+    :Chạy thanh toán thẻ mô phỏng;
+    if (Thẻ thành công?) then (Có)
+      :Lưu SUCCESS, chuyển PAID,\ntiêu thụ tồn và ghi điểm/voucher;
+    else (Không)
+      :Lưu FAILED và PAYMENT_FAILED;\ngiữ kho, cho thử bằng khóa mới;
+    endif
+  else (Không)
+    :Từ chối thanh toán mới;
+  endif
+endif
+|Next.js UI|
+:Hiển thị kết quả;
+stop
+@enduml

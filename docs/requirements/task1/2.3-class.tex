@@ -1,2 +1,46 @@
+\clearpage
 \subsection{Task 2.3 -- Class diagram}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+\subsubsection{Mục tiêu và phạm vi mô hình hóa mức Domain}
+Class Diagram mô hình hóa cấu trúc tĩnh ở mức miền nghiệp vụ (Domain Model) của hệ thống BrewLite, phản ánh trung thực lược đồ cơ sở dữ liệu PostgreSQL (thông qua Prisma ORM) và các quy tắc nghiệp vụ trong SRS.
+
+Bên cạnh 7 thực thể bắt buộc theo rubric của đề bài (\textbf{User}, \textbf{Product}, \textbf{Order}, \textbf{OrderItem}, \textbf{Payment}, \textbf{Promotion}, \textbf{LoyaltyTransaction}), nhóm bổ sung các lớp miền phản ánh nét đặc thù pha chế và quản lý nguyên liệu của BrewLite:
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Ingredient (Nguyên liệu):} Quản lý tồn kho thực tế ($onHand$) và lượng tạm giữ ($reserved$) theo từng đơn vị ($g, ml, piece$).
+  \item \textbf{Recipe (Công thức định mức):} Cầu nối giữa món nước / topping và nguyên liệu thô để phục vụ tính toán tồn kho tự động.
+  \item \textbf{ProductPrice (Giá theo size):} Quản lý đơn giá theo từng kích cỡ ly ($S, M, L$).
+  \item \textbf{Topping:} Danh mục các món thêm vào đồ uống (trân châu, thạch, đào miếng).
+  \item \textbf{RewardItem:} Danh mục quà, số điểm cần để đổi và khuyến mãi tương ứng.
+  \item \textbf{UserVoucher:} Quản lý trạng thái mã ưu đãi mà khách hàng sở hữu hoặc đã sử dụng.
+  \item \textbf{PayosPaymentLink:} Lưu link và mã VietQR theo đơn để checkout xác minh giao dịch hoặc đối soát khi webhook đến trễ.
+\end{itemize}
+
+\subsubsection{Sơ đồ lớp miền (Domain Class Diagram)}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.70\textheight,keepaspectratio]{../../diagrams/class-domain.png}
+\end{center}
+\begin{center}
+\small{\textit{Hình: Class diagram ở mức domain của hệ thống BrewLite (File nguồn: \texttt{docs/diagrams/class-domain.puml})}}
+\end{center}
+
+\clearpage
+\subsubsection{Mô tả các thực thể chính và thuộc tính}
+\begin{enumerate}[leftmargin=2.2em]
+  \item \textbf{User:} Quản lý danh tính khách hàng và quản trị viên (\texttt{Role: USER, ADMIN}), số điểm thưởng tích lũy (\texttt{loyaltyPoints}) và trạng thái xác minh email.
+  \item \textbf{Order:} Trung tâm của quy trình đặt hàng, chứa \texttt{status} (\texttt{OrderStatus}), \texttt{total}, \texttt{discount}, trạng thái tồn kho (\texttt{inventoryState: LEGACY, RESERVED, CONSUMED, RELEASED}) và mốc thời gian hết hạn 120 giây (\texttt{reservationExpiresAt}).
+  \item \textbf{OrderItem:} Thành phần cấu thành đơn hàng (quan hệ Composition $1 \longrightarrow 1..*$). Chứa số lượng, size ly, mảng topping đã chọn, tổng tiền dòng và \texttt{recipeSnapshot} lưu vết công thức tại thời điểm đặt.
+  \item \textbf{Payment:} Ghi nhận thanh toán với \texttt{idempotencyKey} duy nhất chống lặp, phương thức thanh toán (\texttt{PaymentMethod: CARD, EWALLET}) và trạng thái giao dịch (\texttt{PaymentStatus: PENDING, SUCCESS, FAILED}).
+  \item \textbf{Ingredient \& Recipe:} Hỗ trợ bài toán kiểm soát tồn kho thời gian thực. Mỗi \texttt{Recipe} định mức số lượng nguyên liệu cần dùng cho từng \texttt{Product} (theo size) hoặc \texttt{Topping}.
+  \item \textbf{Promotion \& LoyaltyTransaction:} Quản lý chiến dịch giảm giá và lịch sử biến động điểm thưởng (\texttt{EARN, REDEEM, REFUND}) có thể gắn với một đơn hàng. Trong Prisma, lớp sổ điểm được lưu dưới tên \texttt{PointTransaction}.
+\end{enumerate}
+
+\subsubsection{Quan hệ và bội số (Multiplicity)}
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{User -- Order ($1 \longrightarrow 0..*$):} Một người dùng có thể đặt nhiều đơn hàng; mỗi đơn hàng thuộc về đúng một người dùng.
+  \item \textbf{Order -- OrderItem ($1 \longrightarrow 1..*$):} Quan hệ hợp thành (Composition). Một đơn hàng phải có ít nhất 1 dòng món; nếu xóa đơn hàng thì các dòng món con bị xóa theo.
+  \item \textbf{Product -- ProductPrice ($1 \longrightarrow 1..3$):} Một sản phẩm có từ 1 đến 3 mức giá tương ứng với các kích cỡ S, M, L.
+  \item \textbf{Order -- PayosPaymentLink ($1 \longrightarrow 0..1$):} Mỗi đơn có tối đa một link VietQR lưu trong hệ thống.
+  \item \textbf{Order -- Payment ($1 \longrightarrow 0..*$):} Một đơn hàng có thể có nhiều lượt thử thanh toán (ví dụ lượt 1 lỗi thì ghi \texttt{FAILED}, lượt 2 thành công ghi \texttt{SUCCESS}).
+  \item \textbf{Order -- UserVoucher ($0..1 \longrightarrow 0..1$):} Mỗi đơn hàng chỉ được áp dụng tối đa một mã giảm giá hợp lệ.
+  \item \textbf{Ingredient -- Recipe ($1 \longrightarrow 0..*$):} Một loại nguyên liệu thô có thể được sử dụng trong nhiều công thức pha chế khác nhau.
+\end{itemize}

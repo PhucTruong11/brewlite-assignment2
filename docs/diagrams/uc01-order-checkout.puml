@@ -1,48 +1,80 @@
-@startuml
+@startuml uc01-order-checkout
 !pragma layout smetana
 left to right direction
-scale 1.8
-
-skinparam backgroundColor white
+skinparam packageStyle rectangle
+skinparam monochrome true
 skinparam shadowing false
 skinparam defaultFontName Arial
-skinparam ArrowColor #315C48
-skinparam actor {
-  FontColor #183D2B
-  BorderColor #315C48
-}
-skinparam usecase {
-  BackgroundColor #F4FAF6
-  BorderColor #315C48
-  FontColor #183D2B
-}
-skinparam rectangle {
-  BackgroundColor white
-  BorderColor #839B8B
-  FontColor #183D2B
-}
+skinparam roundcorner 4
+skinparam nodesep 20
+skinparam ranksep 34
 
+actor "Quản trị viên" as Admin
 actor "Khách hàng" as Customer
-actor "PayOS\n(webhook)" as PayOS
+actor "Cổng thanh toán\n(PayOS)" as PaymentGateway <<External System>>
 
-rectangle "BrewLite — UC-01: Đặt và thanh toán đơn hàng" {
-  usecase "Đặt và thanh toán\nđơn hàng" as UC
-  usecase "Kiểm tra giỏ, giá\nvà nguyên liệu" as Validate
-  usecase "Tạo đơn PENDING\nvà giữ nguyên liệu" as Create
-  usecase "Thanh toán thẻ\n(mô phỏng)" as Card
-  usecase "Xác nhận VietQR\nqua PayOS" as QR
-  usecase "Hủy đơn hết hạn\nvà trả nguyên liệu" as Expire
-  usecase "Xem trạng thái\nvà biên nhận" as Receipt
+rectangle "Phân hệ Thanh toán & Đơn hàng (BrewLite)" {
+  ' Quản trị viên
+  usecase "Hủy đơn, hoàn kho\nvà thu hồi điểm" as UC_CancelAndRestore
+  usecase "Tiếp nhận đơn tại quầy" as UC_ReceiveOrderPOS
+  usecase "Cập nhật trạng thái pha chế" as UC_UpdateBrewStatus
+
+  ' Xác nhận và đối soát giao dịch
+  usecase "Tiếp nhận webhook thanh toán" as UC_ReceiveWebhook
+  usecase "Xác thực chữ ký webhook" as UC_VerifyHMAC
+  usecase "Đối soát giao dịch PayOS" as UC_Reconcile
+  usecase "Cập nhật trạng thái đã thanh toán" as UC_UpdatePaid
+  usecase "Tích lũy điểm thưởng" as UC_AddLoyalty
+  usecase "Trừ tồn kho chính thức" as UC_DeductInventory
+
+  ' Khách hàng
+  usecase "Xem biên nhận" as UC_ViewInvoice
+  usecase "Tạo đơn mới sau khi đơn cũ đã hủy" as UC_CreateAgain
+  usecase "Xử lý đơn quá hạn" as UC_AutoCancel
+  usecase "Tạm giữ tồn kho 120 giây" as UC_Reserve120s
+  usecase "Thanh toán thẻ mô phỏng" as UC_PayCard
+  usecase "Thanh toán VietQR" as UC_PayVietQR
+  usecase "Tạo mã QR và link thanh toán" as UC_CreateQRLink
+  usecase "Chọn phương thức thanh toán" as UC_ChoosePayment
+  usecase "Theo dõi tiến độ đơn hàng" as UC_TrackOrder
+  usecase "Tạo đơn hàng thanh toán" as UC_CreateOrder
+  usecase "Kiểm tra giỏ, giá và nguyên liệu" as UC_Validate
+  usecase "Kiểm soát thanh toán trùng lặp" as UC_AntiDuplicate
 }
 
-Customer -- UC
-Customer -- Receipt
-PayOS -- QR
+Admin -right-> UC_CancelAndRestore
+Admin -right-> UC_ReceiveOrderPOS
+Admin -right-> UC_UpdateBrewStatus
 
-UC ..> Validate : <<include>>
-UC ..> Create : <<include>>
-Card ..> UC : <<extend>>\n[chọn thẻ]
-QR ..> UC : <<extend>>\n[chọn VietQR]
-Expire ..> UC : <<extend>>\n[hết hạn]
+Customer -right-> UC_ViewInvoice
+Customer -right-> UC_CreateAgain
+Customer -right-> UC_TrackOrder
+Customer -right-> UC_CreateOrder
+Customer -right-> UC_ChoosePayment
 
+UC_CreateOrder ..> UC_Validate : <<include>>
+UC_CreateOrder ..> UC_Reserve120s : <<include>>
+UC_CreateOrder <.right. UC_CreateAgain : <<include>>
+UC_TrackOrder <.right. UC_AutoCancel : <<extend>>\n[đã hết hạn]
+
+UC_ChoosePayment <.right. UC_PayCard : <<extend>>
+UC_ChoosePayment <.right. UC_PayVietQR : <<extend>>
+UC_PayCard ..> UC_AntiDuplicate : <<include>>
+UC_PayVietQR ..> UC_CreateQRLink : <<include>>
+
+UC_CreateQRLink -right-> PaymentGateway
+UC_Reconcile -right-> PaymentGateway
+UC_ReceiveWebhook <-right- PaymentGateway
+UC_ReceiveWebhook ..> UC_VerifyHMAC : <<include>>
+UC_UpdatePaid ..> UC_ReceiveWebhook : <<extend>>\n[giao dịch hợp lệ]
+UC_UpdatePaid ..> UC_Reconcile : <<extend>>\n[đã nhận đủ tiền]
+UC_UpdatePaid ..> UC_DeductInventory : <<include>>
+UC_UpdatePaid ..> UC_AddLoyalty : <<include>>
+
+' Layout anchors keep both actor columns outside the system boundary.
+Admin -[hidden]-> UC_CreateAgain
+Customer -[hidden]-> UC_ReceiveOrderPOS
+UC_VerifyHMAC -[hidden]-> PaymentGateway
+UC_Validate -[hidden]-> PaymentGateway
+UC_Reserve120s -[hidden]-> PaymentGateway
 @enduml

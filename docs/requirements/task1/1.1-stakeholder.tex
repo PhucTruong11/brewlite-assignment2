@@ -1,4 +1,3 @@
-\section{Task 1 -- Khai thác và đặc tả yêu cầu}
 \subsection{Task 1.1 -- Bối cảnh, stakeholder và phạm vi}
 
 \subsubsection{Vấn đề nghiệp vụ}
@@ -6,7 +5,7 @@ Khách mua đồ uống cần biết món nào còn bán, giá theo size và top
 
 \subsubsection{Stakeholder và kỳ vọng}
 \renewcommand{\arraystretch}{1.25}
-\begin{longtable}{@{}p{0.19\textwidth}p{0.46\textwidth}p{0.27\textwidth}@{}}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth}>{\raggedright\arraybackslash}p{0.44\textwidth}>{\raggedright\arraybackslash}p{0.30\textwidth}@{}}
 \toprule
 \textbf{Đối tượng} & \textbf{Mục tiêu và kỳ vọng} & \textbf{Cách xác nhận} \\
 \midrule
@@ -19,6 +18,8 @@ Khách hàng & Xem món, tùy chọn, giá và khả năng đáp ứng; đặt, 
 Nhân viên quầy & Chỉ nhận đơn đã thanh toán; cập nhật pha chế, sẵn sàng và hoàn thành đơn kịp thời. & Demo danh sách đơn và các bước chuyển trạng thái hợp lệ. \\
 Quản lý cửa hàng & Kiểm soát nguyên liệu, công thức, chương trình ưu đãi và doanh thu; tránh bán vượt tồn hoặc ghi nhận thanh toán lặp. & Đối soát tồn, trạng thái đơn, giao dịch và quyền quản trị. \\
 Nhóm phát triển & Có yêu cầu rõ, phân ranh frontend/API/DB, quy trình tích hợp và kiểm thử lặp lại. & Build/test qua CI, tài liệu triển khai và ma trận truy vết. \\
+Giảng viên / khách hàng nghiệm thu & Đánh giá MVP, tính nhất quán của yêu cầu, sơ đồ và kết quả kiểm thử. & Demo theo tiêu chí chấp nhận và đối chiếu ma trận truy vết. \\
+Đơn vị thanh toán (PayOS) & Nhận đúng mã đơn, số tiền và URL webhook; cung cấp trạng thái giao dịch để xác minh. & Kiểm thử webhook, đối soát link và xử lý tín hiệu lặp. \\
 \bottomrule
 \end{longtable}
 

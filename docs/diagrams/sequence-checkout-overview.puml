@@ -1,0 +1,52 @@
+@startuml sequence-checkout-overview
+!pragma layout smetana
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+actor "Khách hàng" as Customer
+participant "Next.js UI" as UI
+participant "NestJS API" as API
+participant "PostgreSQL" as DB
+participant "PayOS" as PayOS
+
+Customer -> UI: Tiến hành thanh toán
+UI -> API: POST /api/cart/validate
+API -> DB: Đọc giá, công thức và tồn
+API --> UI: Kết quả kiểm tra giỏ
+opt Giỏ hợp lệ
+  UI -> API: POST /api/orders (phiên JWT)
+  API -> API: Kiểm tra JWT và DTO
+  API -> DB: Transaction: kiểm tra lại, giữ kho và lưu đơn
+end
+alt Giỏ không hợp lệ hoặc tạo đơn bị từ chối
+  UI --> Customer: Báo lý do hoặc yêu cầu đăng nhập
+else Tạo đơn thành công
+  API --> UI: PENDING và hạn 120 giây
+  par Đồng bộ trạng thái và hạn
+    UI -> API: GET /api/checkout/status/:orderId
+    opt Đơn đủ điều kiện tạo link VietQR
+      API -> PayOS: Tạo link VietQR
+    end
+    API --> UI: Trạng thái, hạn và QR nếu có
+  else Tải chi tiết món
+    UI -> API: GET /api/orders/:id
+    API --> UI: Chi tiết đơn
+  end
+  alt Thẻ mô phỏng
+    UI -> API: POST /api/checkout (CARD, Idempotency-Key)
+    ref over API, DB: Khóa, xử lý thẻ và trả kết quả khi gửi lặp
+    API --> UI: PAID hoặc PAYMENT_FAILED (giữ kho)
+  else VietQR
+    UI --> Customer: Hiển thị mã VietQR
+    Customer -> PayOS: Chuyển khoản qua ngân hàng
+    ref over UI, PayOS: Webhook hoặc đối soát khi polling / hết hạn
+    UI -> API: Polling trạng thái đơn
+    API --> UI: Trả trạng thái hiện tại
+  end
+  alt Đã trả đủ
+    UI --> Customer: Hiển thị biên nhận
+  else Lỗi, chờ hoặc hết hạn
+    UI --> Customer: Hiển thị trạng thái và bước tiếp theo
+  end
+end
+@enduml
