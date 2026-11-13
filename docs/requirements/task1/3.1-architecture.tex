@@ -1,2 +1,17 @@
 \subsection{Task 3.1 -- Phương pháp và quyết định kiến trúc}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+Nhóm mô tả BrewLite theo C4 ở ba mức gồm ngữ cảnh, container và thành phần API.
+Web Next.js phục vụ giao diện mobile-first trên Vercel. API NestJS chạy trên
+Render theo kiến trúc modular monolith và truy cập PostgreSQL trên Supabase
+qua Prisma. CI và quy trình phát hành dùng migration được lưu trong Git.
+
+Khi tạo đơn, API giữ nguyên liệu theo công thức. Thanh toán CARD dùng cổng
+mô phỏng. Luồng VietQR dùng PayOS và đối soát trước khi giải phóng kho của đơn
+hết hạn. PostgreSQL lưu thay đổi đơn, kho và điểm trong một transaction khi
+xác nhận thanh toán. API kiểm tra vai trò và quyền sở hữu đơn, ghi log bằng
+NestJS và kiểm tra kết nối cơ sở dữ liệu qua \nolinkurl{/api/health}.
+
+Thư mục \nolinkurl{docs/architecture/} trong repo lưu sơ đồ, luồng xử lý,
+cấu hình theo môi trường và các đánh đổi trong tệp
+\nolinkurl{system-architecture.md}. Thư mục con \texttt{adr/} lưu sáu quyết
+định kiến trúc.
