@@ -1,2 +1,18 @@
 \subsection{Task 4.3 -- MVP Sprint 1}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+MVP Sprint 1 cho phép khách mở web trên điện thoại, xem menu và mở chi tiết món
+từ dữ liệu do API cung cấp. \texttt{GET} \nolinkurl{/api/products} trả danh sách
+món và hỗ trợ lọc theo danh mục. \texttt{GET} \nolinkurl{/api/products/:id} trả
+chi tiết theo mã món và trả HTTP 404 nếu mã không tồn tại.
+Hai endpoint nằm trong \nolinkurl{products.controller.ts} của module sản phẩm.
+
+Trang chủ Next.js hiển thị danh sách món qua \texttt{AllDrinksScroll}. Màn hình
+có trạng thái tải, thông báo khi danh sách rỗng và thông báo lỗi khi tải thất
+bại. Khi có dữ liệu, khách có thể chọn món để mở trang
+\nolinkurl{/product/[id]}. Prisma seed và các script tạo danh mục, nạp tồn demo
+chuẩn bị dữ liệu trên PostgreSQL local theo \nolinkurl{docker/README.md}.
+
+Ở bộ kiểm thử hiện tại, \nolinkurl{AllDrinksScroll.spec.ts} kiểm tra các trạng
+thái của menu. \nolinkurl{app.e2e-spec.ts} gọi API menu và chi tiết món trước
+khi đi tiếp đến luồng đặt đơn. Các lệnh chạy và dữ liệu kiểm thử được ghi tại
+\nolinkurl{tests/README.md}.

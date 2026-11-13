@@ -1,2 +1,31 @@
 \subsection{Task 5.1 -- Hoàn thiện MVP}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+Sprint 2 nối luồng xem menu với giỏ hàng, đặt đơn, thanh toán và nhận đồ tại
+quầy. Web triển khai các màn hình chi tiết món, giỏ, xác thực, checkout và lịch
+sử đơn. NestJS quản lý nghiệp vụ, trạng thái đơn và dữ liệu trong PostgreSQL.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Chọn món và cập nhật giỏ.} Khách chọn size, topping phù hợp và
+        số lượng. Giỏ cho sửa số lượng, xóa món và xem tổng tiền. Web hiển
+        thị tiền tạm tính và giảm giá. API kiểm tra lại giá, tùy chọn và tồn
+        khả dụng trước khi chấp nhận đơn.
+  \item \textbf{Xác thực và tạo đơn.} Khách đăng ký, xác minh email bằng OTP
+        và đăng nhập. API dùng JWT để bảo vệ thao tác đặt hàng và kiểm tra
+        quyền truy cập đơn. Đơn mới có trạng thái \texttt{PENDING}. API giữ
+        nguyên liệu theo công thức trong thời hạn 120 giây.
+  \item \textbf{Thanh toán.} Kênh CARD dùng cổng mô phỏng. Lựa chọn ví/QR
+        dùng VietQR qua PayOS khi có cấu hình. Bộ test có thể giả lập kết quả
+        PayOS bằng link và webhook ký bằng khóa thử. API dùng khóa giao
+        dịch và kiểm tra trạng thái đơn để tránh ghi nhận trùng. Thanh toán
+        thành công chuyển đơn sang \texttt{PAID} và tiêu thụ nguyên liệu đã giữ.
+  \item \textbf{Xác nhận và theo dõi.} Khách xem biên nhận, trạng thái hiện
+        tại và lịch sử đơn. Nhân viên xử lý các bước pha chế, sẵn sàng và hoàn
+        tất trên giao diện quản trị.
+  \item \textbf{Xử lý lỗi.} Web hiển thị lỗi nhập liệu, thiếu nguyên liệu hoặc
+        lỗi thanh toán. API kiểm tra DTO, quyền truy cập, trạng thái đơn và
+        dữ liệu giao dịch. Khi đơn QR hết hạn, API đối soát với PayOS trước
+        khi quyết định hủy và trả phần nguyên liệu đã giữ.
+\end{enumerate}
+
+Chi tiết luồng thành công và ngoại lệ nằm ở UC-01. Bộ kiểm thử liên quan được
+liệt kê ở Task 5.2 và \nolinkurl{tests/README.md}.
