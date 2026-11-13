@@ -1,0 +1,63 @@
+@startuml activity-checkout-overview
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+|Khách hàng|
+start
+:Bấm Tiến hành thanh toán;
+|Next.js UI|
+if (Có phiên đăng nhập?) then (Có)
+else (Chưa)
+  |Khách hàng|
+  :Đăng nhập rồi quay lại giỏ;
+  |Next.js UI|
+endif
+:Gửi giỏ để kiểm tra;
+|NestJS API|
+:Đọc giá, tùy chọn và tồn khả dụng;
+if (Giỏ hợp lệ và đủ nguyên liệu?) then (Có)
+  :Trong transaction, kiểm tra lại và giữ kho;
+  if (Tạo đơn thành công?) then (Có)
+    :Trả đơn PENDING và hạn 120 giây;
+  else (Không)
+    |Next.js UI|
+    :Báo lỗi để khách kiểm tra lại giỏ;
+    stop
+  endif
+  |Next.js UI|
+  :Mở trang checkout;
+  fork
+    :Tải trạng thái đơn và hạn thanh toán;
+  fork again
+    :Tải chi tiết món của đơn;
+  end fork
+  |Khách hàng|
+  :Chọn thẻ mô phỏng hoặc VietQR;
+  repeat
+    |NestJS API|
+    :Xử lý thẻ hoặc xác minh với PayOS;
+    |Next.js UI|
+    :Hiển thị trạng thái hiện tại;
+  repeat while (Thẻ lỗi và khách thử lại\nkhi còn hạn?) is (Có) not (Không)
+  |NestJS API|
+  if (Đã xác nhận thanh toán?) then (Có)
+    :Ghi PAID, tiêu thụ tồn, ghi điểm/voucher;
+    |Next.js UI|
+    :Mở biên nhận và xóa giỏ;
+  else (Chưa)
+    |NestJS API|
+    if (Hết hạn và đủ điều kiện hủy?) then (Có)
+      :Hủy đơn và trả lượng giữ;
+      |Next.js UI|
+      :Thông báo hết hạn;
+    else (Chưa)
+      |Next.js UI|
+      :Hiện lỗi hoặc chờ đối soát;\nđơn vẫn giữ nguyên liệu;
+    endif
+  endif
+else (Không)
+  |Next.js UI|
+  :Báo lý do để khách sửa giỏ;
+endif
+stop
+@enduml

@@ -1,2 +1,37 @@
 \subsection{Task 4.1 -- Thiết lập repository}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+Mã nguồn Assignment 2 được quản lý trong
+\href{https://github.com/PhucTruong11/brewlite-assignment2}{repository BrewLite}
+với nhánh tích hợp \texttt{main}. \nolinkurl{apps/web} chứa ứng dụng Next.js,
+\nolinkurl{apps/api} chứa NestJS và Prisma, còn \nolinkurl{docs} lưu hồ sơ dự án.
+Ở thư mục gốc, \nolinkurl{README.md} giới thiệu cấu trúc và cách kiểm thử,
+\nolinkurl{.env.example} ghi cấu hình mẫu và \nolinkurl{.gitignore} loại trừ
+các tệp môi trường cục bộ. Web và API có cấu hình mẫu riêng theo ứng dụng.
+
+\paragraph{Nhánh, pull request và commit}
+Thay đổi được thực hiện trên nhánh theo công việc và đưa vào \texttt{main}
+qua pull request. Ví dụ, nhánh \texttt{payments} được tích hợp qua
+\href{https://github.com/PhucTruong11/brewlite-assignment2/pull/1}{PR \#1}.
+Thông điệp commit nên nêu một thay đổi cụ thể, như
+\texttt{Fix API lockfile for npm ci}. Pull request ghi mục đích, phần bị ảnh hưởng
+và cách kiểm thử để người review có thể tái hiện.
+
+\paragraph{Product Backlog theo sprint}
+\begin{itemize}
+  \item \textbf{Sprint 1} thiết lập repo và hồ sơ kỹ thuật, xây API danh mục
+        và chi tiết món, hoàn thiện menu mobile-first, chuẩn bị dữ liệu demo
+        và CI cho web/API.
+  \item \textbf{Sprint 2} hoàn thiện tùy chọn món, giỏ, xác thực, đặt đơn,
+        thanh toán và theo dõi đơn. Tích hợp kiểm thử, phát hành production
+        và chuẩn bị bàn giao.
+\end{itemize}
+
+Danh sách trên ghi lại phạm vi của hai sprint. Báo cáo chưa có liên kết đến
+issue board của nhóm.
+
+\paragraph{Definition of Done}
+Một hạng mục hoàn tất khi tiêu chí chấp nhận được kiểm tra, thay đổi mã và tài
+liệu liên quan được review qua pull request, các kiểm tra CI đều đạt và có thể
+tìm lại minh chứng từ PR hoặc tài liệu truy vết. Với thay đổi production, cần
+ghi nhận kết quả smoke test và cách quay lại bản trước. Cấu hình bắt buộc
+các kiểm tra trước khi merge được đối chiếu ở Task 4.4.

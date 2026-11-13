@@ -1,0 +1,46 @@
+@startuml activity-order-reservation
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+|Khách hàng|
+start
+:Bấm Tiến hành thanh toán;
+|Next.js UI|
+:Gửi POST /api/cart/validate;
+|PostgreSQL|
+fork
+  :Đọc món và giá theo size;
+fork again
+  :Đọc topping;
+end fork
+:Đọc công thức và tồn khả dụng;
+|NestJS API|
+if (Giỏ hợp lệ?) then (Có)
+  |Next.js UI|
+  :Gửi POST /api/orders kèm phiên JWT;
+  |NestJS API|
+  :Kiểm tra phiên và dữ liệu;
+  if (Yêu cầu hợp lệ?) then (Có)
+    :Tính giá và ưu đãi phía máy chủ;
+    |PostgreSQL|
+    :Kiểm tra lại giá và tăng reserved\nnếu đủ tồn trong transaction;
+    if (Đủ tồn?) then (Có)
+      :Lưu đơn PENDING và dòng món; commit;
+      |Next.js UI|
+      :Mở checkout với hạn do API trả;
+    else (Không)
+      |PostgreSQL|
+      :Rollback transaction;
+      |Next.js UI|
+      :Báo thiếu nguyên liệu để sửa giỏ;
+    endif
+  else (Không)
+    |Next.js UI|
+    :Báo lỗi hoặc yêu cầu đăng nhập;
+  endif
+else (Không)
+  |Next.js UI|
+  :Báo giỏ không hợp lệ để khách sửa;
+endif
+stop
+@enduml

@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/modules/prisma/prisma.service.js';
 
@@ -14,13 +14,13 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let token: string;
-  let orderId: string;
   const userId = randomUUID();
   const productId = randomUUID();
   const ingredientId = randomUUID();
   const password = 'TestPass123!';
   const email = `e2e-${userId}@example.test`;
   const checksumKey = 'payos-e2e-checksum-key';
+  const cart = { items: [{ productId, size: 'S', qty: 1, toppings: [], lineTotal: 1 }] };
 
   beforeAll(async () => {
     // Chặn bài test có ghi dữ liệu chạy nhầm trên production.
@@ -77,12 +77,23 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
     expect(token).toBeTruthy();
   }, 30_000);
 
-  afterAll(async () => {
-    vi.unstubAllEnvs();
+  beforeEach(async () => {
+    await prisma.ingredient.update({
+      where: { id: ingredientId },
+      data: { onHand: 10, reserved: 0 },
+    });
+  });
+
+  afterEach(async () => {
     if (!prisma) return;
     await prisma.pointTransaction.deleteMany({ where: { userId } });
     await prisma.payment.deleteMany({ where: { order: { userId } } });
     await prisma.order.deleteMany({ where: { userId } });
+  });
+
+  afterAll(async () => {
+    vi.unstubAllEnvs();
+    if (!prisma) return;
     await prisma.recipe.deleteMany({ where: { productId } });
     await prisma.product.deleteMany({ where: { id: productId } });
     await prisma.ingredient.deleteMany({ where: { id: ingredientId } });
@@ -93,13 +104,6 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
   it('health kiểm tra API và PostgreSQL', async () => {
     const response = await request(app.getHttpServer()).get('/api/health').expect(200);
     expect(response.body).toEqual({ status: 'ok', database: 'ok' });
-  });
-
-  it('menu trả giá và stock theo công thức', async () => {
-    const response = await request(app.getHttpServer()).get('/api/products').expect(200);
-    const product = response.body.data.find((item: { id: string }) => item.id === productId);
-    expect(product.prices[0].price).toBe(29_000);
-    expect(product.stockBySize.S).toBe(2);
   });
 
   it('chặn đơn chưa đăng nhập và giỏ rỗng', async () => {
@@ -118,48 +122,44 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
     expect(await prisma.order.count({ where: { userId } })).toBe(0);
     const ingredient = await prisma.ingredient.findUniqueOrThrow({ where: { id: ingredientId } });
     expect(ingredient.reserved?.toNumber()).toBe(0);
-    await prisma.ingredient.update({ where: { id: ingredientId }, data: { onHand: new Prisma.Decimal(10) } });
   });
 
-  it('tạo đơn PENDING, tính lại giá và giữ nguyên liệu', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/api/orders').set('Authorization', `Bearer ${token}`)
-      .send({ items: [{ productId, size: 'S', qty: 1, toppings: [], lineTotal: 1 }] })
-      .expect(201);
-    orderId = response.body.data.id;
-    expect(orderId).toBeTruthy();
-    expect(response.body.data.status).toBe('PENDING');
-    expect(response.body.data.total).toBe(29_000);
-    expect(response.body.data.items[0].recipeSnapshot).toEqual([{ ingredientId, quantity: '5.000' }]);
-    const ingredient = await prisma.ingredient.findUniqueOrThrow({ where: { id: ingredientId } });
-    expect(ingredient.onHand?.toNumber()).toBe(10);
-    expect(ingredient.reserved?.toNumber()).toBe(5);
-  });
+  it('đi từ menu và đăng nhập qua kiểm tra giỏ đến xác nhận đơn CARD trong cùng một phiên', async () => {
+    const session = request.agent(app.getHttpServer());
+    const menu = await session.get('/api/products').expect(200);
+    const product = menu.body.data.find((item: { id: string }) => item.id === productId);
+    expect(product.prices[0].price).toBe(29_000);
+    expect(product.stockBySize.S).toBe(2);
 
-  it('checkout yêu cầu Idempotency-Key', async () => {
-    await request(app.getHttpServer())
-      .post('/api/checkout').set('Authorization', `Bearer ${token}`)
+    const productDetail = await session.get(`/api/products/${product.id}`).expect(200);
+    expect(productDetail.body.data.id).toBe(productId);
+    await session.post('/api/auth/login').send({ email, password }).expect(200);
+    const validation = await session.post('/api/cart/validate').send(cart).expect(201);
+    expect(validation.body).toMatchObject({ available: true, subtotal: 29_000 });
+
+    const created = await session.post('/api/orders').send(cart).expect(201);
+    const orderId = created.body.data.id as string;
+    expect(created.body.data).toMatchObject({ status: 'PENDING', total: 29_000 });
+    expect(created.body.data.items[0].recipeSnapshot).toEqual([{ ingredientId, quantity: '5.000' }]);
+    const held = await prisma.ingredient.findUniqueOrThrow({ where: { id: ingredientId } });
+    expect(held.onHand?.toNumber()).toBe(10);
+    expect(held.reserved?.toNumber()).toBe(5);
+
+    await session.post('/api/checkout')
       .send({ orderId, method: 'CARD' }).expect(400);
-  });
-
-  it('thanh toán CARD, xác nhận đơn và không trừ kho hai lần', async () => {
     const key = randomUUID();
-    const first = await request(app.getHttpServer())
-      .post('/api/checkout').set('Authorization', `Bearer ${token}`)
+    const first = await session.post('/api/checkout')
       .set('Idempotency-Key', key).send({ orderId, method: 'CARD' }).expect(201);
     expect(first.body.success).toBe(true);
     expect(first.body.payment.status).toBe('SUCCESS');
-    const repeated = await request(app.getHttpServer())
-      .post('/api/checkout').set('Authorization', `Bearer ${token}`)
+    const repeated = await session.post('/api/checkout')
       .set('Idempotency-Key', key).send({ orderId, method: 'CARD' }).expect(201);
     expect(repeated.body.isDuplicate).toBe(true);
 
-    const detail = await request(app.getHttpServer())
-      .get(`/api/orders/${orderId}`).set('Authorization', `Bearer ${token}`).expect(200);
+    const detail = await session.get(`/api/orders/${orderId}`).expect(200);
     expect(detail.body.data.status).toBe('PAID');
     expect(detail.body.data.payments).toHaveLength(1);
-    const history = await request(app.getHttpServer())
-      .get('/api/orders/me').set('Authorization', `Bearer ${token}`).expect(200);
+    const history = await session.get('/api/orders/me').expect(200);
     expect(history.body.data.some((order: { id: string }) => order.id === orderId)).toBe(true);
     const ingredient = await prisma.ingredient.findUniqueOrThrow({ where: { id: ingredientId } });
     expect(ingredient.onHand?.toNumber()).toBe(5);
@@ -182,7 +182,7 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
       .expect(200);
     expect(status.body.status).toBe('CANCELLED');
     const ingredient = await prisma.ingredient.findUniqueOrThrow({ where: { id: ingredientId } });
-    expect(ingredient.onHand?.toNumber()).toBe(5);
+    expect(ingredient.onHand?.toNumber()).toBe(10);
     expect(ingredient.reserved?.toNumber()).toBe(0);
   });
 
@@ -236,7 +236,7 @@ describe('Menu → tạo đơn → thanh toán → xác nhận (e2e)', () => {
       expect(paid.body.payments).toHaveLength(1);
       expect(paid.body.payments[0]).toMatchObject({ amount: 29_000, method: 'EWALLET', status: 'SUCCESS' });
       const ingredient = await prisma.ingredient.findUniqueOrThrow({ where: { id: ingredientId } });
-      expect(ingredient.onHand?.toNumber()).toBe(0);
+      expect(ingredient.onHand?.toNumber()).toBe(5);
       expect(ingredient.reserved?.toNumber()).toBe(0);
       expect(await prisma.pointTransaction.count({ where: { orderId: payosOrderId } })).toBe(1);
     } finally {

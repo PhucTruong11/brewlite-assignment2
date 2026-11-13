@@ -1,2 +1,24 @@
 \subsection{Task 5.2 -- Tích hợp và kiểm thử}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+GitHub Actions chạy lint, unit test và build cho web và API. Job tích hợp dùng
+PostgreSQL 16 riêng, chạy Prisma migration trước khi kiểm thử.
+
+\begin{itemize}
+  \item \textbf{Unit test} kiểm tra xác thực, tính giá, khuyến mãi, điểm thưởng,
+        chuyển trạng thái đơn và giỏ hàng. Các ca phía web còn kiểm tra trạng
+        thái tải, danh sách rỗng và lỗi của menu.
+  \item \textbf{Integration test} gọi API tạo đơn và thanh toán trên DB thử nghiệm.
+        Các ca bao gồm tranh chấp nguyên liệu, quyền sở hữu đơn, thử lại bằng
+        khóa giao dịch, hết hạn trả kho và đối soát PayOS.
+  \item \textbf{E2E qua API} đi từ menu và chi tiết món đến đăng nhập, kiểm tra
+        giỏ, tạo đơn, thanh toán CARD mô phỏng và xác nhận đơn \texttt{PAID}
+        trong lịch sử. Ca VietQR riêng dùng link giả lập và webhook có chữ ký thử.
+  \item \textbf{Tái tạo local} dùng \nolinkurl{docker-compose.yml} cho web, API và
+        PostgreSQL. Prisma migration tạo schema. Seed và hai lệnh tạo danh mục,
+        nạp tồn demo chuẩn bị dữ liệu trên DB local trống.
+  \item \textbf{Health check} tại \nolinkurl{/api/health} kiểm tra kết nối PostgreSQL.
+        Sau khi triển khai, smoke test cũng gọi endpoint này qua proxy của web.
+\end{itemize}
+
+Danh sách ca, lệnh chạy và các bước nghiệm thu trình duyệt nằm trong
+\nolinkurl{tests/README.md}.

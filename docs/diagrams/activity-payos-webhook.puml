@@ -1,0 +1,33 @@
+@startuml activity-payos-webhook
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+|Next.js UI|
+start
+:Hỏi trạng thái đơn;
+|NestJS API|
+:Tạo hoặc đọc link PayOS của đơn;
+|Next.js UI|
+:Hiển thị QR khi lấy được link;
+|Khách hàng|
+:Quét QR và chuyển khoản;
+|NestJS API|
+if (Tín hiệu đang xử lý là webhook?) then (Có)
+  :Xác minh chữ ký trong payload\nvà đối chiếu giao dịch với đơn;
+else (Không)
+  :Polling hoặc tác vụ hết hạn\nđối soát link qua PayOS;
+endif
+if (Đã nhận đủ tiền và đơn còn giữ kho?) then (Có)
+  :Ghi PAID và tiêu thụ tồn\nmột lần trong transaction;
+else (Không)
+  if (Tác vụ hết hạn xác nhận link đã đóng
+và chưa nhận tiền?) then (Có)
+    :Hủy đơn và trả lượng giữ;
+  else (Không)
+    :Giữ trạng thái hoặc báo cần đối soát;
+  endif
+endif
+|Next.js UI|
+:Đọc trạng thái và hiển thị kết quả;
+stop
+@enduml

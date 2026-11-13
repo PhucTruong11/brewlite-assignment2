@@ -1,2 +1,40 @@
 \subsection{Task 5.4 -- Triển khai và bàn giao}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+\begin{itemize}
+  \item \textbf{Mã nguồn trên GitHub}
+        \url{https://github.com/PhucTruong11/brewlite-assignment2}.
+  \item \textbf{Web production}
+        \url{https://brewlite-frontend.vercel.app/}.
+  \item \textbf{API production}
+        \url{https://brewlite-api-omni.onrender.com/api}.
+  \item \textbf{Health check trực tiếp}
+        \url{https://brewlite-api-omni.onrender.com/api/health}.
+  \item \textbf{Health check qua web}
+        \url{https://brewlite-frontend.vercel.app/api/health}.
+\end{itemize}
+
+Kiểm tra ngày 13/11/2026 ghi nhận HTTP 200 ở trang web, API health, API
+danh sách món và health check qua proxy web.
+
+Web Next.js chạy trên Vercel và gọi API NestJS trên Render qua proxy cùng
+origin. Render kết nối PostgreSQL Supabase qua TLS bằng thông tin xác thực.
+Trình duyệt truy cập dữ liệu qua API. Cấu hình production và bí mật nằm trong
+các môi trường của Render, Vercel và GitHub Actions. Repository cung cấp tệp
+mẫu để chỉ ra tên biến cần cấu hình. Log CD dùng để đối chiếu kết quả migration,
+deploy và smoke test.
+
+\paragraph{Hướng dẫn tái tạo và demo}
+Người nghiệm thu có thể clone repository, dùng \nolinkurl{README.md} để xem
+lệnh test và build, dùng \nolinkurl{docker/README.md} để khởi động web, API và
+PostgreSQL local, và dùng \nolinkurl{docs/deployment.md} để xem quy trình
+release và rollback. Kịch bản demo đi từ menu đến chọn size/topping, kiểm
+tra giỏ, đăng nhập, tạo đơn, thanh toán CARD mô phỏng, mở biên nhận và kiểm
+tra lịch sử đơn. Có thể trình bày thêm luồng VietQR khi kênh PayOS đã cấu hình.
+
+\paragraph{Minh chứng bàn giao}
+Phiên bản production đối chiếu được theo commit \texttt{55e5bbe} và
+\href{https://github.com/PhucTruong11/brewlite-assignment2/actions/runs/43011669621}{log phát hành}.
+Tag phiên bản và release notes chưa thấy trên GitHub. Link video hoặc biên
+bản demo trực tiếp, Sprint Review và Sprint Retrospective cần đính kèm khi
+nộp nếu nhóm đã có các tài liệu này. Cấu hình giới hạn mạng của Supabase
+cần được xác nhận từ dashboard dự án.

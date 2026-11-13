@@ -74,7 +74,7 @@ Test API thủ công trong `tests/` chỉ gửi đến URL được chọn trong
 ## Trạng thái Assignment 2
 
 - **Đã sắp cấu trúc:** `apps/web`, `apps/api`, `docs`, `tests`, `.github/workflows`, Dockerfile/Compose và Prisma migration được sao chép; CI đã cập nhật đường dẫn mới.
-- **Task 1:** Bối cảnh/phạm vi và SRS rút gọn đã được viết tại `docs/requirements/`, có bản LaTeX cho Task 1.1–1.2. Task 1.3 còn cần hoàn thiện đặc tả use-case trọng tâm; các sơ đồ Task 2, deployment diagram Task 3, ADR được nhóm duyệt và ma trận truy vết vẫn cần hoàn thiện.
+- **Task 1–2:** Xem [đặc tả và báo cáo LaTeX](docs/requirements/README.md), [sơ đồ UML](docs/diagrams/README.md) và [ma trận truy vết](docs/traceability-matrix.md). Ma trận ghi các test hiện có và tiêu chí còn cần minh chứng.
 - **Task 4–5:** Workflow CI và CD, E2E API với DB test riêng và `GET /api/health` đã có trong mã nguồn. CD tự chạy sau mỗi lần merge/push vào `main`, đồng thời hỗ trợ tag `v*` và chạy thủ công. CI phải pass trước khi chạy migration và deploy. Các secrets nằm trong environment `production`; xem [hướng dẫn deploy](docs/deployment.md) để cấu hình và theo dõi release. Branch protection, release notes, Sprint Review/Retrospective và video demo vẫn cần nhóm thực hiện trên GitHub/tài liệu.
 
 ## Git và bàn giao

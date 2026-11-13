@@ -1,9 +1,47 @@
 # Ma trận truy vết Assignment 2
 
-Điền mã FR/NFR sau khi SRS được nhóm duyệt. Mỗi hàng phải trỏ tới use-case, sơ đồ, code và test có thật; không dùng một dấu tích chung thay cho minh chứng.
+Các mã yêu cầu và tiêu chí chấp nhận nằm trong [SRS](requirements/task1/1.2-requirements.tex). Bảng ghi minh chứng có trong repository. Một bài test chỉ là minh chứng cho các hành vi được nêu ở dòng tương ứng. Kết quả đo và nghiệm thu cần được ghi kèm báo cáo hoặc liên kết đến lần chạy.
 
-| Mã yêu cầu | Use-case/User Story | Thiết kế/Sơ đồ | Code/API | Test | Trạng thái |
-| --- | --- | --- | --- | --- | --- |
-| FR-01 | Chờ đặc tả trong `requirements/srs.md` | Chờ sơ đồ nguồn và bản xuất | Chờ đối chiếu code | Chờ ID test | Chưa truy vết |
+## Yêu cầu chức năng
 
-Thay hàng ví dụ bằng danh sách FR/NFR thực tế trước khi nộp.
+| Mã | Hành vi | Thiết kế | Mã nguồn / API | Minh chứng và tình trạng |
+| --- | --- | --- | --- | --- |
+| FR-01 | Menu | [activity-checkout-overview](diagrams/activity-checkout-overview.puml) | [products.controller.ts](../apps/api/src/modules/products/products.controller.ts) · `GET /api/products` | [app.e2e-spec.ts](../apps/api/test/app.e2e-spec.ts). API menu có test. |
+| FR-02 | Chi tiết món, size, topping | [class-domain](diagrams/class-domain.puml) | [products.service.ts](../apps/api/src/modules/products/products.service.ts) · `GET /api/products/:id` | [order-payment.integration-spec.ts](../apps/api/test/order-payment.integration-spec.ts). Có test chi tiết và tồn. |
+| FR-03 | Giỏ hàng | [activity-checkout-overview](diagrams/activity-checkout-overview.puml) | [cart.store.ts](../apps/web/src/stores/cart.store.ts) | [cart.store.spec.ts](../apps/web/src/stores/cart.store.spec.ts). Có test store. |
+| FR-04 | Kiểm tra giỏ và nguyên liệu | [activity-order-reservation](diagrams/activity-order-reservation.puml) | [cart.controller.ts](../apps/api/src/modules/inventory/cart.controller.ts) · `POST /api/cart/validate` | [order-payment.integration-spec.ts](../apps/api/test/order-payment.integration-spec.ts). Có test API. |
+| FR-05 | Đăng ký, xác minh email | [class-domain](diagrams/class-domain.puml) | [auth.service.ts](../apps/api/src/modules/auth/auth.service.ts) · `POST /api/auth/register` | [auth.service.spec.ts](../apps/api/src/modules/auth/auth.service.spec.ts). Có test gửi OTP. |
+| FR-06 | Đăng nhập, phiên, hồ sơ | [sequence-checkout-overview](diagrams/sequence-checkout-overview.puml) | [jwt.strategy.ts](../apps/api/src/modules/auth/strategies/jwt.strategy.ts) · `POST /api/auth/login` | [auth.service.spec.ts](../apps/api/src/modules/auth/auth.service.spec.ts). Có test đăng nhập. |
+| FR-07 | Đặt lại mật khẩu | [class-domain](diagrams/class-domain.puml) | [auth.service.ts](../apps/api/src/modules/auth/auth.service.ts) · `POST /api/auth/forgot-password` | [auth.service.spec.ts](../apps/api/src/modules/auth/auth.service.spec.ts). Có test OTP đặt lại. |
+| FR-08 | Tạo đơn và giữ kho 120 giây | [sequence-order-reservation](diagrams/sequence-order-reservation.puml) | [orders.service.ts](../apps/api/src/modules/orders/orders.service.ts) · `POST /api/orders` | [order-payment.integration-spec.ts](../apps/api/test/order-payment.integration-spec.ts). Có test tranh tồn. |
+| FR-09 | Thanh toán thẻ và VietQR | [sequence-idempotency](diagrams/sequence-idempotency.puml), [sequence-payos-webhook](diagrams/sequence-payos-webhook.puml) | [checkout.service.ts](../apps/api/src/modules/checkout/checkout.service.ts) · `POST /api/checkout` | [order-payment.integration-spec.ts](../apps/api/test/order-payment.integration-spec.ts), [payos-reconciliation.integration-spec.ts](../apps/api/test/payos-reconciliation.integration-spec.ts). Có test lỗi, retry, webhook và polling. |
+| FR-10 | Hết hạn, đối soát, nhả kho | [activity-payos-webhook](diagrams/activity-payos-webhook.puml), [sequence-checkout-overview](diagrams/sequence-checkout-overview.puml) | [checkout.service.ts](../apps/api/src/modules/checkout/checkout.service.ts) · `GET /api/checkout/status/:orderId` | [payos-reconciliation.integration-spec.ts](../apps/api/test/payos-reconciliation.integration-spec.ts), [order-payment.integration-spec.ts](../apps/api/test/order-payment.integration-spec.ts). Có test đã nhận đủ, chưa nhận, lỗi đối soát. |
+| FR-11 | Lịch sử, chi tiết và trạng thái | [class-domain](diagrams/class-domain.puml) | [orders.controller.ts](../apps/api/src/modules/orders/orders.controller.ts) · `GET /api/orders/me` | [orders.service.spec.ts](../apps/api/src/modules/orders/orders.service.spec.ts), [order-payment.integration-spec.ts](../apps/api/test/order-payment.integration-spec.ts). Có test quyền sở hữu. |
+| FR-12 | Cập nhật trạng thái đơn | [class-domain](diagrams/class-domain.puml) | [admin.controller.ts](../apps/api/src/modules/admin/admin.controller.ts) · `PATCH /api/admin/orders/:id/status` | [admin.service.spec.ts](../apps/api/src/modules/admin/admin.service.spec.ts), [orders-state.spec.ts](../apps/api/src/modules/orders/orders-state.spec.ts). Có test chuyển trạng thái. |
+| FR-13 | Khuyến mãi và voucher | [class-domain](diagrams/class-domain.puml) | [promotions.service.ts](../apps/api/src/modules/promotions/promotions.service.ts) · `POST /api/checkout/apply-voucher` | [promotions.service.spec.ts](../apps/api/src/modules/promotions/promotions.service.spec.ts). Có test quy tắc giảm giá. |
+| FR-14 | Điểm thưởng, đổi voucher | [class-domain](diagrams/class-domain.puml), [sequence-idempotency](diagrams/sequence-idempotency.puml) | [rewards.service.ts](../apps/api/src/modules/rewards/rewards.service.ts) | [rewards.service.spec.ts](../apps/api/src/modules/rewards/rewards.service.spec.ts), [payos-reconciliation.integration-spec.ts](../apps/api/test/payos-reconciliation.integration-spec.ts). Có test voucher và cộng điểm một lần. |
+| FR-15 | Nguyên liệu và công thức | [class-domain](diagrams/class-domain.puml), [activity-order-reservation](diagrams/activity-order-reservation.puml) | [inventory.service.ts](../apps/api/src/modules/inventory/inventory.service.ts) | [order-payment.integration-spec.ts](../apps/api/test/order-payment.integration-spec.ts), [admin.service.spec.ts](../apps/api/src/modules/admin/admin.service.spec.ts). Có test tồn; cần demo thao tác sửa công thức. |
+| FR-16 | Sản phẩm và khuyến mãi (ADMIN) | [class-domain](diagrams/class-domain.puml) | [admin.controller.ts](../apps/api/src/modules/admin/admin.controller.ts) | [app.e2e-spec.ts](../apps/api/test/app.e2e-spec.ts). Có test đọc menu; cần demo bật/tắt món và quản trị khuyến mãi. |
+
+## UC-01 và tiêu chí chấp nhận
+
+| Tiêu chí | Yêu cầu | Sơ đồ chi tiết | Minh chứng trong repo |
+| --- | --- | --- | --- |
+| UC01-AC01 đến AC03 | FR-03, FR-04, FR-06, FR-08, FR-13, NFR-02 | [sequence-order-reservation](diagrams/sequence-order-reservation.puml) | [API E2E](../apps/api/test/app.e2e-spec.ts), [tạo đơn và tranh tồn](../apps/api/test/order-payment.integration-spec.ts), [voucher và giá do máy chủ tính](../apps/api/src/modules/orders/orders.service.spec.ts) |
+| UC01-AC04, AC06 | FR-09, FR-14, NFR-03 | [sequence-idempotency](diagrams/sequence-idempotency.puml), [sequence-payos-webhook](diagrams/sequence-payos-webhook.puml) | [Lượt thẻ lỗi, gửi lặp và thử lại](../apps/api/test/order-payment.integration-spec.ts), [webhook và polling đồng thời](../apps/api/test/payos-reconciliation.integration-spec.ts) |
+| UC01-AC05, AC07 | FR-09, FR-10, NFR-03 | [sequence-payos-webhook](diagrams/sequence-payos-webhook.puml) | [Webhook hợp lệ](../apps/api/test/app.e2e-spec.ts), [đã trả đủ, trả thiếu, hết hạn và PayOS không phản hồi](../apps/api/test/payos-reconciliation.integration-spec.ts) |
+| UC01-AC08 | FR-04, FR-08, FR-10 | [use-case UC-01](diagrams/uc01-order-checkout.puml) | [Luồng tạo lại trên checkout](../apps/web/src/app/checkout/page.tsx). Cần minh chứng E2E trình duyệt cho cả lượt hết hạn và tạo lại. |
+| UC01-AC09 | FR-09, FR-11, NFR-02 | [sequence-checkout-overview](diagrams/sequence-checkout-overview.puml) | [Quyền xem và thanh toán đơn](../apps/api/test/order-payment.integration-spec.ts), [mã hiển thị biên nhận](../apps/web/src/app/checkout/page.tsx). [Smoke test Chromium](../tests/README.md#nghiệm-thu-qua-trình-duyệt) đã xác nhận hóa đơn và chi tiết đơn CARD trên stack local. |
+
+## Yêu cầu phi chức năng
+
+| Mã | Tiêu chí | Mã nguồn / minh chứng hiện có | Tình trạng |
+| --- | --- | --- | --- |
+| NFR-01 | 100 phiên, p95 đọc 2 giây và ghi 3 giây | [Ngưỡng và cách đo](requirements/task1/1.2-requirements.tex) | Chưa có báo cáo đo tải kèm cấu hình, số mẫu và p95. |
+| NFR-02 | Bảo mật, xác thực và quyền truy cập | [JWT strategy](../apps/api/src/modules/auth/strategies/jwt.strategy.ts), [test quyền sở hữu](../apps/api/test/order-payment.integration-spec.ts) | Có test xác thực và quyền trên đơn. Các tiêu chí bảo mật còn lại cần minh chứng riêng. |
+| NFR-03 | Toàn vẹn dữ liệu, đồng thời và idempotency | [Transaction thanh toán](../apps/api/src/modules/checkout/checkout.service.ts), [integration test](../apps/api/test/order-payment.integration-spec.ts), [test đối soát](../apps/api/test/payos-reconciliation.integration-spec.ts) | Có test tranh tồn, thanh toán lặp, đối soát và hết hạn. |
+| NFR-04 | Khả dụng mục tiêu 99% mỗi tháng, kiểm tra tình trạng dịch vụ | [Quy trình triển khai](deployment.md), [health E2E](../apps/api/test/app.e2e-spec.ts), [CD smoke test](../.github/workflows/cd.yml) | Có health check và cấu hình smoke test. Chưa có số đo uptime theo tháng. |
+| NFR-05 | Khả năng mở rộng | [Cấu hình triển khai](deployment.md), [test tranh tồn](../apps/api/test/order-payment.integration-spec.ts) | Có test cạnh tranh trên DB. Chưa có kết quả đo tải hoặc thử nhiều instance. |
+| NFR-06 | Luồng chính trên màn hình nhỏ và khả năng tiếp cận | [Giỏ hàng](../apps/web/src/components/cart/CartContent.tsx), [checkout](../apps/web/src/app/checkout/page.tsx) | Có mã giao diện. Chưa có báo cáo nghiệm thu trên màn hình 360 CSS px, bàn phím và công cụ hỗ trợ. |
+| NFR-07 | Kiểm thử và khả năng triển khai | [CI](../.github/workflows/ci.yml), [CD](../.github/workflows/cd.yml), [hướng dẫn triển khai](deployment.md) | Có cấu hình workflow. Đính kèm lần chạy của commit nộp bài để làm minh chứng. |
+| NFR-08 | Sao lưu và khôi phục | [Hướng dẫn sao lưu trước migration và rollback](deployment.md) | Có quy trình sao lưu trước khi áp migration. Chưa có báo cáo diễn tập phục hồi được lưu trong repo. |

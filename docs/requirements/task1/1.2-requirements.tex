@@ -1,7 +1,7 @@
 \subsection{Task 1.2 -- Yêu cầu chức năng và phi chức năng}
 Tài liệu SRS rút gọn này chuyển từ bản thảo \texttt{task1\_2.docx} của nhóm. Mỗi yêu cầu có mã định danh, mức ưu tiên MoSCoW và tiêu chí chấp nhận (AC) để truy vết sang thiết kế và kiểm thử. Đây là yêu cầu cần nghiệm thu, không phải tuyên bố tất cả đã được kiểm chứng.
 \textbf{Quy ước ưu tiên:} Must = bắt buộc; Should = nên có; Could = có thể có; Won\textquotesingle t = ngoài phạm vi phiên bản này.
-\textbf{Quy tắc nghiệp vụ:} Máy chủ tính lại giá, quyền và nhu cầu nguyên liệu toàn giỏ. Bước kiểm tra giỏ chỉ đọc dữ liệu. Máy chủ giữ nguyên liệu trong transaction khi tạo đơn hợp lệ và tiêu thụ khi thanh toán thành công. Đơn \texttt{PENDING} có hạn hai phút. Hết hạn, máy chủ giải phóng nguyên liệu. Thanh toán thẻ dùng cổng mô phỏng. VietQR qua PayOS yêu cầu webhook có chữ ký hợp lệ và số tiền khớp đơn.
+\textbf{Quy tắc nghiệp vụ:} Máy chủ tính lại giá, quyền và nhu cầu nguyên liệu toàn giỏ. Bước kiểm tra giỏ chỉ đọc dữ liệu. Máy chủ giữ nguyên liệu trong transaction khi tạo đơn hợp lệ và tiêu thụ khi thanh toán thành công. Đơn \texttt{PENDING} có hạn hai phút. Khi hết hạn, máy chủ kiểm tra điều kiện hủy trước khi giải phóng nguyên liệu. Thanh toán thẻ dùng cổng mô phỏng. VietQR được ghi nhận sau khi API xác minh webhook hợp lệ hoặc đối soát trực tiếp với PayOS.
 \subsubsection{Yêu cầu chức năng}
 \paragraph{FR-01 -- Xem danh sách menu}
 \textbf{Ưu tiên:} Must.\\
@@ -63,7 +63,7 @@ Tài liệu SRS rút gọn này chuyển từ bản thảo \texttt{task1\_2.docx
 \paragraph{FR-08 -- Tạo đơn hàng}
 \textbf{Ưu tiên:} Must.\\
 \textbf{Mô tả:} Khách đã đăng nhập gửi giỏ hợp lệ để tạo đơn chờ thanh toán.\\
-\noindent\texttt{AC-FR08.1}: API từ chối khách chưa đăng nhập, giỏ rỗng, số lượng không hợp lệ, món/size/topping không hợp lệ hoặc nguyên liệu không đủ; các trường hợp bị từ chối không để lại đơn dở dang.\par
+\noindent\texttt{AC-FR08.1}: API từ chối khách chưa đăng nhập, giỏ rỗng, số lượng không hợp lệ, món hoặc tùy chọn sai, hay thiếu nguyên liệu. Yêu cầu bị từ chối không để lại đơn dở dang.\par
 \noindent\texttt{AC-FR08.2}: Máy chủ tải lại giá và quy tắc khuyến mãi từ dữ liệu tin cậy, tự tính tổng tiền; chỉnh sửa giá/tổng tiền phía trình duyệt không làm thay đổi số tiền được ghi nhận.\par
 \noindent\texttt{AC-FR08.3}: Khi hợp lệ, đơn và các dòng món được lưu cùng việc giữ nguyên liệu trong một transaction; phản hồi có orderId, tổng tiền, trạng thái PENDING và thời điểm hết hạn giữ nguyên liệu.\par
 \noindent\texttt{AC-FR08.4}: Lỗi ở bất kỳ bước ghi nào làm rollback các thay đổi của transaction; không tạo đơn một phần hoặc giữ nguyên liệu một phần.\par
@@ -71,21 +71,25 @@ Tài liệu SRS rút gọn này chuyển từ bản thảo \texttt{task1\_2.docx
 
 \paragraph{FR-09 -- Thanh toán đơn hàng}
 \textbf{Ưu tiên:} Must.\\
-\textbf{Mô tả:} Khách thanh toán đơn thuộc sở hữu của mình qua mô hình thanh toán được cấu hình; trong phạm vi hiện tại, giao dịch có thể là mô phỏng.\\
+\textbf{Mô tả:} Khách thanh toán đơn thuộc sở hữu của mình bằng thẻ mô phỏng hoặc VietQR qua PayOS khi đã cấu hình.\\
 \noindent\texttt{AC-FR09.1}: Checkout hiển thị mã đơn, số tiền lấy từ máy chủ, phương thức được hỗ trợ và thời gian còn lại nếu đơn có thời hạn.\par
-\noindent\texttt{AC-FR09.2}: API thanh toán yêu cầu xác thực, kiểm tra quyền sở hữu đơn, trạng thái đơn, thời hạn và Idempotency-Key; yêu cầu thiếu khóa hoặc gửi đơn của người khác bị từ chối.\par
+\noindent\texttt{AC-FR09.2}: API checkout yêu cầu xác thực và kiểm tra quyền sở hữu. Yêu cầu POST thanh toán phải có Idempotency-Key. API kiểm tra trạng thái và hạn trước khi xử lý lượt thanh toán mới.\par
 \noindent\texttt{AC-FR09.3}: Kết quả thành công chỉ ghi nhận một thanh toán thành công, chuyển đơn sang PAID, tiêu thụ nguyên liệu đã giữ và phát sinh quyền lợi điểm/voucher theo quy tắc.\par
 \noindent\texttt{AC-FR09.4}: Kết quả thất bại được lưu/hiển thị là thất bại, không trừ tồn thực và chỉ cho thử lại khi đơn còn hạn, trạng thái cho phép.\par
 \noindent\texttt{AC-FR09.5}: Gửi lại cùng thao tác với cùng idempotency key không tạo thanh toán, không tiêu thụ tồn và không cộng điểm lần thứ hai.\par
 \noindent\texttt{AC-FR09.6}: Thanh toán thành công hiển thị biên nhận gồm mã đơn, các dòng món, tổng tiền, phương thức và trạng thái.\par
 
+\noindent\texttt{AC-FR09.7}: VietQR được ghi nhận khi webhook có chữ ký hợp lệ và khớp giao dịch, hoặc khi API đối soát PayOS xác nhận link khớp đơn và đã nhận đủ tiền. Mở mã QR chỉ hiển thị thông tin thanh toán.\par
+
 \paragraph{FR-10 -- Hết hạn đơn chờ thanh toán và giải phóng nguyên liệu}
 \textbf{Ưu tiên:} Must.\\
-\textbf{Mô tả:} Hệ thống chấm dứt đơn chưa thanh toán đúng thời hạn và giải phóng phần nguyên liệu đang giữ.\\
+\textbf{Mô tả:} Hệ thống xử lý đơn hết hạn, xác minh giao dịch VietQR nếu có link và giải phóng nguyên liệu khi đủ điều kiện hủy.\\
 \noindent\texttt{AC-FR10.1}: Thời hạn giữ nguyên liệu cho đơn mới là 2 phút từ thời điểm tạo đơn, theo thời gian do máy chủ ghi nhận.\par
-\noindent\texttt{AC-FR10.2}: Sau khi hết hạn, thanh toán đơn đó bị từ chối; trạng thái đơn được chuyển theo quy tắc hết hạn và nguyên liệu được giải phóng đúng một lần.\par
+\noindent\texttt{AC-FR10.2}: Sau khi hết hạn, API chặn lượt thanh toán mới. Đơn chưa nhận tiền được hủy và trả kho đúng một lần. Nếu đã cấp link VietQR, chỉ hủy khi PayOS xác nhận link đã đóng và chưa nhận tiền.\par
 \noindent\texttt{AC-FR10.3}: Gọi lặp endpoint kiểm tra trạng thái hoặc tác vụ dọn đơn hết hạn không giải phóng nguyên liệu nhiều lần và không làm tồn khả dụng tăng sai.\par
 \noindent\texttt{AC-FR10.4}: Trước khi hết hạn, lỗi thanh toán không tự giải phóng nguyên liệu; khách có thể thử lại nếu đơn vẫn ở trạng thái cho phép.\par
+
+\noindent\texttt{AC-FR10.5}: Khi hết hạn mà PayOS xác nhận đã nhận đủ và đơn còn giữ kho, hệ thống hoàn tất đơn. Nếu PayOS báo nhận thiếu, dữ liệu không khớp hoặc chưa thể đối soát, hệ thống giữ nguyên trạng thái và lượng giữ để kiểm tra tiếp.\par
 
 \paragraph{FR-11 -- Lịch sử, chi tiết và trạng thái đơn của khách}
 \textbf{Ưu tiên:} Must.\\
@@ -123,8 +127,8 @@ Tài liệu SRS rút gọn này chuyển từ bản thảo \texttt{task1\_2.docx
 
 \paragraph{FR-15 -- Quản lý nguyên liệu và công thức}
 \textbf{Ưu tiên:} Should.\\
-\textbf{Mô tả:} ADMIN xem và cập nhật nguyên liệu, nhập kho và công thức định lượng sản phẩm/topping.\\
-\noindent\texttt{AC-FR15.1}: Chỉ ADMIN truy cập API đọc/ghi nguyên liệu và công thức.\par
+\textbf{Mô tả:} ADMIN xem và sửa nguyên liệu, nhập kho, quản lý định lượng cho món và topping.\\
+\noindent\texttt{AC-FR15.1}: Chỉ ADMIN có quyền xem và sửa nguyên liệu, công thức qua API quản trị.\par
 \noindent\texttt{AC-FR15.2}: Nguyên liệu có mã duy nhất, tên, đơn vị, trạng thái theo dõi tồn và các trường số lượng hợp lệ; mã trùng hoặc số lượng âm bị từ chối.\par
 \noindent\texttt{AC-FR15.3}: Nhập kho ghi tăng số lượng thực có và không ghi đè lượng đang giữ; thao tác không làm tồn âm hoặc mất dữ liệu do cập nhật đồng thời.\par
 \noindent\texttt{AC-FR15.4}: Công thức sản phẩm gắn với một product và size; công thức topping gắn với topping; mỗi định lượng lớn hơn 0 và tham chiếu nguyên liệu hợp lệ.\par
@@ -162,7 +166,7 @@ Các ngưỡng hiệu năng và vận hành là mục tiêu nghiệm thu đề x
 \textbf{Yêu cầu:} Giao dịch tạo đơn, giữ tồn, thanh toán, tiêu thụ tồn, voucher và điểm không được để lại trạng thái một phần.\\
 \noindent\texttt{AC-NFR03.1}: Kiểm thử nhiều đơn đồng thời với nhu cầu nguyên liệu vượt tồn không làm tồn khả dụng âm và không chấp nhận lượng bán vượt nguyên liệu có thể dùng.\par
 \noindent\texttt{AC-NFR03.2}: Khi lỗi xảy ra giữa một giao dịch tạo đơn/thanh toán, các thay đổi liên quan được rollback hoặc phục hồi theo cùng một trạng thái nhất quán.\par
-\noindent\texttt{AC-NFR03.3}: Gửi lại cùng idempotency key không tạo thêm payment, không trừ tồn hoặc cộng/đổi điểm lần nữa.\par
+\noindent\texttt{AC-NFR03.3}: Gửi lại cùng khóa không tạo thêm thanh toán, trừ thêm tồn hoặc ghi thêm điểm.\par
 \noindent\texttt{AC-NFR03.4}: Mọi chuyển trạng thái đơn không hợp lệ bị từ chối ở API, kể cả khi gửi request trực tiếp không qua giao diện.\par
 
 \paragraph{NFR-04 -- Khả dụng và phục hồi dịch vụ}
@@ -208,18 +212,22 @@ Hình dưới biểu diễn các nhóm chức năng và actor ở mức tổng q
 \begin{tikzpicture}[font=\small, actor/.style={draw,rounded corners,minimum width=3.0cm,minimum height=1.0cm,align=center}, action/.style={draw,ellipse,minimum width=5.8cm,minimum height=0.8cm,align=center}, >=stealth]
 \node[actor] (guest) at (0,5) {Khách vãng lai};
 \node[actor] (customer) at (0,2.7) {Khách hàng};
-\node[actor] (admin) at (0,-1.2) {Nhân viên / quản lý};
-\draw[rounded corners] (2.75,-1.75) rectangle (9.25,5.75);
+\node[actor] (admin) at (0,-2.4) {Nhân viên / quản lý};
+\node[actor,minimum width=2.0cm] (payos) at (10.7,0.2) {PayOS};
+\draw[rounded corners] (2.75,-2.95) rectangle (9.25,5.75);
 \node[anchor=south] at (6,5.75) {Hệ thống BrewLite};
 \node[action] (menu) at (6,5) {Xem menu và chi tiết món};
 \node[action] (cart) at (6,3.8) {Chọn tùy chọn và quản lý giỏ};
 \node[action] (auth) at (6,2.6) {Đăng ký và đăng nhập};
 \node[action] (order) at (6,1.4) {Kiểm tra giỏ và tạo đơn};
 \node[action] (payment) at (6,0.2) {Thanh toán và theo dõi đơn};
-\node[action] (manage) at (6,-1.2) {Xử lý đơn và quản lý nguyên liệu};
+\node[action] (rewards) at (6,-1.1) {Dùng voucher và đổi điểm};
+\node[action,text width=5.0cm] (manage) at (6,-2.4) {Xử lý đơn, quản lý món, nguyên liệu và khuyến mãi};
 \draw (guest) -- (menu); \draw (guest) -- (cart); \draw (guest) -- (auth);
 \draw (customer) -- (menu); \draw (customer) -- (cart); \draw (customer) -- (order); \draw (customer) -- (payment);
+\draw (customer) -- (rewards);
 \draw (admin) -- (manage);
+\draw (payos) -- (payment);
 \end{tikzpicture}
 \end{center}
 \textbf{Ràng buộc actor:} Xem menu và chuẩn bị giỏ không cần đăng nhập. Tạo đơn, thanh toán và xem lịch sử cần xác thực. Quản trị yêu cầu vai trò \texttt{ADMIN}. Hệ thống kết nối dịch vụ email và PayOS khi có cấu hình tương ứng.

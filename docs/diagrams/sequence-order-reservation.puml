@@ -1,0 +1,36 @@
+@startuml sequence-order-reservation
+!pragma layout smetana
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+actor "Khách hàng" as Customer
+participant "Next.js UI" as UI
+participant "NestJS API" as API
+participant "PostgreSQL" as DB
+
+Customer -> UI: Bấm Tiến hành thanh toán
+UI -> API: POST /api/cart/validate (items)
+API -> DB: Đọc giá, công thức và tồn khả dụng
+API --> UI: Kết quả kiểm tra, không ghi kho
+alt Giỏ không hợp lệ
+  UI --> Customer: Báo lý do để sửa giỏ
+else Giỏ hợp lệ
+  UI -> API: POST /api/orders (items, promoCode, phiên JWT)
+  API -> API: Xác thực JWT, validate DTO
+  alt Thiếu phiên hoặc dữ liệu sai
+    API --> UI: Lỗi xác thực hoặc dữ liệu
+  else Yêu cầu hợp lệ
+    API -> DB: Đọc giá, tồn và ưu đãi để tính tổng
+    API -> DB: BEGIN; kiểm tra lại giá và tùy chọn
+    API -> DB: UPDATE reserved với điều kiện đủ tồn
+    alt Thiếu tồn hoặc ghi lỗi
+      API -> DB: ROLLBACK
+      API --> UI: Trả lỗi, không tạo đơn dở dang
+    else Đủ tồn
+      API -> DB: Lưu đơn và dòng món; COMMIT
+      API --> UI: 201 (id, total, PENDING, reservationExpiresAt)
+      UI --> Customer: Mở checkout, đếm ngược theo hạn của API
+    end
+  end
+end
+@enduml

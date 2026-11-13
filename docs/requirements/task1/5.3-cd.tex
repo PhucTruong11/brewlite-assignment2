@@ -1,2 +1,29 @@
 \subsection{Task 5.3 -- Continuous Delivery/Deployment}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+Workflow \nolinkurl{.github/workflows/cd.yml} tự chạy khi có push vào
+\texttt{main}, bao gồm commit sau khi merge PR. Workflow cũng hỗ trợ tag
+\nolinkurl{v*} và chạy thủ công. Các bước phát hành chạy theo thứ tự sau.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Quality gate.} Gọi lại CI trên cùng commit để chạy lint,
+        unit test, build, kiểm thử tích hợp và E2E. Chỉ chuyển sang đóng gói
+        khi toàn bộ job kiểm tra đạt.
+  \item \textbf{Đóng gói.} Build hai Docker image web và API, gắn tag bằng
+        commit SHA và đẩy lên GitHub Container Registry.
+  \item \textbf{Kiểm tra đích và migration.} Dùng secrets từ GitHub
+        Environment \texttt{production}. Kiểm tra đích Render/Vercel và xác
+        nhận baseline migration cùng bản sao lưu. Sau đó chạy
+        \texttt{prisma migrate deploy} trên Supabase.
+  \item \textbf{Deploy và smoke test.} Render triển khai API từ SHA phát hành.
+        Vercel CLI triển khai web từ cùng checkout. Workflow kiểm tra
+        \nolinkurl{/api/health}, \nolinkurl{/api/products}, trang web HTTPS và
+        health endpoint qua proxy web. Image GHCR lưu bản đóng gói theo SHA
+        để truy vết.
+\end{enumerate}
+
+Nếu rollout lỗi sau khi đã cập nhật một ứng dụng, workflow thử khôi phục bản
+Vercel trước đó hoặc commit Render trước đó, tùy bước đã thành công. Rollback
+schema và dữ liệu PostgreSQL được xử lý riêng theo
+\nolinkurl{docs/deployment.md}.
+\href{https://github.com/PhucTruong11/brewlite-assignment2/actions/runs/43011669621}{Lượt phát hành của commit \texttt{55e5bbe}}
+ghi nhận CI, publish image, migration, deploy và smoke test đều đạt.

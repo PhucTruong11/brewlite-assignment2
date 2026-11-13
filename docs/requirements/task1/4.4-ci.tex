@@ -1,2 +1,25 @@
 \subsection{Task 4.4 -- Continuous Integration}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+Workflow \nolinkurl{.github/workflows/ci.yml} tự chạy khi mở hoặc cập nhật pull
+request vào \texttt{main}. Hai job \texttt{Build \& Check Backend} và
+\texttt{Build \& Check Frontend} dùng Node.js 22, cài phụ thuộc bằng
+\texttt{npm ci}, rồi lần lượt chạy lint, unit test và build. Backend tạo
+Prisma Client trước khi lint. Job \texttt{API integration and order E2E} dựng
+PostgreSQL 16 tạm, áp migration và chạy test tích hợp cùng E2E qua API.
+
+\paragraph{Minh chứng trên PR thanh toán}
+\begin{itemize}
+  \item \href{https://github.com/PhucTruong11/brewlite-assignment2/pull/1}{PR \#1}
+        tích hợp nhánh \texttt{payments} vào \texttt{main}.
+  \item \href{https://github.com/PhucTruong11/brewlite-assignment2/actions/runs/42744381085}{CI lượt \#6}
+        phát hiện lỗi ở bước \texttt{npm ci} của hai job dùng API, tại commit
+        \texttt{7438dd1}.
+  \item \href{https://github.com/PhucTruong11/brewlite-assignment2/actions/runs/42769688179}{CI lượt \#7}
+        đạt cả ba job sau khi cập nhật \nolinkurl{apps/api/package-lock.json}
+        ở commit \texttt{f5dcc2d}.
+\end{itemize}
+
+GitHub hiện báo \texttt{main} chưa được bảo vệ. Để đáp ứng tiêu chí chặn merge
+khi CI thất bại, cần bật branch protection hoặc ruleset trên \texttt{main} và
+đặt cả ba job trên làm required checks. Quality gate của workflow phát hành
+đã chặn bước triển khai nếu CI thất bại.

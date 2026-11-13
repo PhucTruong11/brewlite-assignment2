@@ -14,6 +14,8 @@ Khách cần biết món, giá theo size/topping và khả năng đáp ứng tr�
 | Nhân viên quầy | Nhận đơn đã thanh toán, cập nhật pha chế, sẵn sàng và hoàn tất. | Demo danh sách đơn và chuyển trạng thái. |
 | Quản lý cửa hàng | Kiểm soát nguyên liệu, công thức, khuyến mãi và doanh thu; tránh thanh toán lặp. | Đối soát tồn, giao dịch, quyền admin. |
 | Nhóm phát triển | Phân ranh frontend/API/DB, tích hợp và kiểm thử lặp lại. | Build/test CI, tài liệu triển khai, ma trận truy vết. |
+| Giảng viên / khách hàng nghiệm thu | Đánh giá MVP, tính nhất quán của yêu cầu, sơ đồ và kết quả kiểm thử. | Demo theo tiêu chí chấp nhận và đối chiếu ma trận truy vết. |
+| Đơn vị thanh toán (PayOS) | Nhận đúng mã đơn, số tiền và URL webhook; cung cấp trạng thái giao dịch để xác minh. | Kiểm thử webhook, đối soát link và xử lý tín hiệu lặp. |
 
 ## Mục tiêu và phạm vi
 

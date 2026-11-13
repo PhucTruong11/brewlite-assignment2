@@ -1,0 +1,36 @@
+@startuml sequence-idempotency
+!pragma layout smetana
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+actor "Khách hàng" as Customer
+participant "Next.js UI" as UI
+participant "NestJS API" as API
+participant "PostgreSQL" as DB
+
+Customer -> UI: Xác nhận thanh toán thẻ
+UI -> API: POST /api/checkout (CARD, Idempotency-Key)
+API -> API: Kiểm tra phiên, dữ liệu và quyền trên đơn
+API -> DB: Tra Payment.idempotencyKey
+alt Khóa đã gắn với Payment
+  API --> UI: Kết quả cũ nếu cùng đơn; từ chối nếu khác đơn
+else Chưa có Payment
+  API -> DB: BEGIN; khóa giao dịch theo key và khóa dòng đơn
+  API -> DB: Đọc lại Payment, trạng thái và hạn thanh toán
+  alt Yêu cầu đồng thời đã ghi Payment
+    API --> UI: Trả kết quả đã có, không xử lý lại
+  else Đơn còn hạn và có thể thanh toán
+    API -> API: Chạy cổng thẻ mô phỏng
+    alt Thành công
+      API -> DB: Ghi SUCCESS và PAID, tiêu thụ tồn, ghi quyền lợi
+    else Thất bại
+      API -> DB: Ghi FAILED và PAYMENT_FAILED, giữ tồn
+    end
+    API -> DB: COMMIT
+    API --> UI: Trả kết quả
+  else Đơn không thể thanh toán
+    API --> UI: Từ chối thao tác mới
+  end
+end
+UI --> Customer: Hiển thị trạng thái tương ứng
+@enduml

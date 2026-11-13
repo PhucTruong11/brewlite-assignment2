@@ -1,0 +1,44 @@
+@startuml sequence-payos-webhook
+!pragma layout smetana
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+actor "Khách hàng" as Customer
+participant "Next.js UI" as UI
+participant "NestJS API" as API
+participant "PostgreSQL" as DB
+participant "PayOS" as PayOS
+UI -> API: GET /api/checkout/status/:orderId
+API -> API: Kiểm tra quyền xem đơn
+opt Chưa có link hợp lệ
+  API -> PayOS: Tạo link theo số tiền trên đơn
+  PayOS --> API: Mã link và dữ liệu VietQR
+  API -> DB: Lưu link của đơn
+end
+API --> UI: QR và hạn thanh toán
+Customer -> PayOS: Chuyển khoản qua ngân hàng
+alt API xử lý webhook
+  PayOS -> API: POST /api/checkout/payos-webhook\nBody có data và signature
+  API -> API: Xác minh chữ ký và đối chiếu link, số tiền
+else API xử lý polling hoặc tác vụ hết hạn
+  API -> PayOS: Đọc trạng thái link
+  opt Hết hạn, link mở và chưa nhận tiền
+    API -> PayOS: Yêu cầu đóng link; kiểm tra kết quả
+  end
+  PayOS --> API: Trạng thái link và số tiền đã nhận
+end
+alt Đã nhận đủ và đơn còn giữ kho
+  API -> DB: Transaction: ghi SUCCESS và PAID, tiêu thụ tồn một lần
+else Tác vụ hết hạn xác nhận link đóng và chưa nhận tiền
+  API -> DB: Transaction: CANCELLED và trả lượng giữ
+else Chờ hoặc giao dịch cần đối soát
+  API -> API: Giữ đơn nếu chưa thể xác minh; từ chối webhook sai
+end
+note over API, DB
+  Webhook và polling có thể đến đồng thời.
+  Khóa dòng đơn và kiểm tra trạng thái ngăn ghi lặp.
+end note
+UI -> API: Polling trạng thái đơn
+API --> UI: Trạng thái và thông tin đối soát nếu có
+UI --> Customer: Hiện biên nhận hoặc trạng thái chờ / lỗi
+@enduml

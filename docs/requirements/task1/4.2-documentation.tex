@@ -1,2 +1,20 @@
 \subsection{Task 4.2 -- Quản lý tài liệu}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+Hồ sơ yêu cầu, mô hình hóa và kiến trúc được quản lý cùng mã nguồn trong
+\nolinkurl{docs/}. Báo cáo LaTeX dùng \nolinkurl{docs/requirements/task1/main.tex}
+để ghép các mục từ tệp con. Các tạo phẩm chi tiết được tổ chức như sau.
+
+\begin{itemize}
+  \item \textbf{Task 1} lưu bối cảnh và phạm vi, SRS và đặc tả use-case trong
+        \nolinkurl{docs/requirements/}.
+  \item \textbf{Task 2} lưu mã nguồn PlantUML và các bản xuất PNG/SVG của sơ đồ
+        trong \nolinkurl{docs/diagrams/}. Báo cáo tham chiếu đến bản xuất tương ứng.
+  \item \textbf{Task 3} lưu tài liệu kiến trúc và sáu ADR trong
+        \nolinkurl{docs/architecture/}. \nolinkurl{docs/deployment.md}
+        mô tả môi trường triển khai, migration và rollback.
+\end{itemize}
+
+Khi thay đổi yêu cầu, sơ đồ hoặc kiến trúc, pull request ghi lý do và cập nhật
+các tạo phẩm bị ảnh hưởng. Với sơ đồ, cập nhật cả nguồn và ảnh kết xuất trong
+cùng thay đổi. \nolinkurl{docs/traceability-matrix.md} liên kết mã yêu cầu với
+use-case hoặc user story, thiết kế, API và ca kiểm thử.

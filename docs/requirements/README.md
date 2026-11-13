@@ -1,10 +1,10 @@
-# Task 1 — Khai thác và đặc tả yêu cầu
+# Đặc tả và báo cáo Assignment 2
 
 - [Đề Assignment 2](assignment2-brief.pdf).
 - [Task 1.1 — Bối cảnh, stakeholder và phạm vi](context-and-scope.md).
-- [Task 1.2 — SRS rút gọn](srs.md), trình bày đầy đủ bằng [LaTeX](task1/main.tex).
-- Task 1.3 đang để bản nháp riêng tại [1.3-use-case.tex](task1/1.3-use-case.tex), chưa đưa vào báo cáo tổng hợp.
+- [Task 1.2 — SRS rút gọn](srs.md).
+- [Task 1.3 — Đặc tả UC-01](task1/1.3-use-case.tex).
+- [Task 2 — Sơ đồ mô hình hóa](../diagrams/README.md).
+- [Ma trận truy vết](../traceability-matrix.md).
 
-`task1/main.tex` là file LaTeX tổng hợp Task 1–5. Mỗi mục có một file con đặt tên theo số task và nội dung, ví dụ `1.1-stakeholder.tex`, `1.2-requirements.tex`. Hiện báo cáo chỉ đưa vào Task 1.1 và 1.2; các mục còn lại sẽ được bổ sung sau. Mã FR/NFR và AC được dùng để nối yêu cầu với test, mã nguồn và sơ đồ trong ma trận truy vết.
-
-Muốn lưu PDF riêng cho từng mục, mở `task1/1.1-stakeholder-pdf.tex` hoặc `task1/1.2-requirements-pdf.tex` trong trình biên tập LaTeX, biên dịch rồi dùng chức năng tải/xuất PDF của bản xem trước. Hai file này lần lượt chỉ nạp nội dung Task 1.1 hoặc Task 1.2; `task1/main.tex` vẫn biên dịch báo cáo tổng hợp.
+[main.tex](task1/main.tex) ghép các mục của báo cáo. Chạy XeLaTeX hai lượt từ thư mục `docs/requirements/task1` để cập nhật mục lục. Báo cáo dùng font Times New Roman. Hai file `1.1-stakeholder-pdf.tex` và `1.2-requirements-pdf.tex` dùng để xuất riêng từng mục.

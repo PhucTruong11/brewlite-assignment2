@@ -1,3 +1,4 @@
-# Task 3 - Kiến trúc
+# Task 3 — Kiến trúc
 
-Kiến trúc hiện có: `apps/web` (Next.js), `apps/api` (NestJS), Supabase PostgreSQL production và Prisma migrations. Triển khai web trên Vercel, API trên Render. Ghi quyết định quan trọng vào `adr/`; deployment diagram và mô tả môi trường production phải khớp URL và cấu hình thực tế trong `../deployment.md`.
+- **Task 3.1** · [Kiến trúc hệ thống BrewLite](system-architecture.md) và [sáu quyết định kiến trúc](system-architecture.md#5-các-quyết-định-kiến-trúc).
+- [Hướng dẫn triển khai](../deployment.md) · Môi trường production, migration, smoke test và rollback.
