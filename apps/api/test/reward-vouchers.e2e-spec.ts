@@ -15,6 +15,8 @@ describe('Admin quản lý voucher và khách đổi điểm', () => {
   const rewardCode = 'REWARD-' + randomUUID().slice(0, 8).toUpperCase();
   const publicCode = 'PUBLIC-' + randomUUID().slice(0, 8).toUpperCase();
   const lastVoucherCode = 'LAST-' + randomUUID().slice(0, 8).toUpperCase();
+  const productId = randomUUID();
+  const ingredientId = randomUUID();
   const baseForm = { discountType: 'FIXED_AMOUNT', discountValue: 10_000, minOrderValue: 30_000 };
   const route = '/api/admin/promotions';
   const api = () => request(app.getHttpServer());
@@ -22,6 +24,19 @@ describe('Admin quản lý voucher và khách đổi điểm', () => {
     secret: process.env.JWT_SECRET || 'super-secret-key',
   }).sign({ sub: id });
   const overview = () => api().get('/api/rewards').set('Authorization', bearer(customerId)).expect(200);
+  const adminList = () => api().get(route).set('Authorization', bearer(adminId)).expect(200);
+
+  async function createOrder(promoCode: string) {
+    const order = await api().post('/api/orders').set('Authorization', bearer(customerId))
+      .send({ promoCode, items: [{ productId, size: 'S', qty: 1, lineTotal: 1 }] }).expect(201);
+    return order.body.data.id as string;
+  }
+
+  async function pay(orderId: string) {
+    const response = await api().post('/api/checkout').set('Authorization', bearer(customerId))
+      .set('Idempotency-Key', randomUUID()).send({ orderId, method: 'CARD' }).expect(201);
+    expect(response.body.success).toBe(true);
+  }
 
   beforeAll(async () => {
     const url = new URL(process.env.DATABASE_URL ?? 'postgresql://invalid/');
@@ -42,6 +57,13 @@ describe('Admin quản lý voucher và khách đổi điểm', () => {
         { id: secondCustomerId, email: `${secondCustomerId}@example.test`, passwordHash: 'test', loyaltyPoints: 50 },
       ],
     });
+    await prisma.product.create({
+      data: { id: productId, name: 'Món test voucher', category: 'phin', prices: { create: { size: 'S', price: 50_000 } } },
+    });
+    await prisma.ingredient.create({
+      data: { id: ingredientId, code: 'TEST_' + ingredientId, name: 'Nguyên liệu test', unit: 'G', onHand: 100, reserved: 0 },
+    });
+    await prisma.recipe.create({ data: { productId, size: 'S', ingredientId, quantity: 1 } });
   }, 30_000);
 
   afterAll(async () => {
@@ -50,6 +72,11 @@ describe('Admin quản lý voucher và khách đổi điểm', () => {
       const users = { in: [customerId, secondCustomerId] };
       await prisma.pointTransaction.deleteMany({ where: { userId: users } });
       await prisma.userVoucher.deleteMany({ where: { userId: users } });
+      await prisma.payment.deleteMany({ where: { order: { userId: users } } });
+      await prisma.order.deleteMany({ where: { userId: users } });
+      await prisma.recipe.deleteMany({ where: { ingredientId } });
+      await prisma.product.deleteMany({ where: { id: productId } });
+      await prisma.ingredient.deleteMany({ where: { id: ingredientId } });
       await prisma.rewardItem.deleteMany({ where: { promotion: codes } });
       await prisma.promotion.deleteMany({ where: codes });
       await prisma.user.deleteMany({ where: { id: { in: [adminId, customerId, secondCustomerId] } } });
@@ -89,9 +116,12 @@ describe('Admin quản lý voucher và khách đổi điểm', () => {
     expect(edited.vouchers).toContainEqual(expect.objectContaining({ code: rewardCode, count: 1, discountValue: 12_000, endDate }));
     expect(edited.rewards).toContainEqual(expect.objectContaining({ id: reward.id, pointsCost: 50 }));
     expect((await redeem().expect(200)).body.points).toBe(120);
-    const list = (await api().get(route).set('Authorization', admin).expect(200)).body.data;
-    expect(list).toContainEqual(expect.objectContaining({
-      id, pointsCost: 50, redemptionLimit: 3, remainingCount: 1, canEditTerms: false,
+    expect((await adminList()).body.data).toContainEqual(expect.objectContaining({
+      id, pointsCost: 50, redemptionLimit: 3, remainingCount: 1, appliedCount: 0, canEditTerms: false,
+    }));
+    await pay(await createOrder(rewardCode));
+    expect((await adminList()).body.data).toContainEqual(expect.objectContaining({
+      id, redemptionLimit: 3, remainingCount: 1, appliedCount: 1,
     }));
 
     const toggle = () => api().patch(route + '/' + id + '/active').set('Authorization', admin).expect(200);
@@ -117,6 +147,18 @@ describe('Admin quản lý voucher và khách đổi điểm', () => {
     const edited = await api().patch(route + '/' + id).set('Authorization', admin)
       .send({ discountType: 'PERCENTAGE', discountValue: 15, maxDiscount: 20_000 }).expect(200);
     expect(edited.body.data).toMatchObject({ discountType: 'PERCENTAGE', discountValue: 15, maxDiscount: 20_000 });
+
+    const orderId = await createOrder(` ${publicCode.toLowerCase()} `);
+    expect((await adminList()).body.data).toContainEqual(expect.objectContaining({ id, remainingCount: null, appliedCount: 0 }));
+    await pay(orderId);
+    // Cột đếm đơn đã áp dụng, mỗi đơn chỉ tính một lần dù có nhiều bản ghi thanh toán.
+    await prisma.payment.create({
+      data: { orderId, idempotencyKey: randomUUID(), amount: 42_500, method: 'CARD', status: 'SUCCESS' },
+    });
+    await pay(await createOrder(publicCode));
+    expect((await adminList()).body.data).toContainEqual(expect.objectContaining({
+      id, remainingCount: null, appliedCount: 2, canEditTerms: false,
+    }));
   });
 
   it('mã cũ không giới hạn có thể đặt giới hạn; hai khách đổi đồng thời chỉ nhận một suất cuối', async () => {
