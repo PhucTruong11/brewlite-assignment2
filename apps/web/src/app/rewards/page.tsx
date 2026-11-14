@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
   Gift, Award, Star, ArrowRight, CheckCircle2, Ticket, Loader2, History, AlertCircle,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { RequireAuth } from '@/components/auth/RequireAuth';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RewardOption {
   id: string;
@@ -14,11 +16,13 @@ interface RewardOption {
   description: string | null;
   pointsCost: number;
   code: string;
+  endDate: string | null;
 }
 interface MyVoucher {
   code: string;
   description: string | null;
   count: number;
+  endDate: string | null;
 }
 interface HistoryItem {
   id: string;
@@ -40,6 +44,10 @@ const TYPE_LABEL: Record<HistoryItem['type'], string> = {
   REFUND: 'Hoàn điểm',
 };
 
+const expiryDateFormat = new Intl.DateTimeFormat('vi-VN', {
+  day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh',
+});
+
 function getErrorMessage(err: unknown, fallback: string): string {
   const data = (err as { response?: { data?: { message?: unknown } } })?.response?.data;
   if (data?.message) {
@@ -49,32 +57,24 @@ function getErrorMessage(err: unknown, fallback: string): string {
 }
 
 function RewardsContent() {
-  const [overview, setOverview] = useState<Overview | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, refetchUser } = useAuth();
+  const queryClient = useQueryClient();
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .get('/rewards')
-      .then((res) => {
-        if (!cancelled) setOverview(res.data?.data ?? res.data);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setMsg({ type: 'error', text: getErrorMessage(err, 'Không tải được dữ liệu điểm thưởng') });
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadKey]);
+  const { data: overview, isPending, error } = useQuery({
+    queryKey: ['rewards', 'overview', user?.id],
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<Overview | { data: Overview }>('/rewards', { signal });
+      return 'data' in data ? data.data : data;
+    },
+    enabled: !!user,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+  });
+  const feedback = msg ?? (error
+    ? { type: 'error', text: getErrorMessage(error, 'Không tải được dữ liệu điểm thưởng') }
+    : null);
 
   const handleRedeem = async (reward: RewardOption) => {
     if (!overview || redeemingId) return;
@@ -88,15 +88,19 @@ function RewardsContent() {
       const res = await api.post('/rewards/redeem', { rewardItemId: reward.id });
       const data = res.data?.data ?? res.data;
       setMsg({ type: 'success', text: data.message });
-      setReloadKey((k) => k + 1);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['rewards'] }),
+        refetchUser(),
+      ]);
     } catch (err) {
       setMsg({ type: 'error', text: getErrorMessage(err, 'Đổi voucher thất bại, vui lòng thử lại') });
+      await queryClient.invalidateQueries({ queryKey: ['rewards', 'overview', user?.id] });
     } finally {
       setRedeemingId(null);
     }
   };
 
-  if (loading) {
+  if (isPending) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
         <Loader2 className="animate-spin mr-2" size={20} /> Đang tải...
@@ -149,20 +153,20 @@ function RewardsContent() {
           <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none" />
         </div>
 
-        {msg && (
+        {feedback && (
           <div
             className={`p-4 rounded-2xl flex items-center gap-2 text-sm font-medium ${
-              msg.type === 'success'
+              feedback.type === 'success'
                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                 : 'bg-red-50 text-red-600 border border-red-200'
             }`}
           >
-            {msg.type === 'success' ? (
+            {feedback.type === 'success' ? (
               <CheckCircle2 size={18} className="shrink-0" />
             ) : (
               <AlertCircle size={18} className="shrink-0" />
             )}
-            <span>{msg.text}</span>
+            <span>{feedback.text}</span>
           </div>
         )}
 
@@ -185,6 +189,7 @@ function RewardsContent() {
                     </span>
                     <p className="text-sm text-text mt-2">{v.description}</p>
                     <p className="text-xs text-gray-400 mt-1">Nhập mã này ở trang thanh toán</p>
+                    {v.endDate && <p className="mt-1 text-xs text-gray-500">Hết hạn {expiryDateFormat.format(new Date(v.endDate))}</p>}
                   </div>
                   <span className="text-xl font-black text-primary shrink-0">×{v.count}</span>
                 </div>
@@ -220,6 +225,7 @@ function RewardsContent() {
                       <Ticket size={14} />
                       <span>Cần {r.pointsCost} điểm</span>
                     </div>
+                    {r.endDate && <p className="text-xs text-gray-500">Hết hạn {expiryDateFormat.format(new Date(r.endDate))}</p>}
                   </div>
 
                   <button

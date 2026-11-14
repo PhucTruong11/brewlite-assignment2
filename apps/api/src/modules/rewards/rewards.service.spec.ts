@@ -2,12 +2,17 @@ import { NotFoundException } from '@nestjs/common';
 import { RewardsService } from './rewards.service.js';
 
 describe('RewardsService và hạn voucher', () => {
+  const tx = {
+    $queryRaw: vi.fn(),
+    rewardItem: { findFirst: vi.fn() },
+    user: { updateMany: vi.fn() },
+  };
   const prisma = {
     user: { findUnique: vi.fn() },
-    rewardItem: { findMany: vi.fn(), findFirst: vi.fn() },
+    rewardItem: { findMany: vi.fn() },
     userVoucher: { findMany: vi.fn() },
     pointTransaction: { findMany: vi.fn() },
-    $transaction: vi.fn(),
+    $transaction: vi.fn((operation: (client: typeof tx) => unknown) => operation(tx)),
   };
   const service = new RewardsService(prisma as never);
 
@@ -40,15 +45,16 @@ describe('RewardsService và hạn voucher', () => {
   });
 
   it('không trừ điểm nếu quà vừa hết hạn', async () => {
-    prisma.rewardItem.findFirst.mockResolvedValue({
+    tx.rewardItem.findFirst.mockResolvedValue({
       isActive: true,
       promotion: {
         isActive: true,
+        isRewardOnly: true,
         startDate: new Date('2026-01-01T00:00:00.000Z'),
         endDate: new Date(),
       },
     });
     await expect(service.redeem('u1', 'r1')).rejects.toThrow(NotFoundException);
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.user.updateMany).not.toHaveBeenCalled();
   });
 });
