@@ -35,4 +35,10 @@ export class CreatePromotionDto {
     @Min(1, { message: 'Điểm đổi thưởng phải lớn hơn 0' })
     @Max(2_147_483_647)
     pointsCost?: number;
+
+    @ValidateIf((_dto, value: unknown) => value !== undefined)
+    @IsInt({ message: 'Tổng số lượng được đổi phải là số nguyên' })
+    @Min(1, { message: 'Tổng số lượng được đổi phải lớn hơn 0' })
+    @Max(2_147_483_647)
+    redemptionLimit?: number;
 }

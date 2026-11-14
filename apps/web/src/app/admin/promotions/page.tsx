@@ -20,6 +20,8 @@ interface PromotionItem {
     isActive: boolean;
     isRewardOnly: boolean;
     pointsCost: number | null;
+    redemptionLimit: number | null;
+    remainingCount: number | null;
     canEditTerms: boolean;
 }
 
@@ -33,6 +35,7 @@ const EMPTY_FORM = {
     maxDiscount: '',
     endDate: '', // định dạng yyyy-mm-dd từ <input type="date">
     pointsCost: '',
+    redemptionLimit: '',
 };
 
 // Lấy thông báo lỗi dễ đọc từ phản hồi của backend (NestJS trả message là chuỗi hoặc mảng)
@@ -71,6 +74,7 @@ export default function AdminPromotionsPage() {
     const [formError, setFormError] = useState<string | null>(null);
     const [editing, setEditing] = useState<PromotionItem | null>(null);
     const canEditTerms = editing?.canEditTerms ?? true;
+    const hasRewardPoints = editing ? editing.isRewardOnly : Boolean(form.pointsCost);
     const today = dateInputValue(new Date());
     const originalEndDate = editing?.endDate ? dateInputValue(new Date(editing.endDate)) : '';
 
@@ -114,6 +118,10 @@ export default function AdminPromotionsPage() {
             if (form.pointsCost && (!editing || (editing.isRewardOnly && pointsCost !== editing.pointsCost))) {
                 payload.pointsCost = pointsCost;
             }
+            if (hasRewardPoints && form.redemptionLimit) {
+                const limit = Number(form.redemptionLimit);
+                if (!editing || limit !== editing.redemptionLimit) payload.redemptionLimit = limit;
+            }
             if (editing) return api.patch(`/admin/promotions/${editing.id}`, payload);
             return api.post('/admin/promotions', { ...payload, code: form.code.trim() });
         },
@@ -147,10 +155,15 @@ export default function AdminPromotionsPage() {
                 return setFormError('Hạn dùng voucher không được là ngày đã qua');
             }
         }
-        if (editing?.isRewardOnly || form.pointsCost) {
+        if (hasRewardPoints) {
             const points = Number(form.pointsCost);
             if (!Number.isInteger(points) || points <= 0) {
                 return setFormError('Điểm đổi thưởng phải là số nguyên lớn hơn 0');
+            }
+            const limit = Number(form.redemptionLimit);
+            if ((!editing || editing.redemptionLimit !== null || form.redemptionLimit) &&
+                (!Number.isInteger(limit) || limit <= 0)) {
+                return setFormError('Tổng số lượng được đổi phải là số nguyên lớn hơn 0');
             }
         }
         setFormError(null);
@@ -171,6 +184,7 @@ export default function AdminPromotionsPage() {
             maxDiscount: promotion.maxDiscount === null ? '' : String(promotion.maxDiscount),
             endDate: promotion.endDate ? dateInputValue(new Date(promotion.endDate)) : '',
             pointsCost: promotion.pointsCost === null ? '' : String(promotion.pointsCost),
+            redemptionLimit: promotion.redemptionLimit === null ? '' : String(promotion.redemptionLimit),
         });
         setFormError(null);
         document.getElementById('voucher-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -217,6 +231,23 @@ export default function AdminPromotionsPage() {
                             {editing ? 'Áp dụng cho những lượt đổi tiếp theo.' : 'Để trống để tạo voucher áp dụng chung.'}
                         </p>
                     </div>
+                )}
+
+                {hasRewardPoints && (
+                    <label className="text-sm font-semibold">
+                        Tổng số lượng được đổi
+                        <input
+                            type="number"
+                            min={1}
+                            max={2_147_483_647}
+                            step={1}
+                            required={!editing || editing.redemptionLimit !== null}
+                            className={`${inputClass} mt-1`}
+                            value={form.redemptionLimit}
+                            onChange={(e) => setField('redemptionLimit', e.target.value)}
+                            placeholder={editing?.redemptionLimit === null ? 'Không giới hạn' : 'Ví dụ: 100'}
+                        />
+                    </label>
                 )}
 
                 <label className="text-sm font-semibold">
@@ -287,7 +318,7 @@ export default function AdminPromotionsPage() {
 
                 {!canEditTerms && (
                     <p className="text-xs text-amber-800 md:col-span-2 lg:col-span-3">
-                        Voucher đã được phát hành hoặc sử dụng. Bạn có thể sửa mô tả{editing?.isRewardOnly && ' và điểm cần cho lượt đổi mới'}.
+                        Voucher đã được phát hành hoặc sử dụng. Bạn có thể sửa mô tả{editing?.isRewardOnly && ', điểm cần đổi và tổng số lượng'}.
                     </p>
                 )}
 
@@ -333,12 +364,13 @@ export default function AdminPromotionsPage() {
             )}
 
             <div className="mt-3 overflow-x-auto rounded-2xl bg-surface shadow-sm">
-                <table className="w-full min-w-[780px] text-left text-sm">
+                <table className="w-full min-w-[880px] text-left text-sm">
                     <thead className="border-b border-primary/10 text-xs uppercase text-text/60">
                         <tr>
                             <th className="px-4 py-3">Mã</th>
                             <th className="px-4 py-3">Giảm</th>
                             <th className="px-4 py-3">Đơn tối thiểu</th>
+                            <th className="px-4 py-3">Số lượng</th>
                             <th className="px-4 py-3">Hạn dùng</th>
                             <th className="px-4 py-3">Trạng thái</th>
                             <th className="px-4 py-3 text-right">Thao tác</th>
@@ -360,6 +392,13 @@ export default function AdminPromotionsPage() {
                                     </td>
                                     <td className="px-4 py-3">{formatDiscount(p)}</td>
                                     <td className="px-4 py-3">{formatVND(p.minOrderValue)}</td>
+                                    <td className="whitespace-nowrap px-4 py-3">
+                                        {p.isRewardOnly
+                                            ? p.redemptionLimit === null
+                                                ? 'Không giới hạn'
+                                                : `Còn ${p.remainingCount}/${p.redemptionLimit}`
+                                            : '—'}
+                                    </td>
                                     <td className="px-4 py-3">
                                         {p.endDate ? new Date(p.endDate).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'Không giới hạn'}
                                     </td>

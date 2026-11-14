@@ -33,7 +33,7 @@ export class RewardsService {
       }),
       this.prisma.rewardItem.findMany({
         where: { isActive: true, promotion: { is: { ...usablePromotion, isRewardOnly: true } } },
-        include: { promotion: true },
+        include: { promotion: { include: { _count: { select: { userVouchers: true } } } } },
         orderBy: { pointsCost: 'asc' },
       }),
       this.prisma.userVoucher.findMany({
@@ -86,7 +86,11 @@ export class RewardsService {
         pointsCost: r.pointsCost,
         code: r.promotion.code,
         endDate: r.promotion.endDate,
-      })),
+        redemptionLimit: r.promotion.redemptionLimit,
+        remainingCount: r.promotion.redemptionLimit === null
+          ? null
+          : Math.max(0, r.promotion.redemptionLimit - r.promotion._count.userVouchers),
+      })).filter(reward => reward.remainingCount === null || reward.remainingCount > 0),
       vouchers: [...grouped.values()],
       history,
     };
@@ -96,11 +100,11 @@ export class RewardsService {
   // Trừ điểm + tạo voucher + ghi lịch sử trong CÙNG 1 transaction
   async redeem(userId: string, rewardItemId: string) {
     return this.prisma.$transaction(async (tx) => {
-      // Đọc giá điểm và điều kiện sau khi khóa cùng voucher mà admin có thể đang sửa.
+      // Khóa theo mã voucher để admin và các lượt đổi đồng thời dùng cùng một giới hạn.
       await tx.$queryRaw`
         SELECT p."id" FROM "promotions" p
         JOIN "reward_items" r ON r."promotionId" = p."id"
-        WHERE r."id" = ${rewardItemId} FOR SHARE OF p
+        WHERE r."id" = ${rewardItemId} FOR UPDATE OF p
       `;
       const reward = await tx.rewardItem.findFirst({
         where: { id: rewardItemId, isActive: true },
@@ -110,6 +114,11 @@ export class RewardsService {
       if (!reward || !reward.promotion.isRewardOnly || !reward.promotion.isActive ||
           reward.promotion.startDate > now || (reward.promotion.endDate && reward.promotion.endDate <= now)) {
         throw new NotFoundException('Phần quà không tồn tại, chưa có hiệu lực hoặc đã hết hạn');
+      }
+      const { redemptionLimit } = reward.promotion;
+      if (redemptionLimit !== null) {
+        const issued = await tx.userVoucher.count({ where: { promotionId: reward.promotionId } });
+        if (issued >= redemptionLimit) throw new BadRequestException('Voucher đổi thưởng đã hết lượt đổi');
       }
 
       // Trừ điểm nguyên tử: chỉ thành công nếu còn đủ điểm (chống âm điểm khi bấm/đổi đồng thời)
