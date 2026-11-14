@@ -284,6 +284,7 @@ model Promotion {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   isRewardOnly Boolean       @default(false) // Giá trị đúng nghĩa là phải đổi điểm mới dùng được.
+  redemptionLimit Int?
   rewardItems  RewardItem[]
   userVouchers UserVoucher[]
 
@@ -334,6 +335,7 @@ model UserVoucher {
   usedOrder  Order?     @relation(fields: [usedOrderId], references: [id])
 
   @@index([userId, promotionId, usedAt])
+  @@index([promotionId])
   @@map("user_vouchers")
 }
 

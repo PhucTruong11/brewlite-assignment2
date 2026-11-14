@@ -701,6 +701,12 @@ export class AdminService {
 
         const description = dto.description?.trim() || null;
         const pointsCost = dto.pointsCost;
+        if (pointsCost !== undefined && dto.redemptionLimit === undefined) {
+            throw new BadRequestException('Vui lòng nhập tổng số lượng được đổi');
+        }
+        if (pointsCost === undefined && dto.redemptionLimit !== undefined) {
+            throw new BadRequestException('Chỉ voucher đổi thưởng mới có giới hạn lượt đổi');
+        }
         return this.prisma.promotion.create({
             data: {
                 code: formattedCode,
@@ -713,6 +719,7 @@ export class AdminService {
                 endDate,
                 isActive: dto.isActive ?? true,
                 isRewardOnly: pointsCost !== undefined,
+                redemptionLimit: dto.redemptionLimit,
                 ...(pointsCost !== undefined && {
                     rewardItems: { create: { name: description ?? formattedCode, description, pointsCost } },
                 }),
@@ -736,6 +743,9 @@ export class AdminService {
         return promotions.map(({ rewardItems, _count, ...promotion }) => ({
             ...promotion,
             pointsCost: promotion.isRewardOnly ? (rewardItems[0]?.pointsCost ?? null) : null,
+            remainingCount: promotion.redemptionLimit === null
+                ? null
+                : Math.max(0, promotion.redemptionLimit - _count.userVouchers),
             canEditTerms: _count.userVouchers === 0 && !usedCodes.has(promotion.code.toUpperCase()),
         }));
     }
@@ -751,6 +761,16 @@ export class AdminService {
             if (!promotion) throw new NotFoundException(`Không tìm thấy voucher ${id}`);
             if (!promotion.isRewardOnly && dto.pointsCost !== undefined) {
                 throw new BadRequestException('Chỉ voucher đổi thưởng mới có điểm đổi');
+            }
+            if (dto.redemptionLimit !== undefined) {
+                if (!promotion.isRewardOnly) {
+                    throw new BadRequestException('Chỉ voucher đổi thưởng mới có giới hạn lượt đổi');
+                }
+                if (dto.redemptionLimit < promotion._count.userVouchers) {
+                    throw new BadRequestException(
+                        `Tổng số lượng được đổi không được nhỏ hơn số voucher đã phát hành (${promotion._count.userVouchers})`,
+                    );
+                }
             }
 
             const discountType = dto.discountType ?? promotion.discountType;
@@ -784,6 +804,7 @@ export class AdminService {
                 : {};
             const description = dto.description?.trim() || null;
             if (dto.description !== undefined) data.description = description;
+            if (dto.redemptionLimit !== undefined) data.redemptionLimit = dto.redemptionLimit;
 
             if (promotion.isRewardOnly) {
                 const reward = promotion.rewardItems[0];
