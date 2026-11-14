@@ -4,7 +4,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { assertTransition } from '../orders/orders-state.js';
 import { ListOrdersQueryDto } from './dto/list-orders-query.dto.js';
 import { UpdateStockDto } from './dto/update-stock.dto.js';
-import { CreatePromotionDto } from './dto/create-promotion.dto.js'
+import { CreatePromotionDto } from './dto/create-promotion.dto.js';
+import { UpdatePromotionDto } from './dto/update-promotion.dto.js';
 import { InventoryService } from '../inventory/inventory.service.js';
 import { CreateIngredientDto, UpdateIngredientDto, RestockIngredientDto, } from './dto/ingredient.dto.js';
 import { SaveRecipeDto } from './dto/save-recipe.dto.js';
@@ -34,6 +35,20 @@ function isPackagingCode(code: string): boolean {
     return code.startsWith('CUP_') || code === 'STRAW';
 }
 
+function parsePromotionEndDate(value: string | null): Date | null {
+    if (value === null) return null;
+    // Ngày không có giờ hết hạn vào cuối ngày Việt Nam.
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T23:59:59+07:00` : value);
+    if (!Number.isFinite(date.getTime()) || date.getTime() <= Date.now()) {
+        throw new BadRequestException('Hạn dùng voucher phải ở trong tương lai theo giờ Việt Nam');
+    }
+    return date;
+}
+
+const promotionRewards = {
+    orderBy: [{ isActive: 'desc' }, { createdAt: 'asc' }],
+    select: { id: true, pointsCost: true },
+} satisfies Prisma.Promotion$rewardItemsArgs;
 
 @Injectable()
 export class AdminService {
@@ -668,15 +683,8 @@ export class AdminService {
 
     async createPromotion(dto: CreatePromotionDto) {
         const formattedCode = dto.code.trim().toUpperCase();
-        // API nhận cả ngày đơn thuần và ISO có múi giờ; ngày đơn thuần hết hạn cuối ngày Việt Nam.
-        const endDate = dto.endDate
-            ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(dto.endDate)
-                ? `${dto.endDate}T23:59:59+07:00`
-                : dto.endDate)
-            : null;
-        if (endDate && (Number.isNaN(endDate.getTime()) || endDate.getTime() <= Date.now())) {
-            throw new BadRequestException('Hạn dùng voucher phải ở trong tương lai theo giờ Việt Nam');
-        }
+        if (!formattedCode) throw new BadRequestException('Mã voucher không được để trống');
+        const endDate = parsePromotionEndDate(dto.endDate ?? null);
 
         const existingPromo = await this.prisma.promotion.findUnique({
             where: { code: formattedCode },
@@ -691,10 +699,12 @@ export class AdminService {
             throw new BadRequestException('Mức giảm theo phần trăm không được vượt quá 100%');
         }
 
+        const description = dto.description?.trim() || null;
+        const pointsCost = dto.pointsCost;
         return this.prisma.promotion.create({
             data: {
                 code: formattedCode,
-                description: dto.description?.trim() || null,
+                description,
                 discountType: dto.discountType,
                 discountValue: dto.discountValue,
                 minOrderValue: dto.minOrderValue ?? 0,
@@ -702,14 +712,100 @@ export class AdminService {
                 startDate: new Date(),
                 endDate,
                 isActive: dto.isActive ?? true,
+                isRewardOnly: pointsCost !== undefined,
+                ...(pointsCost !== undefined && {
+                    rewardItems: { create: { name: description ?? formattedCode, description, pointsCost } },
+                }),
             },
         });
     }
 
     // Danh sách toàn bộ voucher cho Admin (kể cả mã đã tắt / đã hết hạn)
     async listPromotions() {
-        return this.prisma.promotion.findMany({
-            orderBy: { createdAt: 'desc' },
+        const [promotions, paidOrdersByCode] = await Promise.all([
+            this.prisma.promotion.findMany({
+                orderBy: { createdAt: 'desc' },
+                include: { rewardItems: promotionRewards, _count: { select: { userVouchers: true } } },
+            }),
+            this.prisma.order.groupBy({
+                by: ['promoCode'],
+                where: { promoCode: { not: null }, payments: { some: { status: 'SUCCESS' } } },
+            }),
+        ]);
+        const usedCodes = new Set(paidOrdersByCode.map(({ promoCode }) => promoCode?.toUpperCase()));
+        return promotions.map(({ rewardItems, _count, ...promotion }) => ({
+            ...promotion,
+            pointsCost: promotion.isRewardOnly ? (rewardItems[0]?.pointsCost ?? null) : null,
+            canEditTerms: _count.userVouchers === 0 && !usedCodes.has(promotion.code.toUpperCase()),
+        }));
+    }
+
+    async updatePromotion(id: string, dto: UpdatePromotionDto) {
+        const endDate = dto.endDate === undefined ? undefined : parsePromotionEndDate(dto.endDate);
+        return this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT "id" FROM "promotions" WHERE "id" = ${id} FOR UPDATE`;
+            const promotion = await tx.promotion.findUnique({
+                where: { id },
+                include: { rewardItems: promotionRewards, _count: { select: { userVouchers: true } } },
+            });
+            if (!promotion) throw new NotFoundException(`Không tìm thấy voucher ${id}`);
+            if (!promotion.isRewardOnly && dto.pointsCost !== undefined) {
+                throw new BadRequestException('Chỉ voucher đổi thưởng mới có điểm đổi');
+            }
+
+            const discountType = dto.discountType ?? promotion.discountType;
+            const discountValue = dto.discountValue ?? promotion.discountValue;
+            const minOrderValue = dto.minOrderValue ?? promotion.minOrderValue;
+            const maxDiscount = discountType === 'FIXED_AMOUNT' ? null : (
+                dto.maxDiscount === undefined ? promotion.maxDiscount : dto.maxDiscount
+            );
+            if (discountType === 'PERCENTAGE' && discountValue > 100) {
+                throw new BadRequestException('Mức giảm theo phần trăm không được vượt quá 100%');
+            }
+
+            const termsChanged = discountType !== promotion.discountType
+                || discountValue !== promotion.discountValue
+                || minOrderValue !== promotion.minOrderValue
+                || maxDiscount !== promotion.maxDiscount
+                || (endDate !== undefined && endDate?.getTime() !== promotion.endDate?.getTime());
+            if (termsChanged && (
+                promotion._count.userVouchers > 0 || await tx.order.count({
+                    where: {
+                        promoCode: { equals: promotion.code, mode: 'insensitive' },
+                        payments: { some: { status: 'SUCCESS' } },
+                    },
+                }) > 0
+            )) {
+                throw new BadRequestException('Không thể sửa điều kiện giảm giá hoặc hạn dùng sau khi voucher đã được phát hành hoặc sử dụng');
+            }
+
+            const data: Prisma.PromotionUpdateInput = termsChanged
+                ? { discountType, discountValue, minOrderValue, maxDiscount, endDate }
+                : {};
+            const description = dto.description?.trim() || null;
+            if (dto.description !== undefined) data.description = description;
+
+            if (promotion.isRewardOnly) {
+                const reward = promotion.rewardItems[0];
+                if (reward && (dto.pointsCost !== undefined || dto.description !== undefined)) {
+                    data.rewardItems = {
+                        update: {
+                            where: { id: reward.id },
+                            data: {
+                                pointsCost: dto.pointsCost,
+                                ...(dto.description !== undefined && { name: description ?? promotion.code, description }),
+                            },
+                        },
+                    };
+                } else if (!reward && dto.pointsCost !== undefined) {
+                    const rewardDescription = dto.description === undefined ? promotion.description : description;
+                    data.rewardItems = {
+                        create: { name: rewardDescription ?? promotion.code, description: rewardDescription, pointsCost: dto.pointsCost },
+                    };
+                }
+            }
+
+            return Object.keys(data).length > 0 ? tx.promotion.update({ where: { id }, data }) : promotion;
         });
     }
 

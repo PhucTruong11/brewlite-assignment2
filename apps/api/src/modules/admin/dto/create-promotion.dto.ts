@@ -1,4 +1,4 @@
-import { IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator'
+import { IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min, ValidateIf } from 'class-validator';
 
 export class CreatePromotionDto {
     @IsNotEmpty({ message: 'Mã voucher không được để trống' })
@@ -29,4 +29,10 @@ export class CreatePromotionDto {
     @IsOptional()
     @IsBoolean({ message: 'Trạng thái kích hoạt phải là true hoặc false' })
     isActive?: boolean;
+
+    @ValidateIf((_dto, value: unknown) => value !== undefined)
+    @IsInt({ message: 'Điểm đổi thưởng phải là số nguyên' })
+    @Min(1, { message: 'Điểm đổi thưởng phải lớn hơn 0' })
+    @Max(2_147_483_647)
+    pointsCost?: number;
 }

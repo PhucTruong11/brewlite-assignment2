@@ -32,7 +32,7 @@ export class RewardsService {
         select: { loyaltyPoints: true },
       }),
       this.prisma.rewardItem.findMany({
-        where: { isActive: true, promotion: { is: usablePromotion } },
+        where: { isActive: true, promotion: { is: { ...usablePromotion, isRewardOnly: true } } },
         include: { promotion: true },
         orderBy: { pointsCost: 'asc' },
       }),
@@ -59,6 +59,7 @@ export class RewardsService {
       discountValue: number;
       minOrderValue: number;
       maxDiscount: number | null;
+      endDate: Date | null;
     }>();
     for (const v of unusedVouchers) {
       const cur = grouped.get(v.promotion.code);
@@ -72,6 +73,7 @@ export class RewardsService {
           discountValue: v.promotion.discountValue,
           minOrderValue: v.promotion.minOrderValue,
           maxDiscount: v.promotion.maxDiscount,
+          endDate: v.promotion.endDate,
         });
     }
 
@@ -83,6 +85,7 @@ export class RewardsService {
         description: r.description,
         pointsCost: r.pointsCost,
         code: r.promotion.code,
+        endDate: r.promotion.endDate,
       })),
       vouchers: [...grouped.values()],
       history,
@@ -92,16 +95,23 @@ export class RewardsService {
   // ---------------- POST /rewards/redeem ----------------
   // Trừ điểm + tạo voucher + ghi lịch sử trong CÙNG 1 transaction
   async redeem(userId: string, rewardItemId: string) {
-    const reward = await this.prisma.rewardItem.findFirst({
-      where: { id: rewardItemId, isActive: true },
-      include: { promotion: true },
-    });
-    if (!reward || !reward.promotion.isActive || reward.promotion.startDate > new Date() ||
-        (reward.promotion.endDate && reward.promotion.endDate <= new Date())) {
-      throw new NotFoundException('Phần quà không tồn tại, chưa có hiệu lực hoặc đã hết hạn');
-    }
-
     return this.prisma.$transaction(async (tx) => {
+      // Đọc giá điểm và điều kiện sau khi khóa cùng voucher mà admin có thể đang sửa.
+      await tx.$queryRaw`
+        SELECT p."id" FROM "promotions" p
+        JOIN "reward_items" r ON r."promotionId" = p."id"
+        WHERE r."id" = ${rewardItemId} FOR SHARE OF p
+      `;
+      const reward = await tx.rewardItem.findFirst({
+        where: { id: rewardItemId, isActive: true },
+        include: { promotion: true },
+      });
+      const now = new Date();
+      if (!reward || !reward.promotion.isRewardOnly || !reward.promotion.isActive ||
+          reward.promotion.startDate > now || (reward.promotion.endDate && reward.promotion.endDate <= now)) {
+        throw new NotFoundException('Phần quà không tồn tại, chưa có hiệu lực hoặc đã hết hạn');
+      }
+
       // Trừ điểm nguyên tử: chỉ thành công nếu còn đủ điểm (chống âm điểm khi bấm/đổi đồng thời)
       const deducted = await tx.user.updateMany({
         where: { id: userId, loyaltyPoints: { gte: reward.pointsCost } },

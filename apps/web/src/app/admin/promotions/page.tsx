@@ -19,6 +19,8 @@ interface PromotionItem {
     endDate: string | null;
     isActive: boolean;
     isRewardOnly: boolean;
+    pointsCost: number | null;
+    canEditTerms: boolean;
 }
 
 // Trạng thái ban đầu của form tạo voucher
@@ -30,6 +32,7 @@ const EMPTY_FORM = {
     minOrderValue: '',
     maxDiscount: '',
     endDate: '', // định dạng yyyy-mm-dd từ <input type="date">
+    pointsCost: '',
 };
 
 // Lấy thông báo lỗi dễ đọc từ phản hồi của backend (NestJS trả message là chuỗi hoặc mảng)
@@ -48,10 +51,10 @@ function isExpired(p: PromotionItem): boolean {
 }
 
 // Ngày nhập trên form luôn tính đến 23:59:59 theo giờ Việt Nam.
-function todayInVietnam(): string {
+function dateInputValue(date: Date): string {
     const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
-    }).formatToParts(new Date());
+    }).formatToParts(date);
     const value = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
     return `${value('year')}-${value('month')}-${value('day')}`;
 }
@@ -66,6 +69,10 @@ export default function AdminPromotionsPage() {
     const queryClient = useQueryClient();
     const [form, setForm] = useState(EMPTY_FORM);
     const [formError, setFormError] = useState<string | null>(null);
+    const [editing, setEditing] = useState<PromotionItem | null>(null);
+    const canEditTerms = editing?.canEditTerms ?? true;
+    const today = dateInputValue(new Date());
+    const originalEndDate = editing?.endDate ? dateInputValue(new Date(editing.endDate)) : '';
 
     // Lấy danh sách voucher
     const { data: promotions = [], isLoading, isError } = useQuery({
@@ -76,28 +83,43 @@ export default function AdminPromotionsPage() {
         },
     });
 
-    // Tạo voucher mới
-    const createMutation = useMutation({
+    const resetForm = () => {
+        setEditing(null);
+        setForm(EMPTY_FORM);
+        setFormError(null);
+    };
+
+    const refreshLists = () => Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-promotions'] }),
+        queryClient.invalidateQueries({ queryKey: ['rewards'] }),
+    ]);
+
+    const saveMutation = useMutation({
         mutationFn: async () => {
-            // Chuyển chuỗi trong form sang đúng kiểu mà DTO backend yêu cầu
-            const payload: Record<string, unknown> = {
-                code: form.code.trim(),
-                discountType: form.discountType,
-                discountValue: Number(form.discountValue),
-            };
-            if (form.description.trim()) payload.description = form.description.trim();
-            if (form.minOrderValue) payload.minOrderValue = Number(form.minOrderValue);
-            if (form.discountType === 'PERCENTAGE' && form.maxDiscount) {
-                payload.maxDiscount = Number(form.maxDiscount);
+            const description = form.description.trim() || null;
+            const payload: Record<string, unknown> = {};
+            if (!editing || description !== editing.description) payload.description = description;
+            if (canEditTerms) {
+                const discountValue = Number(form.discountValue);
+                const minOrderValue = Number(form.minOrderValue);
+                const maxDiscount = form.discountType === 'PERCENTAGE' && form.maxDiscount
+                    ? Number(form.maxDiscount) : null;
+                if (!editing || form.discountType !== editing.discountType) payload.discountType = form.discountType;
+                if (!editing || discountValue !== editing.discountValue) payload.discountValue = discountValue;
+                if (!editing || minOrderValue !== editing.minOrderValue) payload.minOrderValue = minOrderValue;
+                if (!editing || maxDiscount !== editing.maxDiscount) payload.maxDiscount = maxDiscount;
+                if (form.endDate !== originalEndDate) payload.endDate = form.endDate || null;
             }
-            // Voucher hết hạn vào cuối ngày đã chọn
-            if (form.endDate) payload.endDate = new Date(`${form.endDate}T23:59:59+07:00`).toISOString();
-            return api.post('/admin/promotions', payload);
+            const pointsCost = Number(form.pointsCost);
+            if (form.pointsCost && (!editing || (editing.isRewardOnly && pointsCost !== editing.pointsCost))) {
+                payload.pointsCost = pointsCost;
+            }
+            if (editing) return api.patch(`/admin/promotions/${editing.id}`, payload);
+            return api.post('/admin/promotions', { ...payload, code: form.code.trim() });
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin-promotions'] });
-            setForm(EMPTY_FORM);
-            setFormError(null);
+        onSuccess: async () => {
+            resetForm();
+            await refreshLists();
         },
         onError: (error) => setFormError(getErrorMessage(error)),
     });
@@ -105,7 +127,7 @@ export default function AdminPromotionsPage() {
     // Bật / tắt voucher
     const toggleMutation = useMutation({
         mutationFn: async (id: string) => api.patch(`/admin/promotions/${id}/active`),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-promotions'] }),
+        onSuccess: refreshLists,
         onError: (error) => alert(getErrorMessage(error)),
     });
 
@@ -113,22 +135,46 @@ export default function AdminPromotionsPage() {
         e.preventDefault();
         // Kiểm tra nhanh ở client; backend vẫn validate lại
         if (!form.code.trim()) return setFormError('Vui lòng nhập mã voucher');
-        const value = Number(form.discountValue);
-        if (!form.discountValue || Number.isNaN(value) || value <= 0) {
-            return setFormError('Giá trị giảm phải lớn hơn 0');
+        if (canEditTerms) {
+            const value = Number(form.discountValue);
+            if (!form.discountValue || !Number.isFinite(value) || value <= 0) {
+                return setFormError('Giá trị giảm phải lớn hơn 0');
+            }
+            if (form.discountType === 'PERCENTAGE' && value > 100) {
+                return setFormError('Giảm theo % không được vượt quá 100');
+            }
+            if (form.endDate && form.endDate !== originalEndDate && form.endDate < today) {
+                return setFormError('Hạn dùng voucher không được là ngày đã qua');
+            }
         }
-        if (form.discountType === 'PERCENTAGE' && value > 100) {
-            return setFormError('Giảm theo % không được vượt quá 100');
-        }
-        if (form.endDate && form.endDate < todayInVietnam()) {
-            return setFormError('Hạn dùng voucher không được là ngày đã qua');
+        if (editing?.isRewardOnly || form.pointsCost) {
+            const points = Number(form.pointsCost);
+            if (!Number.isInteger(points) || points <= 0) {
+                return setFormError('Điểm đổi thưởng phải là số nguyên lớn hơn 0');
+            }
         }
         setFormError(null);
-        createMutation.mutate();
+        saveMutation.mutate();
     };
 
     const setField = (key: keyof typeof EMPTY_FORM, value: string) =>
         setForm((f) => ({ ...f, [key]: value }));
+
+    const startEditing = (promotion: PromotionItem) => {
+        setEditing(promotion);
+        setForm({
+            code: promotion.code,
+            description: promotion.description ?? '',
+            discountType: promotion.discountType === 'FIXED_AMOUNT' ? 'FIXED_AMOUNT' : 'PERCENTAGE',
+            discountValue: String(promotion.discountValue),
+            minOrderValue: String(promotion.minOrderValue),
+            maxDiscount: promotion.maxDiscount === null ? '' : String(promotion.maxDiscount),
+            endDate: promotion.endDate ? dateInputValue(new Date(promotion.endDate)) : '',
+            pointsCost: promotion.pointsCost === null ? '' : String(promotion.pointsCost),
+        });
+        setFormError(null);
+        document.getElementById('voucher-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
 
     const inputClass =
         'w-full rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm outline-none focus:border-primary';
@@ -136,10 +182,8 @@ export default function AdminPromotionsPage() {
     return (
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 lg:px-8">
             <h1 className="text-2xl font-extrabold tracking-tight text-text">Quản lý voucher</h1>
-            <p className="mt-1 text-sm text-text/70">Tạo mã giảm giá và bật/tắt mã đang áp dụng cho khách.</p>
-
-            {/* ===== Form tạo voucher ===== */}
             <form
+                id="voucher-form"
                 onSubmit={handleSubmit}
                 className="mt-6 grid gap-4 rounded-2xl bg-surface p-4 shadow-sm md:grid-cols-2 lg:grid-cols-3"
             >
@@ -148,15 +192,38 @@ export default function AdminPromotionsPage() {
                     <input
                         className={`${inputClass} mt-1 uppercase`}
                         value={form.code}
+                        readOnly={editing !== null}
                         onChange={(e) => setField('code', e.target.value)}
                         placeholder="VD: SUMMER10"
                     />
                 </label>
 
+                {(!editing || editing.isRewardOnly) && (
+                    <div>
+                        <label htmlFor="pointsCost" className="block text-sm font-semibold">Điểm đổi thưởng</label>
+                        <input
+                            id="pointsCost"
+                            type="number"
+                            min={1}
+                            max={2_147_483_647}
+                            step={1}
+                            className={`${inputClass} mt-1`}
+                            value={form.pointsCost}
+                            onChange={(e) => setField('pointsCost', e.target.value)}
+                            placeholder="Ví dụ: 100 điểm"
+                            aria-describedby="voucher-points-help"
+                        />
+                        <p id="voucher-points-help" className="mt-1 text-xs text-text/65">
+                            {editing ? 'Áp dụng cho những lượt đổi tiếp theo.' : 'Để trống để tạo voucher áp dụng chung.'}
+                        </p>
+                    </div>
+                )}
+
                 <label className="text-sm font-semibold">
                     Loại giảm giá
                     <select
                         className={`${inputClass} mt-1`}
+                        disabled={!canEditTerms}
                         value={form.discountType}
                         onChange={(e) => setField('discountType', e.target.value)}
                     >
@@ -171,6 +238,7 @@ export default function AdminPromotionsPage() {
                         type="number"
                         min={0}
                         className={`${inputClass} mt-1`}
+                        disabled={!canEditTerms}
                         value={form.discountValue}
                         onChange={(e) => setField('discountValue', e.target.value)}
                     />
@@ -182,6 +250,7 @@ export default function AdminPromotionsPage() {
                         type="number"
                         min={0}
                         className={`${inputClass} mt-1`}
+                        disabled={!canEditTerms}
                         value={form.minOrderValue}
                         onChange={(e) => setField('minOrderValue', e.target.value)}
                         placeholder="0"
@@ -196,6 +265,7 @@ export default function AdminPromotionsPage() {
                             type="number"
                             min={0}
                             className={`${inputClass} mt-1`}
+                            disabled={!canEditTerms}
                             value={form.maxDiscount}
                             onChange={(e) => setField('maxDiscount', e.target.value)}
                             placeholder="Không giới hạn"
@@ -207,12 +277,19 @@ export default function AdminPromotionsPage() {
                     Hạn dùng (để trống = không hết hạn)
                     <input
                         type="date"
-                        min={todayInVietnam()}
+                        min={originalEndDate && form.endDate === originalEndDate && originalEndDate < today ? originalEndDate : today}
                         className={`${inputClass} mt-1`}
+                        disabled={!canEditTerms}
                         value={form.endDate}
                         onChange={(e) => setField('endDate', e.target.value)}
                     />
                 </label>
+
+                {!canEditTerms && (
+                    <p className="text-xs text-amber-800 md:col-span-2 lg:col-span-3">
+                        Voucher đã được phát hành hoặc sử dụng. Bạn có thể sửa mô tả{editing?.isRewardOnly && ' và điểm cần cho lượt đổi mới'}.
+                    </p>
+                )}
 
                 <label className="text-sm font-semibold md:col-span-2 lg:col-span-3">
                     Mô tả
@@ -227,12 +304,22 @@ export default function AdminPromotionsPage() {
                 <div className="flex flex-wrap items-center gap-3 md:col-span-2 lg:col-span-3">
                     <button
                         type="submit"
-                        disabled={createMutation.isPending}
+                        disabled={saveMutation.isPending}
                         className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
                     >
-                        {createMutation.isPending ? 'Đang tạo...' : 'Tạo voucher'}
+                        {saveMutation.isPending ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Tạo voucher'}
                     </button>
-                    {formError && <p className="text-sm text-red-600">{formError}</p>}
+                    {editing && (
+                        <button
+                            type="button"
+                            disabled={saveMutation.isPending}
+                            onClick={resetForm}
+                            className="rounded-lg border border-primary/30 px-4 py-2 text-sm font-semibold"
+                        >
+                            Hủy sửa
+                        </button>
+                    )}
+                    {formError && <p role="alert" className="text-sm text-red-600">{formError}</p>}
                 </div>
             </form>
 
@@ -246,7 +333,7 @@ export default function AdminPromotionsPage() {
             )}
 
             <div className="mt-3 overflow-x-auto rounded-2xl bg-surface shadow-sm">
-                <table className="w-full min-w-[720px] text-left text-sm">
+                <table className="w-full min-w-[780px] text-left text-sm">
                     <thead className="border-b border-primary/10 text-xs uppercase text-text/60">
                         <tr>
                             <th className="px-4 py-3">Mã</th>
@@ -266,13 +353,15 @@ export default function AdminPromotionsPage() {
                                         <p className="font-bold">{p.code}</p>
                                         {p.description && <p className="text-xs text-text/60">{p.description}</p>}
                                         {p.isRewardOnly && (
-                                            <span className="text-xs font-semibold text-primary">Voucher đổi điểm</span>
+                                            <span className="text-xs font-semibold text-primary">
+                                                {p.pointsCost === null ? 'Chưa cấu hình điểm đổi' : `${p.pointsCost.toLocaleString('vi-VN')} điểm để đổi`}
+                                            </span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">{formatDiscount(p)}</td>
                                     <td className="px-4 py-3">{formatVND(p.minOrderValue)}</td>
                                     <td className="px-4 py-3">
-                                        {p.endDate ? new Date(p.endDate).toLocaleDateString('vi-VN') : 'Không giới hạn'}
+                                        {p.endDate ? new Date(p.endDate).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'Không giới hạn'}
                                     </td>
                                     <td className="px-4 py-3">
                                         {expired ? (
@@ -283,7 +372,15 @@ export default function AdminPromotionsPage() {
                                             <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">Đã tắt</span>
                                         )}
                                     </td>
-                                    <td className="px-4 py-3 text-right">
+                                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                                        <button
+                                            type="button"
+                                            disabled={saveMutation.isPending}
+                                            onClick={() => startEditing(p)}
+                                            className="mr-1 rounded-lg border border-primary/30 px-3 py-1 text-xs font-semibold hover:bg-background disabled:opacity-60"
+                                        >
+                                            Sửa
+                                        </button>
                                         <button
                                             type="button"
                                             disabled={toggleMutation.isPending}
