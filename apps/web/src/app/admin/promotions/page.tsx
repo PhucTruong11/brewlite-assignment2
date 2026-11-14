@@ -22,6 +22,7 @@ interface PromotionItem {
     pointsCost: number | null;
     redemptionLimit: number | null;
     remainingCount: number | null;
+    appliedCount: number;
     canEditTerms: boolean;
 }
 
@@ -364,13 +365,14 @@ export default function AdminPromotionsPage() {
             )}
 
             <div className="mt-3 overflow-x-auto rounded-2xl bg-surface shadow-sm">
-                <table className="w-full min-w-[880px] text-left text-sm">
+                <table className="w-full min-w-[940px] text-left text-sm">
                     <thead className="border-b border-primary/10 text-xs uppercase text-text/60">
                         <tr>
                             <th className="px-4 py-3">Mã</th>
                             <th className="px-4 py-3">Giảm</th>
                             <th className="px-4 py-3">Đơn tối thiểu</th>
-                            <th className="px-4 py-3">Số lượng</th>
+                            <th scope="col" className="whitespace-nowrap px-3 py-3" title="Số lượt còn đổi / tổng lượt đổi">Số lượng</th>
+                            <th scope="col" className="whitespace-nowrap px-3 py-3" title="Số lần voucher đã được dùng khi thanh toán">Đã áp dụng</th>
                             <th className="px-4 py-3">Hạn dùng</th>
                             <th className="px-4 py-3">Trạng thái</th>
                             <th className="px-4 py-3 text-right">Thao tác</th>
@@ -392,13 +394,14 @@ export default function AdminPromotionsPage() {
                                     </td>
                                     <td className="px-4 py-3">{formatDiscount(p)}</td>
                                     <td className="px-4 py-3">{formatVND(p.minOrderValue)}</td>
-                                    <td className="whitespace-nowrap px-4 py-3">
+                                    <td className="whitespace-nowrap px-3 py-3 tabular-nums">
                                         {p.isRewardOnly
                                             ? p.redemptionLimit === null
                                                 ? 'Không giới hạn'
                                                 : `Còn ${p.remainingCount}/${p.redemptionLimit}`
                                             : '—'}
                                     </td>
+                                    <td className="whitespace-nowrap px-3 py-3 tabular-nums">{p.appliedCount}</td>
                                     <td className="px-4 py-3">
                                         {p.endDate ? new Date(p.endDate).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'Không giới hạn'}
                                     </td>

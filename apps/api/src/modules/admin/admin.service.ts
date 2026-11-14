@@ -729,7 +729,7 @@ export class AdminService {
 
     // Danh sách toàn bộ voucher cho Admin (kể cả mã đã tắt / đã hết hạn)
     async listPromotions() {
-        const [promotions, paidOrdersByCode] = await Promise.all([
+        const [promotions, paidOrdersByCode, appliedVouchers] = await Promise.all([
             this.prisma.promotion.findMany({
                 orderBy: { createdAt: 'desc' },
                 include: { rewardItems: promotionRewards, _count: { select: { userVouchers: true } } },
@@ -737,17 +737,34 @@ export class AdminService {
             this.prisma.order.groupBy({
                 by: ['promoCode'],
                 where: { promoCode: { not: null }, payments: { some: { status: 'SUCCESS' } } },
+                _count: { _all: true },
+            }),
+            this.prisma.userVoucher.groupBy({
+                by: ['promotionId'],
+                where: { usedAt: { not: null } },
+                _count: { _all: true },
             }),
         ]);
-        const usedCodes = new Set(paidOrdersByCode.map(({ promoCode }) => promoCode?.toUpperCase()));
-        return promotions.map(({ rewardItems, _count, ...promotion }) => ({
-            ...promotion,
-            pointsCost: promotion.isRewardOnly ? (rewardItems[0]?.pointsCost ?? null) : null,
-            remainingCount: promotion.redemptionLimit === null
-                ? null
-                : Math.max(0, promotion.redemptionLimit - _count.userVouchers),
-            canEditTerms: _count.userVouchers === 0 && !usedCodes.has(promotion.code.toUpperCase()),
-        }));
+        const paidCounts = new Map<string, number>();
+        for (const { promoCode, _count } of paidOrdersByCode) {
+            if (promoCode === null) continue;
+            const code = promoCode.trim().toUpperCase();
+            paidCounts.set(code, (paidCounts.get(code) ?? 0) + _count._all);
+        }
+        const appliedByPromotion = new Map(appliedVouchers.map(({ promotionId, _count }) => [promotionId, _count._all]));
+
+        return promotions.map(({ rewardItems, _count, ...promotion }) => {
+            const paidCount = paidCounts.get(promotion.code.toUpperCase()) ?? 0;
+            return {
+                ...promotion,
+                pointsCost: promotion.isRewardOnly ? (rewardItems[0]?.pointsCost ?? null) : null,
+                remainingCount: promotion.redemptionLimit === null
+                    ? null
+                    : Math.max(0, promotion.redemptionLimit - _count.userVouchers),
+                appliedCount: promotion.isRewardOnly ? (appliedByPromotion.get(promotion.id) ?? 0) : paidCount,
+                canEditTerms: _count.userVouchers === 0 && paidCount === 0,
+            };
+        });
     }
 
     async updatePromotion(id: string, dto: UpdatePromotionDto) {
