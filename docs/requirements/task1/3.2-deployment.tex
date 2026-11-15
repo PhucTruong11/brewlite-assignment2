@@ -1,2 +1,19 @@
+\clearpage
 \subsection{Task 3.2 -- Deployment diagram}
-\emph{Khung nội dung: nhóm sẽ bổ sung tạo phẩm và minh chứng của task này.}
+
+Trình duyệt truy cập Next.js trên Vercel qua HTTPS. Web chuyển tiếp
+\nolinkurl{/api} sang NestJS trên Render. API kết nối với PostgreSQL trên
+Supabase qua TLS và nhận webhook PayOS trực tiếp. Docker Compose tái tạo
+web, API và PostgreSQL ở local với volume lưu dữ liệu.
+
+\begin{center}
+\includegraphics[page=1,width=\linewidth,keepaspectratio]{../../architecture/deployment/deployment-diagram.pdf}\\[0.5em]
+{\small\itshape Hình 3.2. Triển khai BrewLite ở local, CI/CD và production}
+\end{center}
+
+Khi CI đạt, workflow lưu image theo SHA lên GHCR, áp migration Supabase,
+deploy API rồi web và kiểm tra \nolinkurl{/api/health} trực tiếp và qua proxy.
+Biến môi trường và secrets được cấu hình trên từng nền tảng.
+Bảng đối chiếu nút triển khai với mã nguồn nằm trong
+\nolinkurl{docs/architecture/deployment/README.md}.
+\clearpage

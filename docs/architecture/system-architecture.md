@@ -2,6 +2,8 @@
 
 BrewLite là hệ thống đặt và thanh toán đồ uống để nhận tại quầy. Tài liệu này mô tả kiến trúc Assignment 2 của Nhóm 04 theo ba mức C4 gồm ngữ cảnh hệ thống, container và thành phần API. Các quyết định kiến trúc được ghi trong ADR.
 
+Task 3.1 trong báo cáo sử dụng [sơ đồ ngữ cảnh và container](c4/c4-context-container.svg) và [sơ đồ thành phần NestJS API](c4/c4-backend-components.svg). Task 3.2 trình bày [sơ đồ triển khai và đối chiếu mã nguồn](deployment/README.md).
+
 ## 1. Ngữ cảnh hệ thống
 
 Khách hàng dùng BrewLite để xem menu, chọn món, đặt đơn, thanh toán và theo dõi tiến độ. Nhân viên quầy dùng giao diện quản trị để xử lý đơn đã thanh toán. Quản trị viên quản lý thêm nguyên liệu, công thức và khuyến mãi. Các thao tác của nhân viên trên giao diện quản trị hiện dùng tài khoản có vai trò `ADMIN`.
@@ -101,7 +103,7 @@ Sơ đồ tập trung vào các thành phần của luồng đặt và thanh to�
 
 [Schema và migration Prisma](../../apps/api/prisma/) nằm cùng API. Nhóm tạo migration trên cơ sở dữ liệu phát triển bằng `prisma migrate dev`, lưu các migration vào Git và chạy `prisma migrate deploy` trong CI và phát hành production.
 
-Tạo đơn `PENDING` giữ nguyên liệu theo công thức trong 120 giây. API kiểm tra tồn khả dụng bằng `onHand - reserved` và lưu snapshot công thức trong cùng transaction. Khi thanh toán thành công, API tiêu thụ phần giữ và ghi `CONSUMED`. Đơn quá hạn đủ điều kiện hủy sẽ trả phần giữ và ghi `RELEASED`. Admin hủy đơn đã thanh toán trong trạng thái cho phép thì kho được hoàn theo snapshot với trạng thái `RESTORED`, đồng thời hệ thống xử lý thu hồi điểm đã cấp.
+Tạo đơn `PENDING` giữ nguyên liệu theo công thức trong 120 giây. API kiểm tra tồn khả dụng bằng `onHand - reserved` và lưu snapshot công thức trong cùng transaction. Khi thanh toán thành công, API tiêu thụ phần giữ và ghi `CONSUMED`. Đơn quá hạn đủ điều kiện hủy sẽ trả phần giữ và ghi `RELEASED`. Khi admin hủy đơn đã thanh toán ở trạng thái cho phép, API hoàn kho theo snapshot và ghi `RESTORED`. API khóa hàng người dùng trước khi đọc số dư để thu hồi tối đa số điểm hiện có, kể cả khi hai đơn của cùng khách bị hủy đồng thời.
 
 `Product` và các lựa chọn size/topping xác định thành phần công thức. `Recipe` liên kết món hoặc topping với `Ingredient`. `OrderItem` giữ bản chụp định lượng để các thao tác sau đó dùng lượng nguyên liệu đã tính lúc đặt. `Payment` ghi kết quả giao dịch và ràng buộc duy nhất trên `idempotencyKey`. `PayosPaymentLink` lưu liên kết giữa đơn và link PayOS, còn `PointTransaction` ghi biến động điểm. [Schema Prisma](../../apps/api/prisma/schema.prisma)
 
@@ -119,7 +121,8 @@ Với production, workflow xác minh đích triển khai và xác nhận đã r�
 | --- | --- |
 | Gửi lại cùng `Idempotency-Key` cho cùng đơn | API trả kết quả đã ghi. Khóa dùng cho đơn khác bị từ chối. |
 | Webhook và kiểm tra trạng thái đến cùng lúc | Khóa dòng đơn và kiểm tra lại kết quả trước khi ghi, để mỗi đơn chỉ được xác nhận và trừ kho một lần. |
-| Quá hạn với link PayOS đã đóng và chưa nhận tiền | API hủy đơn và giải phóng nguyên liệu đã giữ. |
+| Đơn áp dụng voucher đổi điểm khi xin QR | API giữ voucher cho đơn bằng `UserVoucher.reservedOrderId` trước khi gọi PayOS. Thành công chuyển lượt giữ sang đã dùng trong transaction thanh toán. |
+| Quá hạn với link PayOS đã đóng và chưa nhận tiền | API hủy đơn, giải phóng nguyên liệu và nhả voucher đã giữ. |
 | Khách đã trả đủ và đơn còn giữ kho | API có thể xác nhận `PAID` qua đối soát ngay cả khi đã qua thời hạn chờ trên giao diện. |
 | PayOS báo đã nhận một phần tiền, dữ liệu lệch hoặc cổng không phản hồi | API giữ nguyên đơn khi kết quả chưa đủ điều kiện xử lý. Giao dịch cần được đối soát thêm. |
 

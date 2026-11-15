@@ -6,7 +6,15 @@ skinparam defaultFontName Arial
 start
 :Hỏi trạng thái đơn;
 |NestJS API|
-:Tạo hoặc đọc link PayOS của đơn;
+if (Đơn chưa có link PayOS?) then (Có)
+  :Kiểm tra và giữ voucher đổi điểm nếu có;
+  if (Có thể cấp QR?) then (Có)
+    :Tạo và lưu link PayOS;
+  else (Không)
+    :Báo lỗi và không cấp QR;
+    stop
+  endif
+endif
 |Next.js UI|
 :Hiển thị QR khi lấy được link;
 |Khách hàng|
@@ -17,12 +25,12 @@ if (Tín hiệu đang xử lý là webhook?) then (Có)
 else (Không)
   :Polling hoặc tác vụ hết hạn\nđối soát link qua PayOS;
 endif
-if (Đã nhận đủ tiền và đơn còn giữ kho?) then (Có)
-  :Ghi PAID và tiêu thụ tồn\nmột lần trong transaction;
+if (Đã nhận đủ tiền và đơn đủ điều kiện hoàn tất?) then (Có)
+  :Ghi PAID, trừ tồn, dùng voucher\nvà cộng điểm trong một transaction;
 else (Không)
   if (Tác vụ hết hạn xác nhận link đã đóng
 và chưa nhận tiền?) then (Có)
-    :Hủy đơn và trả lượng giữ;
+    :Hủy đơn, trả lượng giữ và nhả voucher;
   else (Không)
     :Giữ trạng thái hoặc báo cần đối soát;
   endif

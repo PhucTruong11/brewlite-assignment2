@@ -43,3 +43,6 @@ docker/data/
 
 # Local database backups
 .backups/
+
+# Local notes for oral defense
+/BrewLite-Assignment2-So-do-on-bao-cao.md

@@ -1,0 +1,907 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" pages="2">
+  <diagram name="Page-1" id="uaUiKZX4-EYvslX1TkD3">
+    <mxGraphModel dx="4371" dy="3043" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <UserObject label="" mermaidData="{&#xa;  &quot;data&quot;: &quot;sequenceDiagram\n    actor Khach as Khách hàng\n    participant Cart as CartContent.tsx\n    participant Inventory as inventory.service.ts\n    participant Orders as orders.service.ts\n    participant DB as PostgreSQL\n    participant Checkout as checkout/page.tsx\n    participant Payment as checkout.service.ts\n    participant SePay as SePay\n\n    Khach-&gt;&gt;Cart: Chọn món, size, topping và bấm Tiến hành thanh toán\n    Cart-&gt;&gt;Inventory: POST /api/cart/validate\n    Inventory-&gt;&gt;DB: Đọc món, giá, công thức và nguyên liệu\n    Inventory--&gt;&gt;Cart: Kết quả kiểm tra giỏ\n\n    alt Giỏ thiếu nguyên liệu hoặc dữ liệu đã đổi\n        Cart--&gt;&gt;Khach: Báo lỗi và yêu cầu sửa giỏ\n    else Giỏ hợp lệ, khách đã đăng nhập\n        Cart-&gt;&gt;Orders: POST /api/orders với items và promoCode\n        Orders-&gt;&gt;Inventory: Tính lại giá và nhu cầu nguyên liệu\n        Orders-&gt;&gt;DB: Transaction kiểm tra lại và tăng reserved\n        Orders-&gt;&gt;DB: Lưu Order PENDING và OrderItem\n        Orders--&gt;&gt;Cart: HTTP 201, orderId, reservationExpiresAt\n        Cart-&gt;&gt;Checkout: Mở /checkout?orderId=...\n        Checkout-&gt;&gt;Payment: GET /api/checkout/status/:orderId mỗi 2 giây\n        Payment--&gt;&gt;Checkout: Trạng thái và hạn thanh toán\n\n        alt Chọn VietQR\n            Khach-&gt;&gt;SePay: Chuyển khoản theo QR và nội dung đơn\n            SePay-&gt;&gt;Payment: POST /api/checkout/sepay-webhook\n        else Chọn thẻ\n            Khach-&gt;&gt;Checkout: Xác nhận thanh toán\n            Checkout-&gt;&gt;Payment: POST /api/checkout với Idempotency-Key\n        end\n\n        alt Thanh toán thành công\n            Payment-&gt;&gt;DB: Lưu Payment SUCCESS, Order PAID\n            Payment-&gt;&gt;Inventory: Trừ onHand và giảm reserved\n            Payment-&gt;&gt;DB: Dùng voucher và cộng điểm\n            Payment--&gt;&gt;Checkout: Trạng thái PAID\n            Checkout--&gt;&gt;Khach: Hiện hóa đơn và mã đơn\n        else Thanh toán lỗi nhưng còn hạn\n            Payment-&gt;&gt;DB: Order PAYMENT_FAILED\n            Payment--&gt;&gt;Checkout: Cho thử lại trong thời hạn\n        else Hết hạn 2 phút\n            Payment-&gt;&gt;Inventory: Nhả reserved\n            Payment-&gt;&gt;DB: Order CANCELLED\n            Checkout--&gt;&gt;Khach: Cho tạo lại tối đa một lượt\n            Khach-&gt;&gt;Checkout: Bấm tạo lại\n            Checkout-&gt;&gt;Orders: POST /api/orders từ giỏ hiện tại\n            Orders--&gt;&gt;Checkout: orderId mới nếu vẫn đủ nguyên liệu\n        end\n    end&quot;,&#xa;  &quot;config&quot;: null,&#xa;  &quot;version&quot;: &quot;12&quot;&#xa;}" id="Y2M2MFyH29BE9PH0GsK3-1">
+          <mxCell connectable="0" parent="1" style="group;transparentBounds=1;editIcon=1;lockedGroup=0;groupPadding=10;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Khách hàng" mermaidId="n:Khach" mermaidBaseStyle="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;fillColor=#FDF4FF;strokeColor=#E879F9;fontColor=#28253D;participant=seqActorStick;verticalAlign=bottom;align=center;spacingBottom=4;size=90;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;" mermaidBaseValue="Khách hàng" id="Y2M2MFyH29BE9PH0GsK3-2">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;participant=seqActorStick;verticalAlign=bottom;align=center;spacingBottom=4;size=90;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="1908" width="150" x="386" y="386" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="CartContent.tsx" mermaidId="n:Cart" mermaidBaseStyle="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;fillColor=#F0FDFA;strokeColor=#2DD4BF;fontColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;" mermaidBaseValue="CartContent.tsx" id="Y2M2MFyH29BE9PH0GsK3-3">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="1891" width="150" x="855" y="386" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="inventory.service.ts" mermaidId="n:Inventory" mermaidBaseStyle="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;fillColor=#FFF7ED;strokeColor=#FB923C;fontColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;" mermaidBaseValue="inventory.service.ts" id="Y2M2MFyH29BE9PH0GsK3-4">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="1891" width="163" x="1091" y="386" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="orders.service.ts" mermaidId="n:Orders" mermaidBaseStyle="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;fillColor=#ECFEFF;strokeColor=#22D3EE;fontColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;" mermaidBaseValue="orders.service.ts" id="Y2M2MFyH29BE9PH0GsK3-5">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="1891" width="150" x="1415" y="386" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="PostgreSQL" mermaidId="n:DB" mermaidBaseStyle="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;fillColor=#F0FDF4;strokeColor=#4ADE80;fontColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;" mermaidBaseValue="PostgreSQL" id="Y2M2MFyH29BE9PH0GsK3-6">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="1891" width="150" x="1790" y="386" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="checkout/page.tsx" mermaidId="n:Checkout" mermaidBaseStyle="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;fillColor=#F5F3FF;strokeColor=#A78BFA;fontColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;" mermaidBaseValue="checkout/page.tsx" id="Y2M2MFyH29BE9PH0GsK3-7">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="1891" width="151" x="1990" y="386" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="checkout.service.ts" mermaidId="n:Payment" mermaidBaseStyle="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;fillColor=#FEF2F2;strokeColor=#F87171;fontColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;" mermaidBaseValue="checkout.service.ts" id="Y2M2MFyH29BE9PH0GsK3-8">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="1891" width="158" x="2403" y="386" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="SePay" mermaidId="n:SePay" mermaidBaseStyle="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;fillColor=#FEFCE8;strokeColor=#FACC15;fontColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;" mermaidBaseValue="SePay" id="Y2M2MFyH29BE9PH0GsK3-9">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;sequenceEdgeStyle&quot;,&quot;libavoidRouting&quot;:0,&quot;curved&quot;:0,&quot;rounded&quot;:0};lifelineDashed=0;strokeWidth=2;rounded=1;absoluteArcSize=1;arcSize=12;lifelineColor=#28253D;size=73;lifelineMirror=1;fontFamily=Recursive;fontSize=16;shadow=1;shadowColor=#000000;shadowOffsetX=4;shadowOffsetY=4;shadowBlur=0;shadowOpacity=6;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="1891" width="150" x="2745" y="386" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="alt" mermaidId="n:f0" mermaidBaseStyle="html=1;shape=umlFrame;dashed=1;fixDash=1;dashPattern=2 2;strokeWidth=2;pointerEvents=0;dropTarget=0;fillColor=#ffffff;strokeColor=#28253D;fontSize=16;align=center;verticalAlign=middle;fontFamily=Recursive;fontColor=#28253D;height=35;width=50;" mermaidBaseValue="alt" id="Y2M2MFyH29BE9PH0GsK3-10">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlFrame;dashed=1;fixDash=1;dashPattern=2 2;strokeWidth=2;pointerEvents=0;dropTarget=0;fontSize=16;align=center;verticalAlign=middle;fontFamily=Recursive;height=35;width=50;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="1531" width="2399" x="441" y="653" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-11" parent="Y2M2MFyH29BE9PH0GsK3-10" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" value="[Giỏ thiếu nguyên liệu hoặc dữ liệu đã đổi]" vertex="1">
+          <mxGeometry height="16" width="2345" x="54" y="2" as="geometry" />
+        </mxCell>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-12" parent="Y2M2MFyH29BE9PH0GsK3-10" style="shape=line;dashed=1;fixDash=1;dashPattern=2 2;labelBackgroundColor=none;" vertex="1">
+          <mxGeometry height="1" width="2399" y="96" as="geometry" />
+        </mxCell>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-13" parent="Y2M2MFyH29BE9PH0GsK3-10" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" value="[Giỏ hợp lệ, khách đã đăng nhập]" vertex="1">
+          <mxGeometry height="16" width="2399" y="98" as="geometry" />
+        </mxCell>
+        <UserObject label="alt" mermaidId="n:f1" mermaidBaseStyle="html=1;shape=umlFrame;dashed=1;fixDash=1;dashPattern=2 2;strokeWidth=2;pointerEvents=0;dropTarget=0;fillColor=#ffffff;strokeColor=#28253D;fontSize=16;align=center;verticalAlign=middle;fontFamily=Recursive;fontColor=#28253D;height=35;width=50;" mermaidBaseValue="alt" id="Y2M2MFyH29BE9PH0GsK3-14">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlFrame;dashed=1;fixDash=1;dashPattern=2 2;strokeWidth=2;pointerEvents=0;dropTarget=0;fontSize=16;align=center;verticalAlign=middle;fontFamily=Recursive;height=35;width=50;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="274" width="2379" x="451" y="1157" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-15" parent="Y2M2MFyH29BE9PH0GsK3-14" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" value="[Chọn VietQR]" vertex="1">
+          <mxGeometry height="16" width="2325" x="54" y="2" as="geometry" />
+        </mxCell>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-16" parent="Y2M2MFyH29BE9PH0GsK3-14" style="shape=line;dashed=1;fixDash=1;dashPattern=2 2;labelBackgroundColor=none;" vertex="1">
+          <mxGeometry height="1" width="2379" y="142" as="geometry" />
+        </mxCell>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-17" parent="Y2M2MFyH29BE9PH0GsK3-14" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" value="[Chọn thẻ]" vertex="1">
+          <mxGeometry height="16" width="2379" y="144" as="geometry" />
+        </mxCell>
+        <UserObject label="alt" mermaidId="n:f2" mermaidBaseStyle="html=1;shape=umlFrame;dashed=1;fixDash=1;dashPattern=2 2;strokeWidth=2;pointerEvents=0;dropTarget=0;fillColor=#ffffff;strokeColor=#28253D;fontSize=16;align=center;verticalAlign=middle;fontFamily=Recursive;fontColor=#28253D;height=35;width=50;" mermaidBaseValue="alt" id="Y2M2MFyH29BE9PH0GsK3-18">
+          <mxCell parent="Y2M2MFyH29BE9PH0GsK3-1" style="html=1;shape=umlFrame;dashed=1;fixDash=1;dashPattern=2 2;strokeWidth=2;pointerEvents=0;dropTarget=0;fontSize=16;align=center;verticalAlign=middle;fontFamily=Recursive;height=35;width=50;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" vertex="1">
+            <mxGeometry height="733" width="2041" x="451" y="1441" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-19" parent="Y2M2MFyH29BE9PH0GsK3-18" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" value="[Thanh toán thành công]" vertex="1">
+          <mxGeometry height="16" width="1987" x="54" y="2" as="geometry" />
+        </mxCell>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-20" parent="Y2M2MFyH29BE9PH0GsK3-18" style="shape=line;dashed=1;fixDash=1;dashPattern=2 2;labelBackgroundColor=none;" vertex="1">
+          <mxGeometry height="1" width="2041" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-21" parent="Y2M2MFyH29BE9PH0GsK3-18" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" value="[Thanh toán lỗi nhưng còn hạn]" vertex="1">
+          <mxGeometry height="16" width="2041" y="282" as="geometry" />
+        </mxCell>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-22" parent="Y2M2MFyH29BE9PH0GsK3-18" style="shape=line;dashed=1;fixDash=1;dashPattern=2 2;labelBackgroundColor=none;" vertex="1">
+          <mxGeometry height="1" width="2041" y="417" as="geometry" />
+        </mxCell>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-23" parent="Y2M2MFyH29BE9PH0GsK3-18" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;labelBackgroundColor=none;" value="[Hết hạn 2 phút]" vertex="1">
+          <mxGeometry height="16" width="2041" y="419" as="geometry" />
+        </mxCell>
+        <UserObject label="Chọn món, size, topping và bấm Tiến hành thanh toán" mermaidId="e:Khach-&gt;Cart#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Chọn món, size, topping và bấm Tiến hành thanh toán" id="Y2M2MFyH29BE9PH0GsK3-24">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-2" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-3">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="696" y="505" />
+              </Array>
+              <mxPoint x="461" y="505" as="sourcePoint" />
+              <mxPoint x="930" y="505" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="POST /api/cart/validate" mermaidId="e:Cart-&gt;Inventory#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="POST /api/cart/validate" id="Y2M2MFyH29BE9PH0GsK3-25">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-3" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-4">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1051" y="551" />
+              </Array>
+              <mxPoint x="930" y="551" as="sourcePoint" />
+              <mxPoint x="1173" y="551" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Đọc món, giá, công thức và nguyên liệu" mermaidId="e:Inventory-&gt;DB#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Đọc món, giá, công thức và nguyên liệu" id="Y2M2MFyH29BE9PH0GsK3-26">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-4" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-6">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1519" y="597" />
+              </Array>
+              <mxPoint x="1173" y="597" as="sourcePoint" />
+              <mxPoint x="1865" y="597" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Kết quả kiểm tra giỏ" mermaidId="e:Inventory-&gt;Cart#0" mermaidBaseStyle="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Kết quả kiểm tra giỏ" id="Y2M2MFyH29BE9PH0GsK3-27">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-4" style="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-3">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1051" y="643" />
+              </Array>
+              <mxPoint x="1173" y="643" as="sourcePoint" />
+              <mxPoint x="930" y="643" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Báo lỗi và yêu cầu sửa giỏ" mermaidId="e:Cart-&gt;Khach#0" mermaidBaseStyle="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Báo lỗi và yêu cầu sửa giỏ" id="Y2M2MFyH29BE9PH0GsK3-28">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-3" style="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-2">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="696" y="734" />
+              </Array>
+              <mxPoint x="930" y="734" as="sourcePoint" />
+              <mxPoint x="461" y="734" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="POST /api/orders với items và promoCode" mermaidId="e:Cart-&gt;Orders#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="POST /api/orders với items và promoCode" id="Y2M2MFyH29BE9PH0GsK3-29">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-3" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-5">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1210" y="825" />
+              </Array>
+              <mxPoint x="930" y="825" as="sourcePoint" />
+              <mxPoint x="1490" y="825" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Tính lại giá và nhu cầu nguyên liệu" mermaidId="e:Orders-&gt;Inventory#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Tính lại giá và nhu cầu nguyên liệu" id="Y2M2MFyH29BE9PH0GsK3-30">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-5" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-4">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1331" y="871" />
+              </Array>
+              <mxPoint x="1490" y="871" as="sourcePoint" />
+              <mxPoint x="1173" y="871" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Transaction kiểm tra lại và tăng reserved" mermaidId="e:Orders-&gt;DB#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Transaction kiểm tra lại và tăng reserved" id="Y2M2MFyH29BE9PH0GsK3-31">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-5" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-6">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1678" y="917" />
+              </Array>
+              <mxPoint x="1490" y="917" as="sourcePoint" />
+              <mxPoint x="1865" y="917" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Lưu Order PENDING và OrderItem" mermaidId="e:Orders-&gt;DB#1" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Lưu Order PENDING và OrderItem" id="Y2M2MFyH29BE9PH0GsK3-32">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-5" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-6">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1678" y="963" />
+              </Array>
+              <mxPoint x="1490" y="963" as="sourcePoint" />
+              <mxPoint x="1865" y="963" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTP 201, orderId, reservationExpiresAt" mermaidId="e:Orders-&gt;Cart#0" mermaidBaseStyle="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="HTTP 201, orderId, reservationExpiresAt" id="Y2M2MFyH29BE9PH0GsK3-33">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-5" style="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-3">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1210" y="1009" />
+              </Array>
+              <mxPoint x="1490" y="1009" as="sourcePoint" />
+              <mxPoint x="930" y="1009" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Mở /checkout?orderId=..." mermaidId="e:Cart-&gt;Checkout#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Mở /checkout?orderId=..." id="Y2M2MFyH29BE9PH0GsK3-34">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-3" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-7">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1498" y="1055" />
+              </Array>
+              <mxPoint x="930" y="1055" as="sourcePoint" />
+              <mxPoint x="2066" y="1055" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="GET /api/checkout/status/:orderId mỗi 2 giây" mermaidId="e:Checkout-&gt;Payment#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="GET /api/checkout/status/:orderId mỗi 2 giây" id="Y2M2MFyH29BE9PH0GsK3-35">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-7" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-8">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2274" y="1101" />
+              </Array>
+              <mxPoint x="2066" y="1101" as="sourcePoint" />
+              <mxPoint x="2482" y="1101" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Trạng thái và hạn thanh toán" mermaidId="e:Payment-&gt;Checkout#0" mermaidBaseStyle="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Trạng thái và hạn thanh toán" id="Y2M2MFyH29BE9PH0GsK3-36">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-8" style="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-7">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2274" y="1147" />
+              </Array>
+              <mxPoint x="2482" y="1147" as="sourcePoint" />
+              <mxPoint x="2066" y="1147" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Chuyển khoản theo QR và nội dung đơn" mermaidId="e:Khach-&gt;SePay#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Chuyển khoản theo QR và nội dung đơn" id="Y2M2MFyH29BE9PH0GsK3-37">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-2" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-9">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1641" y="1238" />
+              </Array>
+              <mxPoint x="461" y="1238" as="sourcePoint" />
+              <mxPoint x="2820" y="1238" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="POST /api/checkout/sepay-webhook" mermaidId="e:SePay-&gt;Payment#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="POST /api/checkout/sepay-webhook" id="Y2M2MFyH29BE9PH0GsK3-38">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-9" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-8">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2651" y="1284" />
+              </Array>
+              <mxPoint x="2820" y="1284" as="sourcePoint" />
+              <mxPoint x="2482" y="1284" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Xác nhận thanh toán" mermaidId="e:Khach-&gt;Checkout#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Xác nhận thanh toán" id="Y2M2MFyH29BE9PH0GsK3-39">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-2" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-7">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1263" y="1375" />
+              </Array>
+              <mxPoint x="461" y="1375" as="sourcePoint" />
+              <mxPoint x="2066" y="1375" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="POST /api/checkout với Idempotency-Key" mermaidId="e:Checkout-&gt;Payment#1" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="POST /api/checkout với Idempotency-Key" id="Y2M2MFyH29BE9PH0GsK3-40">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-7" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-8">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2274" y="1421" />
+              </Array>
+              <mxPoint x="2066" y="1421" as="sourcePoint" />
+              <mxPoint x="2482" y="1421" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Lưu Payment SUCCESS, Order PAID" mermaidId="e:Payment-&gt;DB#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Lưu Payment SUCCESS, Order PAID" id="Y2M2MFyH29BE9PH0GsK3-41">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-8" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-6">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2174" y="1522" />
+              </Array>
+              <mxPoint x="2482" y="1522" as="sourcePoint" />
+              <mxPoint x="1865" y="1522" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Trừ onHand và giảm reserved" mermaidId="e:Payment-&gt;Inventory#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Trừ onHand và giảm reserved" id="Y2M2MFyH29BE9PH0GsK3-42">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-8" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-4">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1827" y="1568" />
+              </Array>
+              <mxPoint x="2482" y="1568" as="sourcePoint" />
+              <mxPoint x="1173" y="1568" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Dùng voucher và cộng điểm" mermaidId="e:Payment-&gt;DB#1" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Dùng voucher và cộng điểm" id="Y2M2MFyH29BE9PH0GsK3-43">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-8" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-6">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2174" y="1614" />
+              </Array>
+              <mxPoint x="2482" y="1614" as="sourcePoint" />
+              <mxPoint x="1865" y="1614" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Trạng thái PAID" mermaidId="e:Payment-&gt;Checkout#1" mermaidBaseStyle="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Trạng thái PAID" id="Y2M2MFyH29BE9PH0GsK3-44">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-8" style="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-7">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2274" y="1660" />
+              </Array>
+              <mxPoint x="2482" y="1660" as="sourcePoint" />
+              <mxPoint x="2066" y="1660" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Hiện hóa đơn và mã đơn" mermaidId="e:Checkout-&gt;Khach#0" mermaidBaseStyle="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Hiện hóa đơn và mã đơn" id="Y2M2MFyH29BE9PH0GsK3-45">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-7" style="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-2">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1263" y="1706" />
+              </Array>
+              <mxPoint x="2066" y="1706" as="sourcePoint" />
+              <mxPoint x="461" y="1706" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Order PAYMENT_FAILED" mermaidId="e:Payment-&gt;DB#2" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Order PAYMENT_FAILED" id="Y2M2MFyH29BE9PH0GsK3-46">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-8" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-6">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2174" y="1797" />
+              </Array>
+              <mxPoint x="2482" y="1797" as="sourcePoint" />
+              <mxPoint x="1865" y="1797" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Cho thử lại trong thời hạn" mermaidId="e:Payment-&gt;Checkout#2" mermaidBaseStyle="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Cho thử lại trong thời hạn" id="Y2M2MFyH29BE9PH0GsK3-47">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-8" style="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-7">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2274" y="1843" />
+              </Array>
+              <mxPoint x="2482" y="1843" as="sourcePoint" />
+              <mxPoint x="2066" y="1843" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Nhả reserved" mermaidId="e:Payment-&gt;Inventory#1" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Nhả reserved" id="Y2M2MFyH29BE9PH0GsK3-48">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-8" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-4">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1827" y="1934" />
+              </Array>
+              <mxPoint x="2482" y="1934" as="sourcePoint" />
+              <mxPoint x="1173" y="1934" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Order CANCELLED" mermaidId="e:Payment-&gt;DB#3" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Order CANCELLED" id="Y2M2MFyH29BE9PH0GsK3-49">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-8" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-6">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="2174" y="1980" />
+              </Array>
+              <mxPoint x="2482" y="1980" as="sourcePoint" />
+              <mxPoint x="1865" y="1980" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Cho tạo lại tối đa một lượt" mermaidId="e:Checkout-&gt;Khach#1" mermaidBaseStyle="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Cho tạo lại tối đa một lượt" id="Y2M2MFyH29BE9PH0GsK3-50">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-7" style="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-2">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1263" y="2026" />
+              </Array>
+              <mxPoint x="2066" y="2026" as="sourcePoint" />
+              <mxPoint x="461" y="2026" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Bấm tạo lại" mermaidId="e:Khach-&gt;Checkout#1" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="Bấm tạo lại" id="Y2M2MFyH29BE9PH0GsK3-51">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-2" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-7">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1263" y="2072" />
+              </Array>
+              <mxPoint x="461" y="2072" as="sourcePoint" />
+              <mxPoint x="2066" y="2072" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="POST /api/orders từ giỏ hiện tại" mermaidId="e:Checkout-&gt;Orders#0" mermaidBaseStyle="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="POST /api/orders từ giỏ hiện tại" id="Y2M2MFyH29BE9PH0GsK3-52">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-7" style="endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-5">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1778" y="2118" />
+              </Array>
+              <mxPoint x="2066" y="2118" as="sourcePoint" />
+              <mxPoint x="1490" y="2118" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="orderId mới nếu vẫn đủ nguyên liệu" mermaidId="e:Orders-&gt;Checkout#0" mermaidBaseStyle="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;strokeColor=#28253D;fontColor=#28253D;fontFamily=Recursive;" mermaidBaseValue="orderId mới nếu vẫn đủ nguyên liệu" id="Y2M2MFyH29BE9PH0GsK3-53">
+          <mxCell edge="1" parent="Y2M2MFyH29BE9PH0GsK3-1" source="Y2M2MFyH29BE9PH0GsK3-5" style="dashed=1;fixDash=1;dashPattern=3 3;endArrow=block;endSize=9;verticalAlign=bottom;spacingBottom=2;edgeStyle=sequenceEdgeStyle;libavoidRouting=0;curved=0;rounded=0;fontSize=16;labelBackgroundColor=none;strokeWidth=1.5;fontColor=default;fontFamily=Recursive;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRecursive;" target="Y2M2MFyH29BE9PH0GsK3-7">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1778" y="2164" />
+              </Array>
+              <mxPoint x="1490" y="2164" as="sourcePoint" />
+              <mxPoint x="2066" y="2164" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <mxCell id="Y2M2MFyH29BE9PH0GsK3-54" parent="1" style="text;whiteSpace=wrap;html=1;fontSize=54;fontStyle=1" value="Giỏ → tạo đơn → thanh toán" vertex="1">
+          <mxGeometry height="83" width="888" x="1253" y="120" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="BZOaJcywo8aTaWlcBU_r" name="Page-2">
+    <mxGraphModel dx="2335" dy="2142" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <UserObject label="" plantUmlData="{&#xa;  &quot;data&quot;: &quot;\n@startuml\n&#39; BrewLite — UML Deployment Diagram, Task 3.2\n&#39; Nguồn: HEAD 42553db8; quan sát live 2026-11-13\n&#39; Giữ nguyên Node ID N1-N19 theo brief.\n\nleft to right direction\nskinparam shadowing false\nskinparam packageStyle rectangle\nskinparam defaultFontName Arial\nskinparam defaultFontSize 11\nskinparam node {\n  BackgroundColor White\n  BorderColor #374151\n  FontColor #111827\n}\nskinparam artifact {\n  BackgroundColor #F9FAFB\n  BorderColor #6B7280\n  FontColor #111827\n}\nskinparam database {\n  BackgroundColor #F3F4F6\n  BorderColor #374151\n  FontColor #111827\n}\nskinparam note {\n  BackgroundColor #FFFBE6\n  BorderColor #A3A3A3\n  FontColor #111827\n}\nskinparam package {\n  BackgroundColor White\n  BorderColor #6B7280\n  FontColor #111827\n}\n\ntitle BrewLite — UML Deployment Diagram (Task 3.2)\\nProduction thực tế + Local + CI/CD | HEAD 42553db8 | Live audit 13-11-2026\n\n&#39; CLIENT — nằm ngoài ba boundary\nnode \&quot;Thiết bị khách hàng / Admin\\nTrình duyệt Web\\n[VERIFIED — LIVE]\&quot; as N1 &lt;&lt;device&gt;&gt;\n\n&#39; BOUNDARY 1 — LOCAL DEVELOPMENT\npackage \&quot;BOUNDARY 1 — DEVELOPER LOCAL WORKSPACE\\nCURRENT / VERIFIED — REPOSITORY\&quot; as LOCAL {\n\n  node \&quot;Developer Workstation\\nWindows + Docker Desktop\\n[VERIFIED — REPO]\&quot; as N8 &lt;&lt;device&gt;&gt; {\n\n    artifact \&quot;Mã nguồn local\\nfrontend/ · backend/\&quot; as SRC_LOCAL\n    artifact \&quot;backend/.env\\nChỉ tên biến; ẩn giá trị secret\&quot; as ENV_LOCAL &lt;&lt;artifact&gt;&gt;\n\n    artifact \&quot;docker-compose.dev.yml\&quot; as SPEC_DEV &lt;&lt;deploymentSpec&gt;&gt;\n    artifact \&quot;docker-compose.app.yml\&quot; as SPEC_APP &lt;&lt;deploymentSpec&gt;&gt;\n\n    node \&quot;Docker Engine / Compose\\nProject: docker\\nMạng bridge nội bộ\&quot; as N9 &lt;&lt;executionEnvironment&gt;&gt; {\n\n      node \&quot;web container\\nNode.js 22 · next start\\nContainer port 3000\\nHost port 3000\\n[VERIFIED — REPO]\&quot; as N12 &lt;&lt;executionEnvironment&gt;&gt; {\n        artifact \&quot;Next.js build output\\n.next/\&quot; as ART_WEB &lt;&lt;artifact&gt;&gt;\n      }\n\n      node \&quot;api container\\nNode.js 22 · node dist/main.js\\nContainer port 3001\\nHost binding 127.0.0.1:3001\\n[VERIFIED — REPO]\&quot; as N11 &lt;&lt;executionEnvironment&gt;&gt; {\n        artifact \&quot;NestJS build output\\ndist/main.js\&quot; as ART_API &lt;&lt;artifact&gt;&gt;\n      }\n\n      node \&quot;db container\\nPostgreSQL 16-alpine\\nContainer port 5432\\nHost port 5433 — publish mọi interface\\n[VERIFIED — REPO]\&quot; as N10 &lt;&lt;executionEnvironment&gt;&gt; {\n        database \&quot;BrewLite DB\\nLocal PostgreSQL\&quot; as DB_LOCAL\n        artifact \&quot;docker_brewlite_pgdata\\nMount: /var/lib/postgresql/data\\nDocker local driver\&quot; as N13 &lt;&lt;artifact&gt;&gt;\n      }\n    }\n  }\n}\n\n&#39; BOUNDARY 2 — CI/CD\npackage \&quot;BOUNDARY 2 — CI/CD &amp; CONTAINER REGISTRY\&quot; as CICD {\n\n  node \&quot;GitHub Repository\\n[VERIFIED — REPO]\&quot; as N14 {\n    artifact \&quot;PhucTruong11/brewlite\\nHEAD: 42553db8\&quot; as REPO_MAIN &lt;&lt;artifact&gt;&gt;\n    artifact \&quot;PhucTruong11/brewlite-assignment2\\nSnapshot: 3e7744a7\&quot; as REPO_A2 &lt;&lt;artifact&gt;&gt;\n    artifact \&quot;workflows/ci.yml\\nACTIVE — PR vào main\&quot; as CI_FILE &lt;&lt;artifact&gt;&gt;\n    artifact \&quot;workflows/cd.yml.example\\nTEMPLATE — chưa kích hoạt\&quot; as CD_FILE &lt;&lt;artifact&gt;&gt;\n  }\n\n  node \&quot;GitHub Actions Runner\\nubuntu-latest · Node.js 22\\n[VERIFIED — REPO]\&quot; as N15 &lt;&lt;executionEnvironment&gt;&gt;\n\n  node \&quot;GitHub Container Registry (GHCR)\\n[PLANNED / TEMPLATE]\\nChưa xác minh image đã push\&quot; as N16\n}\n\n&#39; BOUNDARY 3 — PRODUCTION CLOUD\npackage \&quot;BOUNDARY 3 — PRODUCTION CLOUD\\nVERIFIED LIVE TOPOLOGY (với giới hạn bằng chứng được ghi rõ)\&quot; as PROD {\n\n  node \&quot;Vercel Platform\\nEdge / CDN / Runtime\\nHTTPS public: 443\\n[VERIFIED — LIVE]\&quot; as N2 {\n    node \&quot;Next.js Frontend\\nNext.js 16.4.2 · React 19.2.8\\nSSR + static assets\\n[VERIFIED — REPO + LIVE]\&quot; as N3 &lt;&lt;executionEnvironment&gt;&gt; {\n      artifact \&quot;Next.js application\\nSSR pages + static assets\&quot; as ART_FRONT &lt;&lt;artifact&gt;&gt;\n      artifact \&quot;frontend/next.config.ts\\nrewrite /api/* → API destination\&quot; as ART_REWRITE &lt;&lt;artifact&gt;&gt;\n    }\n  }\n\n  node \&quot;Cloudflare\\nProxy phía trước Render\\nHeader Cf-Ray quan sát được\\n[VERIFIED LIVE — vai trò chi tiết chưa xác minh]\&quot; as N4\n\n  node \&quot;Render Service\\nPublic HTTPS: 443\\nRuntime Node.js 22 [INFERRED]\\n[VERIFIED — LIVE]\&quot; as N5 {\n    node \&quot;NestJS API Runtime\\nNestJS + Prisma Client\\nInternal port 3001 [INFERRED]\\nREST prefix /api + cron scheduler\\n[VERIFIED — REPO]\&quot; as N6 &lt;&lt;executionEnvironment&gt;&gt; {\n      artifact \&quot;Backend build output\\ndist/main.js\&quot; as ART_NEST &lt;&lt;artifact&gt;&gt;\n    }\n  }\n\n  node \&quot;Supabase\\nManaged PostgreSQL\\nPersistent storage do Supabase quản lý\\n[OWNER-PROVIDED — NOT VERIFIED độc lập]\&quot; as N7\n}\n\n&#39; EXTERNAL SERVICES — nằm ngoài ba boundary\nnode \&quot;SePay\\nQR image + payment webhook\\n[VERIFIED — REPO]\&quot; as N17\nnode \&quot;PayOS\\nPayment webhook\\n[VERIFIED — REPO]\&quot; as N18\nnode \&quot;SMTP Server\\nGmail theo cấu hình mặc định\\n[VERIFIED — REPO]\&quot; as N19\n\n&#39; COMMUNICATION PATHS — Association nét liền\n&#39; Production\nN1 -- N2 : HTTPS / TCP 443\\nTruy cập website\nN3 -- N4 : HTTPS / TCP 443\\nNext.js rewrite /api/* → API\nN4 -- N5 : HTTPS / TCP 443\\nProxy tới Render public endpoint\nN6 -- N7 : PostgreSQL / TCP 5432 hoặc 6543\\n[OWNER-PROVIDED; port + TLS UNKNOWN]\n\n&#39; Payment and email\nN1 -- N17 : HTTPS / TCP 443\\nTải ảnh QR từ qr.sepay.vn\nN17 -- N5 : HTTPS / TCP 443\\nWebhook: /api/checkout/sepay-webhook\\nRender public endpoint\nN18 -- N5 : HTTPS / TCP 443\\nWebhook: /api/checkout/payos-webhook\\nRender public endpoint\nN5 -- N6 : HTTP / TCP 3001\\nRender service → NestJS runtime [INFERRED]\nN6 -- N19 : SMTP(S) / TCP 465 hoặc 587\\nGửi email OTP\n\n&#39; Local Docker\nN12 -- N11 : HTTP / TCP 3001\\nDocker DNS: api:3001\nN11 -- N10 : PostgreSQL / TCP 5432\\nDocker network nội bộ\nN8 -- N12 : HTTP / TCP 3000\\nHost → web container\nN8 -- N10 : TCP 5433\\nHost DB access; publish mọi interface\nN8 -- N11 : HTTP / TCP 3001\\nHost loopback 127.0.0.1:3001\n\n&#39; CI active\nN14 -- N15 : HTTPS / TCP 443\\nTrigger PR vào main\n\n&#39; DEPENDENCIES / CONDITIONAL OR PLANNED — nét đứt\n&#39; Không gọi các đường này là Communication Path đã VERIFIED.\nN15 ..&gt; N16 : HTTPS / TCP 443\\nPush Docker image — PLANNED / TEMPLATE\nN14 ..&gt; N2 : Git integration deployment\\n[INFERRED — repo Assignment 2]\nN14 ..&gt; N5 : Git integration deployment\\n[INFERRED — repo Assignment 2]\nN1 ..&gt; N5 : Direct cross-origin API call\\n[INFERRED — chỉ khi env là URL tuyệt đối]\n\n&#39; NOTES — giới hạn bằng chứng và vận hành\nnote bottom of N3\n  Rewrite destination được chọn theo:\n  API_INTERNAL_URL ?? NEXT_PUBLIC_API_URL\n  ?? fallback http://localhost:3001\n  Giá trị env thực tế trên Vercel: NOT VERIFIED.\nend note\n\nnote bottom of N5\n  Render response có header Rndr-Id.\n  Runtime type / region / plan / NODE_ENV / env vars:\n  NOT VERIFIED. Node.js 22 là INFERRED.\n  Port 3001 nội bộ là INFERRED; public HTTPS 443.\nend note\n\nnote bottom of N6\n  Không có endpoint /health chuyên dụng trong source.\n  Health check production: UNKNOWN / NOT VERIFIED.\n  Production logging qua Render: cơ chế chi tiết chưa xác minh.\n  CORS production cho phép origin Vercel đã quan sát.\n  JWT cookie access_token: HttpOnly, SameSite=Lax;\n  Secure khi NODE_ENV=production.\nend note\n\nnote bottom of N15\n  CI active: trigger khi mở Pull Request vào main.\n  2 job backend/frontend trên ubuntu-latest, Node.js 22.\n  npm ci; backend prisma generate; lint, build, test.\n  Không build Docker image và không deploy.\nend note\n\nnote bottom of N7\n  Supabase PostgreSQL được chủ dự án xác nhận qua README.\n  Direct DB port 5432 hay pooler 6543: UNKNOWN.\n  TLS, region, PostgreSQL version, backup/retention: UNKNOWN.\n  Không mô hình hóa thành container hoặc Docker volume.\nend note\n\nnote bottom of N10\n  Health check local: pg_isready -U brewlite.\n  Logging: json-file, max-size 10m, max-file 3.\n  Resource limit mỗi container: 512 MB RAM / 0.5 CPU.\nend note\n\nnote bottom of N11\n  Health check local: GET /api/products.\n  Không có endpoint /health chuyên dụng.\n  Logging: json-file, max-size 10m, max-file 3.\nend note\n\nnote bottom of N12\n  Health check local: GET /.\n  Logging: json-file, max-size 10m, max-file 3.\nend note\n\nlegend bottom\n  |= Ký hiệu |= Ý nghĩa |\n  | Association nét liền | Communication Path giữa các Node; trạng thái bằng chứng ghi trong nhãn |\n  | Dependency nét đứt | Quan hệ tích hợp / dự kiến / suy luận; không phải Communication Path đã xác minh |\n  | [VERIFIED — REPO] | Có bằng chứng từ repository tại HEAD nêu trong tiêu đề |\n  | [VERIFIED — LIVE] | Quan sát được trên deployment đang chạy ngày 13-11-2026 |\n  | [OWNER-PROVIDED] | Chủ dự án cung cấp; chưa xác minh độc lập |\n  | [INFERRED] | Suy luận có cơ sở; không coi là cấu hình đã xác minh |\n  | [PLANNED / TEMPLATE] | Có trong template/kế hoạch nhưng chưa kích hoạt |\n  | [UNKNOWN / NOT VERIFIED] | Không tự điền hoặc suy diễn |\nendlegend\n\n@enduml\n&quot;,&#xa;  &quot;config&quot;: null&#xa;}" id="iOOD7KRn9CtJKhw9IrwI-1">
+          <mxCell connectable="0" parent="1" style="group;transparentBounds=1;editIcon=1;lockedGroup=0;groupPadding=10;" vertex="1">
+            <mxGeometry as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«device»&#xa;Thiết bị khách hàng / Admin&#xa;Trình duyệt Web&#xa;" plantUmlId="n_0" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«device»&#xa;Thiết bị khách hàng / Admin&#xa;Trình duyệt Web&#xa;[VERIFIED — LIVE]" id="iOOD7KRn9CtJKhw9IrwI-2">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="78" width="226" x="496.5" y="86" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="SePay&#xa;QR image + payment webhook" plantUmlId="n_1" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="SePay&#xa;QR image + payment webhook&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-3">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="233" x="1235" y="726.5" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="PayOS&#xa;Payment webhook" plantUmlId="n_2" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="PayOS&#xa;Payment webhook&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-4">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="158" x="530.5" y="224" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="SMTP Server&#xa;Gmail theo cấu hình mặc định" plantUmlId="n_3" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="SMTP Server&#xa;Gmail theo cấu hình mặc định&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-5">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="237" x="2997.25" y="880" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="BOUNDARY 1 — DEVELOPER LOCAL WORKSPACE&#xa;" plantUmlId="c_4" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=none;strokeColor=#181818;verticalAlign=top;align=center;spacingTop=-4;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontFamily=Arial;" plantUmlBaseValue="BOUNDARY 1 — DEVELOPER LOCAL WORKSPACE&#xa;CURRENT / VERIFIED — REPOSITORY" id="iOOD7KRn9CtJKhw9IrwI-6">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=none;strokeColor=#181818;verticalAlign=top;align=center;spacingTop=-4;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="747" width="1047.7649999999999" x="81.99750000000006" y="342" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«device»&#xa;Developer Workstation&#xa;Windows + Docker Desktop&#xa;" plantUmlId="c_5" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«device»&#xa;Developer Workstation&#xa;Windows + Docker Desktop&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-7">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-6" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="686" width="1017.765" x="0.37999999999994394" y="51" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«executionEnvironment»&#xa;Docker Engine / Compose&#xa;" plantUmlId="c_6" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«executionEnvironment»&#xa;Docker Engine / Compose&#xa;Project: docker&#xa;Mạng bridge nội bộ" id="iOOD7KRn9CtJKhw9IrwI-8">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-7" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="391" width="977.765" x="15" y="85" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«executionEnvironment»&#xa;web container&#xa;Node.js 22 · next start&#xa;Container port 3000&#xa;Host port 3000" plantUmlId="c_7" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«executionEnvironment»&#xa;web container&#xa;Node.js 22 · next start&#xa;Container port 3000&#xa;Host port 3000&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-9">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-8" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="193" width="245.155" x="15" y="133.5" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;Next.js build output&#xa;.next/" plantUmlId="n_8" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;Next.js build output&#xa;.next/" id="iOOD7KRn9CtJKhw9IrwI-10">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-9" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="41" width="148.58" x="46" y="140.5" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_9" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-11">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-10" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«executionEnvironment»&#xa;api container&#xa;Node.js 22 · node dist/main.js&#xa;Container port 3001&#xa;Host binding 127.0.0.1:3001" plantUmlId="c_10" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«executionEnvironment»&#xa;api container&#xa;Node.js 22 · node dist/main.js&#xa;Container port 3001&#xa;Host binding 127.0.0.1:3001&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-12">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-8" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="193" width="284.21500000000003" x="295.155" y="133.5" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;NestJS build output&#xa;dist/main.js" plantUmlId="n_11" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;NestJS build output&#xa;dist/main.js" id="iOOD7KRn9CtJKhw9IrwI-13">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-12" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="153" x="60.607500000000016" y="115" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_12" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-14">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-13" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«executionEnvironment»&#xa;db container&#xa;PostgreSQL 16-alpine&#xa;Container port 5432&#xa;Host port 5433 — publish mọi interface" plantUmlId="c_13" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«executionEnvironment»&#xa;db container&#xa;PostgreSQL 16-alpine&#xa;Container port 5432&#xa;Host port 5433 — publish mọi interface&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-15">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-8" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="290" width="338.395" x="614.37" y="85" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="BrewLite DB&#xa;Local PostgreSQL" plantUmlId="n_14" plantUmlBaseStyle="shape=cylinder3;size=10;boundedLbl=1;backgroundOutline=1;fillColor=#F3F4F6;strokeColor=#374151;fontSize=11;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="BrewLite DB&#xa;Local PostgreSQL" id="iOOD7KRn9CtJKhw9IrwI-16">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-15" style="shape=cylinder3;size=10;boundedLbl=1;backgroundOutline=1;fillColor=#F3F4F6;strokeColor=#374151;fontSize=11;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="46" width="134" x="97.19749999999999" y="228" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;docker_brewlite_pgdata&#xa;Mount: /var/lib/postgresql/data&#xa;Docker local driver" plantUmlId="n_15" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;docker_brewlite_pgdata&#xa;Mount: /var/lib/postgresql/data&#xa;Docker local driver" id="iOOD7KRn9CtJKhw9IrwI-17">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-15" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="78" width="247" x="40.69749999999999" y="115" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_16" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-18">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-17" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTP / TCP 3001&#xa;Docker DNS: api:3001" plantUmlId="e_59" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTP / TCP 3001&#xa;Docker DNS: api:3001" id="iOOD7KRn9CtJKhw9IrwI-61">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-8" source="iOOD7KRn9CtJKhw9IrwI-9" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-12">
+            <mxGeometry relative="1" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="PostgreSQL / TCP 5432&#xa;Docker network nội bộ" plantUmlId="e_60" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="PostgreSQL / TCP 5432&#xa;Docker network nội bộ" id="iOOD7KRn9CtJKhw9IrwI-62">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-8" source="iOOD7KRn9CtJKhw9IrwI-12" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-15">
+            <mxGeometry relative="1" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Mã nguồn local&#xa;frontend/ · backend/" plantUmlId="n_17" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="Mã nguồn local&#xa;frontend/ · backend/" id="iOOD7KRn9CtJKhw9IrwI-19">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-7" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="46" width="172" x="66.57749999999999" y="519" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_18" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-20">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-19" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;backend/.env&#xa;Chỉ tên biến; ẩn giá trị secret" plantUmlId="n_19" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;backend/.env&#xa;Chỉ tên biến; ẩn giá trị secret" id="iOOD7KRn9CtJKhw9IrwI-21">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-7" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="229" x="38.077499999999986" y="608" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_20" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-22">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-21" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«deploymentSpec»&#xa;docker-compose.dev.yml" plantUmlId="n_21" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«deploymentSpec»&#xa;docker-compose.dev.yml" id="iOOD7KRn9CtJKhw9IrwI-23">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-7" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="46" width="199" x="342.0775" y="519" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_22" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-24">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-23" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«deploymentSpec»&#xa;docker-compose.app.yml" plantUmlId="n_23" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«deploymentSpec»&#xa;docker-compose.app.yml" id="iOOD7KRn9CtJKhw9IrwI-25">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-7" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="46" width="199" x="342.0775" y="616" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_24" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-26">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-25" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTP / TCP 3000&#xa;Host → web container" plantUmlId="e_61" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTP / TCP 3000&#xa;Host → web container" id="iOOD7KRn9CtJKhw9IrwI-63">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-7" source="iOOD7KRn9CtJKhw9IrwI-7" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-9">
+            <mxGeometry relative="1" x="0.0857" y="-22" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTP / TCP 3001&#xa;Host loopback 127.0.0.1:3001" plantUmlId="e_63" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTP / TCP 3001&#xa;Host loopback 127.0.0.1:3001" id="iOOD7KRn9CtJKhw9IrwI-65">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-7" source="iOOD7KRn9CtJKhw9IrwI-7" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-12">
+            <mxGeometry relative="1" x="0.0376" y="1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="TCP 5433&lt;br&gt;Host DB access;&amp;nbsp;&lt;div&gt;publish mọi interface&lt;/div&gt;" plantUmlId="e_62" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="TCP 5433&#xa;Host DB access; publish mọi interface" id="iOOD7KRn9CtJKhw9IrwI-64">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-7" source="iOOD7KRn9CtJKhw9IrwI-7" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-15">
+            <mxGeometry relative="1" x="-0.5285" y="4" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Health check local: pg_isready -U brewlite.&#xa;Logging: json-file, max-size 10m, max-file 3.&#xa;Resource limit mỗi container: 512 MB RAM / 0.5 CPU." plantUmlId="note_79" plantUmlBaseStyle="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="Health check local: pg_isready -U brewlite.&#xa;Logging: json-file, max-size 10m, max-file 3.&#xa;Resource limit mỗi container: 512 MB RAM / 0.5 CPU." id="iOOD7KRn9CtJKhw9IrwI-81">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-7" style="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="56" width="342" x="650.7625" y="497" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="BOUNDARY 2 — CI/CD &amp; CONTAINER REGISTRY" plantUmlId="c_25" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=none;strokeColor=#181818;verticalAlign=top;align=center;spacingTop=-4;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontFamily=Arial;" plantUmlBaseValue="BOUNDARY 2 — CI/CD &amp; CONTAINER REGISTRY" id="iOOD7KRn9CtJKhw9IrwI-27">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=none;strokeColor=#181818;verticalAlign=top;align=center;spacingTop=-4;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="276" width="1181" x="19" y="1153" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="GitHub Repository" plantUmlId="c_26" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="GitHub Repository&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-28">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-27" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="230" width="621" x="15" y="34" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;PhucTruong11/brewlite&#xa;HEAD: 42553db8" plantUmlId="n_27" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;PhucTruong11/brewlite&#xa;HEAD: 42553db8" id="iOOD7KRn9CtJKhw9IrwI-29">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-28" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="187" x="60" y="55" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_28" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-30">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-29" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;PhucTruong11/brewlite-assignment2&#xa;Snapshot: 3e7744a7" plantUmlId="n_29" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;PhucTruong11/brewlite-assignment2&#xa;Snapshot: 3e7744a7" id="iOOD7KRn9CtJKhw9IrwI-31">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-28" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="277" x="15" y="152" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_30" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-32">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-31" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;workflows/ci.yml&#xa;ACTIVE — PR vào main" plantUmlId="n_31" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;workflows/ci.yml&#xa;ACTIVE — PR vào main" id="iOOD7KRn9CtJKhw9IrwI-33">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-28" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="168" x="406.5" y="55" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_32" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-34">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-33" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;workflows/cd.yml.example&#xa;TEMPLATE — chưa kích hoạt" plantUmlId="n_33" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;workflows/cd.yml.example&#xa;TEMPLATE — chưa kích hoạt" id="iOOD7KRn9CtJKhw9IrwI-35">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-28" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="211" x="385" y="152" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_34" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-36">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-35" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«executionEnvironment»&#xa;GitHub Actions Runner&#xa;ubuntu-latest · Node.js 22" plantUmlId="n_35" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«executionEnvironment»&#xa;GitHub Actions Runner&#xa;ubuntu-latest · Node.js 22&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-37">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-27" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="78" width="168" x="747" y="110" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="GitHub Container&#xa; Registry (GHCR)" plantUmlId="n_36" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="GitHub Container Registry (GHCR)&#xa;[PLANNED / TEMPLATE]&#xa;Chưa xác minh image đã push" id="iOOD7KRn9CtJKhw9IrwI-38">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-27" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="143" x="1030" y="118" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTPS / TCP 443&#xa;Trigger PR vào main" plantUmlId="e_64" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTPS / TCP 443&#xa;Trigger PR vào main" id="iOOD7KRn9CtJKhw9IrwI-66">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-27" source="iOOD7KRn9CtJKhw9IrwI-28" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;exitX=0;exitY=0.507;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1.003;entryY=0.515;entryDx=0;entryDy=0;entryPerimeter=0;" target="iOOD7KRn9CtJKhw9IrwI-37">
+            <mxGeometry relative="1" x="-0.0588" y="2" as="geometry">
+              <mxPoint as="offset" />
+              <mxPoint x="645" y="149.23000000000002" as="sourcePoint" />
+              <mxPoint x="755.664" y="149.77999999999997" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTPS / TCP 443&lt;br&gt;Push Docker image —&amp;nbsp;" plantUmlId="e_65" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=classicThin;endFill=1;dashed=1;dashPattern=7 7;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTPS / TCP 443&#xa;Push Docker image — PLANNED / TEMPLATE" id="iOOD7KRn9CtJKhw9IrwI-67">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-27" source="iOOD7KRn9CtJKhw9IrwI-37" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=classicThin;endFill=1;dashed=1;dashPattern=7 7;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-38">
+            <mxGeometry relative="1" x="0.0857" y="2" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="CI active: trigger khi mở Pull Request vào main.&#xa;2 job backend/frontend trên ubuntu-latest, Node.js 22.&#xa;npm ci; backend prisma generate; lint, build, test.&#xa;Không build Docker image và không deploy." plantUmlId="note_75" plantUmlBaseStyle="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="CI active: trigger khi mở Pull Request vào main.&#xa;2 job backend/frontend trên ubuntu-latest, Node.js 22.&#xa;npm ci; backend prisma generate; lint, build, test.&#xa;Không build Docker image và không deploy." id="iOOD7KRn9CtJKhw9IrwI-77">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-27" style="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="289" x="660" y="37" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="noteptr_72" plantUmlBaseStyle="shape=triangle;fillColor=#FFFBE6;strokeColor=#A3A3A3;strokeWidth=0.5;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;direction=north;part=1;" plantUmlBaseValue="" id="gOYOnjfyIR3gPot0cXcn-3">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-27" style="shape=triangle;fillColor=#FFFBE6;strokeColor=#A3A3A3;strokeWidth=0.5;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;direction=north;part=1;rotation=-179;" vertex="1">
+            <mxGeometry height="10" width="8" x="810.77" y="100" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="BOUNDARY 3 — PRODUCTION CLOUD" plantUmlId="c_37" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=none;strokeColor=#181818;verticalAlign=top;align=center;spacingTop=-4;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontFamily=Arial;" plantUmlBaseValue="BOUNDARY 3 — PRODUCTION CLOUD&#xa;VERIFIED LIVE TOPOLOGY (với giới hạn bằng chứng được ghi rõ)" id="iOOD7KRn9CtJKhw9IrwI-39">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=none;strokeColor=#181818;verticalAlign=top;align=center;spacingTop=-4;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="437" width="1459.25" x="1503" y="539" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Vercel Platform&#xa;Edge / CDN / Runtime&#xa;HTTPS public: 443" plantUmlId="c_38" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="Vercel Platform&#xa;Edge / CDN / Runtime&#xa;HTTPS public: 443&#xa;[VERIFIED — LIVE]" id="iOOD7KRn9CtJKhw9IrwI-40">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-39" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="376" width="320" x="15" y="49" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«executionEnvironment»&#xa;Next.js Frontend&#xa;Next.js 16.4.2 · React 19.2.8&#xa;SSR + static assets" plantUmlId="c_39" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«executionEnvironment»&#xa;Next.js Frontend&#xa;Next.js 16.4.2 · React 19.2.8&#xa;SSR + static assets&#xa;[VERIFIED — REPO + LIVE]" id="iOOD7KRn9CtJKhw9IrwI-41">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-40" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="275" width="280" x="15" y="85" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;Next.js application&#xa;SSR pages + static assets" plantUmlId="n_40" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;Next.js application&#xa;SSR pages + static assets" id="iOOD7KRn9CtJKhw9IrwI-42">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-41" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="196" x="37" y="197" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_41" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-43">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-42" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;frontend/next.config.ts&#xa;rewrite /api/* → API destination" plantUmlId="n_42" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;frontend/next.config.ts&#xa;rewrite /api/* → API destination" id="iOOD7KRn9CtJKhw9IrwI-44">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-41" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="240" x="15" y="100" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_43" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-45">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-44" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Render Service&#xa;Public HTTPS: 443&#xa;Runtime Node.js 22" plantUmlId="c_44" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="Render Service&#xa;Public HTTPS: 443&#xa;Runtime Node.js 22 [INFERRED]&#xa;[VERIFIED — LIVE]" id="iOOD7KRn9CtJKhw9IrwI-46">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-39" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="294" width="352.2500000000001" x="748" y="90" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«executionEnvironment»&#xa;NestJS API Runtime&#xa;NestJS + Prisma Client&#xa;Internal port 3001&#xa;REST prefix /api + cron scheduler" plantUmlId="c_45" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«executionEnvironment»&#xa;NestJS API Runtime&#xa;NestJS + Prisma Client&#xa;Internal port 3001 [INFERRED]&#xa;REST prefix /api + cron scheduler&#xa;[VERIFIED — REPO]" id="iOOD7KRn9CtJKhw9IrwI-47">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-46" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;verticalAlign=top;align=center;spacingTop=7;spacingRight=10;fontSize=11;fontStyle=1;whiteSpace=wrap;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="193" width="312.2500000000001" x="15" y="85" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="«artifact»&#xa;Backend build output&#xa;dist/main.js" plantUmlId="n_46" plantUmlBaseStyle="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="«artifact»&#xa;Backend build output&#xa;dist/main.js" id="iOOD7KRn9CtJKhw9IrwI-48">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-47" style="rounded=1;absoluteArcSize=1;arcSize=5;fillColor=#F9FAFB;strokeColor=#6B7280;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=2;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="62" width="164" x="69.12500000000006" y="115" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="ci_47" plantUmlBaseStyle="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-49">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-48" style="shape=note;size=6;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=0.5;part=1;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="14" relative="1" width="12" x="1" as="geometry">
+              <mxPoint x="-17" y="5" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTP / TCP 3001&lt;br&gt;Render service → NestJS runtime" plantUmlId="e_57" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;labelPosition=right;align=left;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTP / TCP 3001&#xa;Render service → NestJS runtime [INFERRED]" id="iOOD7KRn9CtJKhw9IrwI-59">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-46" source="iOOD7KRn9CtJKhw9IrwI-46" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;labelPosition=right;align=left;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;entryX=0.34;entryY=0.004;entryDx=0;entryDy=0;entryPerimeter=0;" target="iOOD7KRn9CtJKhw9IrwI-47">
+            <mxGeometry relative="1" x="0.4254" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Cloudflare&#xa;Proxy phía trước Render&#xa;Header Cf-Ray quan sát được" plantUmlId="n_48" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="Cloudflare&#xa;Proxy phía trước Render&#xa;Header Cf-Ray quan sát được&#xa;[VERIFIED LIVE — vai trò chi tiết chưa xác minh]" id="iOOD7KRn9CtJKhw9IrwI-50">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-39" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="78" width="343" x="370" y="291" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Supabase&#xa;Managed PostgreSQL&#xa;Persistent storage do Supabase quản lý" plantUmlId="n_49" plantUmlBaseStyle="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="Supabase&#xa;Managed PostgreSQL&#xa;Persistent storage do Supabase quản lý&#xa;[OWNER-PROVIDED — NOT VERIFIED độc lập]" id="iOOD7KRn9CtJKhw9IrwI-51">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-39" style="shape=cube;size=10;flipH=1;fillColor=#FFFFFF;strokeColor=#374151;fontSize=11;whiteSpace=wrap;spacingRight=10;spacingTop=9;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="78" width="309" x="1135.25" y="198" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTPS / TCP 443&#xa;Next.js rewrite /api/* → API" plantUmlId="e_51" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTPS / TCP 443&#xa;Next.js rewrite /api/* → API" id="iOOD7KRn9CtJKhw9IrwI-53">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-39" source="iOOD7KRn9CtJKhw9IrwI-41" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-50">
+            <mxGeometry relative="1" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="PostgreSQL / TCP 5432 hoặc 6543" plantUmlId="e_53" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="PostgreSQL / TCP 5432 hoặc 6543&#xa;[OWNER-PROVIDED; port + TLS UNKNOWN]" id="iOOD7KRn9CtJKhw9IrwI-55">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-39" source="iOOD7KRn9CtJKhw9IrwI-47" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-51">
+            <mxGeometry relative="1" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTPS / TCP 443&#xa;Proxy tới Render public endpoint" plantUmlId="e_52" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTPS / TCP 443&#xa;Proxy tới Render public endpoint" id="iOOD7KRn9CtJKhw9IrwI-54">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-39" source="iOOD7KRn9CtJKhw9IrwI-50" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-46">
+            <mxGeometry relative="1" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTPS / TCP 443&#xa;Truy cập website" plantUmlId="e_50" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTPS / TCP 443&#xa;Truy cập website" id="iOOD7KRn9CtJKhw9IrwI-52">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-1" source="iOOD7KRn9CtJKhw9IrwI-2" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-40">
+            <mxGeometry relative="1" x="0.2802" y="-8" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTPS / TCP 443&#xa;Tải ảnh QR từ qr.sepay.vn" plantUmlId="e_54" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTPS / TCP 443&#xa;Tải ảnh QR từ qr.sepay.vn" id="iOOD7KRn9CtJKhw9IrwI-56">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-1" source="iOOD7KRn9CtJKhw9IrwI-2" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-3">
+            <mxGeometry relative="1" x="0.7036" y="4" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTPS / TCP 443&#xa;Webhook: /api/checkout/sepay-webhook&#xa;Render public endpoint" plantUmlId="e_55" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTPS / TCP 443&#xa;Webhook: /api/checkout/sepay-webhook&#xa;Render public endpoint" id="iOOD7KRn9CtJKhw9IrwI-57">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-1" source="iOOD7KRn9CtJKhw9IrwI-3" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-46">
+            <mxGeometry relative="1" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="HTTPS / TCP 443&#xa;Webhook: /api/checkout/payos-webhook&#xa;Render public endpoint" plantUmlId="e_56" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="HTTPS / TCP 443&#xa;Webhook: /api/checkout/payos-webhook&#xa;Render public endpoint" id="iOOD7KRn9CtJKhw9IrwI-58">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-1" source="iOOD7KRn9CtJKhw9IrwI-4" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-46">
+            <mxGeometry relative="1" x="-0.0217" y="-14" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="SMTP(S) / TCP 465 hoặc 587&#xa;Gửi email OTP" plantUmlId="e_58" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="SMTP(S) / TCP 465 hoặc 587&#xa;Gửi email OTP" id="iOOD7KRn9CtJKhw9IrwI-60">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-1" source="iOOD7KRn9CtJKhw9IrwI-47" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=none;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-5">
+            <mxGeometry relative="1" x="0.0149" y="-6" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="e_66" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=13;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=classicThin;endFill=1;dashed=1;dashPattern=7 7;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="Git integration deployment&#xa;[INFERRED — repo Assignment 2]" id="iOOD7KRn9CtJKhw9IrwI-68">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-1" source="iOOD7KRn9CtJKhw9IrwI-28" style="strokeColor=#181818;fontColor=#000000;fontSize=13;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=classicThin;endFill=1;dashed=1;dashPattern=7 7;exitX=0.001;exitY=0.801;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;exitPerimeter=0;" target="iOOD7KRn9CtJKhw9IrwI-40">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="3262.25" y="1370" />
+                <mxPoint x="3262.25" y="776" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="e_67" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=13;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=classicThin;endFill=1;dashed=1;dashPattern=7 7;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="Git integration deployment&#xa;[INFERRED — repo Assignment 2]" id="iOOD7KRn9CtJKhw9IrwI-69">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-1" source="iOOD7KRn9CtJKhw9IrwI-28" style="strokeColor=#181818;fontColor=#000000;fontSize=13;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=classicThin;endFill=1;dashed=1;dashPattern=7 7;exitX=-0.001;exitY=0.803;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;exitPerimeter=0;" target="iOOD7KRn9CtJKhw9IrwI-46">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="3262.25" y="1370" />
+                <mxPoint x="3262.25" y="776" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Direct cross-origin API call" plantUmlId="e_68" plantUmlBaseStyle="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=classicThin;endFill=1;dashed=1;dashPattern=7 7;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" plantUmlBaseValue="Direct cross-origin API call&#xa;[INFERRED — chỉ khi env là URL tuyệt đối]" id="iOOD7KRn9CtJKhw9IrwI-70">
+          <mxCell edge="1" parent="iOOD7KRn9CtJKhw9IrwI-1" source="iOOD7KRn9CtJKhw9IrwI-2" style="strokeColor=#181818;fontColor=#000000;fontSize=11;html=1;labelBackgroundColor=#FFFFFF;verticalAlign=bottom;endArrow=classicThin;endFill=1;dashed=1;dashPattern=7 7;fontFamily=Arial;curved=0;rounded=0;endSize=6;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;" target="iOOD7KRn9CtJKhw9IrwI-46">
+            <mxGeometry relative="1" x="-0.0709" y="-1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Render response có header Rndr-Id.&#xa;Runtime type / region / plan / NODE_ENV / env vars:&#xa; Node.js 22; Port 3001 nội bộ; public HTTPS 443." plantUmlId="note_71" plantUmlBaseStyle="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="Render response có header Rndr-Id.&#xa;Runtime type / region / plan / NODE_ENV / env vars:&#xa;NOT VERIFIED. Node.js 22 là INFERRED.&#xa;Port 3001 nội bộ là INFERRED; public HTTPS 443." id="iOOD7KRn9CtJKhw9IrwI-73">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="71" width="342" x="2256" y="958" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="noteptr_72" plantUmlBaseStyle="shape=triangle;fillColor=#FFFBE6;strokeColor=#A3A3A3;strokeWidth=0.5;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;direction=north;part=1;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-74">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-73" style="shape=triangle;fillColor=#FFFBE6;strokeColor=#A3A3A3;strokeWidth=0.5;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;direction=north;part=1;" vertex="1">
+            <mxGeometry height="36" width="8" x="167" y="-35" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Health check local: GET /api/products.&#xa;Không có endpoint /health chuyên dụng.&#xa;Logging: json-file, max-size 10m, max-file 3." plantUmlId="note_81" plantUmlBaseStyle="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="Health check local: GET /api/products.&#xa;Không có endpoint /health chuyên dụng.&#xa;Logging: json-file, max-size 10m, max-file 3." id="iOOD7KRn9CtJKhw9IrwI-83">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="56" width="247" x="422" y="841" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="noteptr_82" plantUmlBaseStyle="shape=triangle;fillColor=#FFFBE6;strokeColor=#A3A3A3;strokeWidth=0.5;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;direction=north;part=1;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-84">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-83" style="shape=triangle;fillColor=#FFFBE6;strokeColor=#A3A3A3;strokeWidth=0.5;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;direction=north;part=1;" vertex="1">
+            <mxGeometry height="36.5" width="6.608695652173913" x="120.6086956521739" y="-35.5" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Health check local: GET /.&#xa;Logging: json-file, max-size 10m, max-file 3." plantUmlId="note_83" plantUmlBaseStyle="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" plantUmlBaseValue="Health check local: GET /.&#xa;Logging: json-file, max-size 10m, max-file 3." id="iOOD7KRn9CtJKhw9IrwI-85">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="shape=note;size=10;fillColor=#FFFBE6;strokeColor=#A3A3A3;fontSize=11;whiteSpace=wrap;align=left;spacingLeft=4;shadow=0;fontColor=#111827;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="41" width="243.5" x="101" y="842" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" plantUmlId="noteptr_84" plantUmlBaseStyle="shape=triangle;fillColor=#FFFBE6;strokeColor=#A3A3A3;strokeWidth=0.5;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;direction=north;part=1;" plantUmlBaseValue="" id="iOOD7KRn9CtJKhw9IrwI-86">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-85" style="shape=triangle;fillColor=#FFFBE6;strokeColor=#A3A3A3;strokeWidth=0.5;shadow=0;fontColor=#111827;fontSize=11;fontFamily=Arial;direction=north;part=1;" vertex="1">
+            <mxGeometry height="36.5" width="6.51505016722408" x="118.08528428093646" y="-35.5" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="BrewLite — UML Deployment Diagram" plantUmlId="title_85" plantUmlBaseStyle="text;html=1;fillColor=none;strokeColor=none;fontSize=14;fontStyle=1;fontColor=#000000;align=center;verticalAlign=middle;fontFamily=Arial;" plantUmlBaseValue="BrewLite — UML Deployment Diagram (Task 3.2)&#xa;Production thực tế + Local + CI/CD | HEAD 42553db8 | Live audit 13-11-2026" id="iOOD7KRn9CtJKhw9IrwI-87">
+          <mxCell parent="iOOD7KRn9CtJKhw9IrwI-1" style="text;html=1;fillColor=none;strokeColor=none;fontSize=14;fontStyle=1;fontColor=#000000;align=center;verticalAlign=middle;fontFamily=Arial;" vertex="1">
+            <mxGeometry height="44" width="535" x="1359" y="30" as="geometry" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

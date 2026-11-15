@@ -89,7 +89,7 @@ Tài liệu SRS rút gọn này chuyển từ bản thảo \texttt{task1\_2.docx
 \noindent\texttt{AC-FR10.3}: Gọi lặp endpoint kiểm tra trạng thái hoặc tác vụ dọn đơn hết hạn không giải phóng nguyên liệu nhiều lần và không làm tồn khả dụng tăng sai.\par
 \noindent\texttt{AC-FR10.4}: Trước khi hết hạn, lỗi thanh toán không tự giải phóng nguyên liệu; khách có thể thử lại nếu đơn vẫn ở trạng thái cho phép.\par
 
-\noindent\texttt{AC-FR10.5}: Khi hết hạn mà PayOS xác nhận đã nhận đủ và đơn còn giữ kho, hệ thống hoàn tất đơn. Nếu PayOS báo nhận thiếu, dữ liệu không khớp hoặc chưa thể đối soát, hệ thống giữ nguyên trạng thái và lượng giữ để kiểm tra tiếp.\par
+\noindent\texttt{AC-FR10.5}: Khi hết hạn mà PayOS xác nhận đã nhận đủ và đơn còn đủ điều kiện, hệ thống hoàn tất đơn. Nếu PayOS báo nhận thiếu, dữ liệu không khớp hoặc chưa thể đối soát, hệ thống giữ nguyên đơn, lượng giữ kho và voucher đã giữ để kiểm tra tiếp.\par
 
 \paragraph{FR-11 -- Lịch sử, chi tiết và trạng thái đơn của khách}
 \textbf{Ưu tiên:} Must.\\
@@ -115,7 +115,8 @@ Tài liệu SRS rút gọn này chuyển từ bản thảo \texttt{task1\_2.docx
 \noindent\texttt{AC-FR13.2}: Mã không tồn tại, chưa bắt đầu, hết hạn, không hoạt động hoặc không đạt giá trị đơn tối thiểu bị từ chối với lý do phù hợp.\par
 \noindent\texttt{AC-FR13.3}: Máy chủ tính mức giảm và giới hạn giảm theo cấu hình; client không thể tự sửa số tiền giảm.\par
 \noindent\texttt{AC-FR13.4}: Điều kiện voucher được xác minh lại khi tạo đơn/thanh toán theo quy tắc nghiệp vụ, tránh áp dụng mã đã hết hiệu lực sau khi xem giỏ.\par
-\noindent\texttt{AC-FR13.5}: Voucher giới hạn lượt sử dụng không bị ghi nhận vượt giới hạn trong các yêu cầu đồng thời.\par
+\noindent\texttt{AC-FR13.5}: Khi nhiều khách đổi cùng lúc, số voucher đã phát hành không vượt tổng số lượt đổi do ADMIN thiết lập.\par
+\noindent\texttt{AC-FR13.6}: API giữ một voucher đổi điểm cho đơn trước khi cấp VietQR. Hai đơn tranh cùng một voucher chỉ có một đơn được cấp QR. Khi xác nhận link đã đóng và chưa nhận tiền, API trả voucher về trạng thái khả dụng.\par
 
 \paragraph{FR-14 -- Điểm thưởng và đổi thưởng}
 \textbf{Ưu tiên:} Could.\\
@@ -123,7 +124,7 @@ Tài liệu SRS rút gọn này chuyển từ bản thảo \texttt{task1\_2.docx
 \noindent\texttt{AC-FR14.1}: API điểm thưởng yêu cầu xác thực và chỉ trả số dư/lịch sử của user hiện tại.\par
 \noindent\texttt{AC-FR14.2}: Đổi thưởng yêu cầu phần thưởng còn hiệu lực và số dư đủ; nếu không đủ điều kiện, điểm không bị trừ.\par
 \noindent\texttt{AC-FR14.3}: Cộng, đổi hoặc hoàn điểm tạo giao dịch sổ điểm tương ứng; cùng một đơn/thao tác không phát sinh giao dịch trùng khi được gửi lại.\par
-\noindent\texttt{AC-FR14.4}: Điểm tích lũy từ mua hàng chỉ được cấp khi điều kiện thanh toán thành công được đáp ứng; hủy/hoàn theo nghiệp vụ không làm số dư sai lệch.\par
+\noindent\texttt{AC-FR14.4}: Điểm mua hàng được cấp khi xác nhận thanh toán. Nếu ADMIN hủy đơn đã thanh toán, hệ thống chỉ thu hồi tối đa bằng số điểm còn lại tại thời điểm xử lý, kể cả khi nhiều đơn của cùng khách bị hủy đồng thời.\par
 
 \paragraph{FR-15 -- Quản lý nguyên liệu và công thức}
 \textbf{Ưu tiên:} Should.\\
@@ -209,12 +210,27 @@ Các ngưỡng hiệu năng và vận hành là mục tiêu nghiệm thu đề x
 \subsubsection{Sơ đồ use-case tổng quát}
 Hình dưới biểu diễn các nhóm chức năng và actor ở mức tổng quát. Đặc tả luồng chính, thay thế và ngoại lệ của use-case trọng tâm thuộc Task 1.3.
 \begin{center}
-\begin{tikzpicture}[font=\small, actor/.style={draw,rounded corners,minimum width=3.0cm,minimum height=1.0cm,align=center}, action/.style={draw,ellipse,minimum width=5.8cm,minimum height=0.8cm,align=center}, >=stealth]
-\node[actor] (guest) at (0,5) {Khách vãng lai};
-\node[actor] (customer) at (0,2.7) {Khách hàng};
-\node[actor] (admin) at (0,-2.4) {Nhân viên / quản lý};
-\node[actor,minimum width=2.0cm] (payos) at (10.7,0.2) {PayOS};
-\draw[rounded corners] (2.75,-2.95) rectangle (9.25,5.75);
+\begin{tikzpicture}[
+  font=\small,
+  action/.style={draw,ellipse,minimum width=5.8cm,minimum height=0.8cm,align=center},
+  association/.style={->,>=stealth},
+  pics/person/.style args={#1}{
+    code={
+      \draw (0,0.38) circle[radius=0.14];
+      \draw (0,0.24) -- (0,-0.22)
+        (-0.31,0.05) -- (0.31,0.05)
+        (-0.24,-0.55) -- (0,-0.22) -- (0.24,-0.55);
+      \coordinate (-left) at (-0.31,0.05);
+      \coordinate (-right) at (0.31,0.05);
+      \node[anchor=north,align=center] at (0,-0.55) {#1};
+    }
+  }
+]
+\pic (guest) at (0,5) {person={Khách vãng lai}};
+\pic (customer) at (0,2.7) {person={Khách hàng}};
+\pic (admin) at (0,-2.35) {person={Nhân viên / quản lý}};
+\pic (payos) at (11.2,0.2) {person={{\scriptsize «external system»}\\PayOS}};
+\draw[rounded corners] (2.4,-3.43) rectangle (9.6,5.75);
 \node[anchor=south] at (6,5.75) {Hệ thống BrewLite};
 \node[action] (menu) at (6,5) {Xem menu và chi tiết món};
 \node[action] (cart) at (6,3.8) {Chọn tùy chọn và quản lý giỏ};
@@ -222,12 +238,17 @@ Hình dưới biểu diễn các nhóm chức năng và actor ở mức tổng q
 \node[action] (order) at (6,1.4) {Kiểm tra giỏ và tạo đơn};
 \node[action] (payment) at (6,0.2) {Thanh toán và theo dõi đơn};
 \node[action] (rewards) at (6,-1.1) {Dùng voucher và đổi điểm};
-\node[action,text width=5.0cm] (manage) at (6,-2.4) {Xử lý đơn, quản lý món, nguyên liệu và khuyến mãi};
-\draw (guest) -- (menu); \draw (guest) -- (cart); \draw (guest) -- (auth);
-\draw (customer) -- (menu); \draw (customer) -- (cart); \draw (customer) -- (order); \draw (customer) -- (payment);
-\draw (customer) -- (rewards);
-\draw (admin) -- (manage);
-\draw (payos) -- (payment);
+\node[action] (manage) at (6,-2.5) {Xử lý đơn, quản lý món,\\nguyên liệu và khuyến mãi};
+\draw[association] (guest-right) -- (menu.west);
+\draw[association] (guest-right) -- (cart.west);
+\draw[association] (guest-right) -- (auth.west);
+\draw[association] (customer-right) -- (menu.193);
+\draw[association] (customer-right) -- (cart.193);
+\draw[association] (customer-right) -- (order.west);
+\draw[association] (customer-right) -- (payment.west);
+\draw[association] (customer-right) -- (rewards.west);
+\draw[association] (admin-right) -- (manage.west);
+\draw[association] (payment.east) -- (payos-left);
 \end{tikzpicture}
 \end{center}
 \textbf{Ràng buộc actor:} Xem menu và chuẩn bị giỏ không cần đăng nhập. Tạo đơn, thanh toán và xem lịch sử cần xác thực. Quản trị yêu cầu vai trò \texttt{ADMIN}. Hệ thống kết nối dịch vụ email và PayOS khi có cấu hình tương ứng.

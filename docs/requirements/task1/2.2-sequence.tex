@@ -29,7 +29,7 @@ API tra \texttt{Payment.idempotencyKey}. Nếu chưa có kết quả, transactio
 
 \clearpage
 \subsubsection{Thanh toán VietQR và đối soát PayOS}
-PayOS gửi webhook có \texttt{data} và \texttt{signature} trong body. API dùng SDK PayOS kiểm tra chữ ký và đối chiếu giao dịch với đơn. Polling hoặc tác vụ hết hạn cũng có thể đọc trực tiếp trạng thái link. Webhook hợp lệ và polling đồng thời chỉ hoàn tất đơn một lần.
+API giữ voucher đổi điểm trước khi tạo link PayOS. Nếu không còn lượt khả dụng, API không cấp QR. Khi nhận webhook, API dùng SDK PayOS kiểm tra chữ ký và đối chiếu giao dịch với đơn. Polling hoặc tác vụ hết hạn cũng đọc trực tiếp trạng thái link. Giao dịch đủ điều kiện chỉ hoàn tất một lần.
 
 \begin{center}
 \includegraphics[width=\linewidth,height=0.70\textheight,keepaspectratio]{../../diagrams/sequence-payos-webhook.png}\\[0.5em]
