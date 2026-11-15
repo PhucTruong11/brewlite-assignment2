@@ -1,0 +1,25 @@
+@startuml c4-context-container
+!include <C4/C4_Container>
+
+skinparam defaultFontName Arial
+
+Person(customer, "Khách hàng", "Xem menu, đặt món, thanh toán và theo dõi đơn.")
+Person(admin, "Nhân viên quầy / Quản trị viên", "Xử lý đơn, quản lý kho, công thức và voucher. Dùng vai trò ADMIN.")
+
+System_Boundary(brewlite, "Hệ thống BrewLite") {
+    Container(web, "Web BrewLite", "Next.js / Vercel", "Giao diện mobile-first. Giỏ dùng Zustand và localStorage.")
+    Container(api, "Backend API", "NestJS / Render", "REST API, xác thực, đặt đơn, giữ kho và thanh toán.")
+    ContainerDb(db, "Cơ sở dữ liệu", "PostgreSQL / Supabase", "Lưu tài khoản, menu, tồn kho, đơn, thanh toán và điểm.")
+}
+
+System_Ext(payos, "PayOS", "Cung cấp link thanh toán VietQR và thông báo giao dịch.")
+System_Ext(mail, "Dịch vụ email", "Brevo hoặc SMTP")
+
+Rel_D(customer, web, "Đặt món và theo dõi đơn", "HTTPS")
+Rel_D(admin, web, "Thao tác tại quầy", "HTTPS")
+Rel_D(web, api, "Chuyển tiếp /api cùng origin, kèm cookie JWT", "REST / JSON")
+Rel_D(api, db, "Đọc, ghi và chạy transaction", "Prisma")
+Rel_L(api, payos, "Tạo link và đối soát", "HTTPS")
+Rel_R(payos, api, "Gửi webhook có chữ ký", "HTTPS")
+Rel_R(api, mail, "Gửi email OTP", "HTTPS hoặc SMTP")
+@enduml

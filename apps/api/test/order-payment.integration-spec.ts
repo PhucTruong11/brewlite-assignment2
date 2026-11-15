@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../src/app.module.js';
+import { AdminService } from '../src/modules/admin/admin.service.js';
 import { PaymentGatewayService } from '../src/modules/checkout/payment-gateway.service.js';
 import { PrismaService } from '../src/modules/prisma/prisma.service.js';
 
@@ -163,6 +164,60 @@ describe('API tạo đơn và thanh toán với PostgreSQL test (integration)', 
     expect(await prisma.payment.count({ where: { orderId } })).toBe(2);
     expect((await stock()).onHand?.toNumber()).toBe(4);
     expect((await stock()).reserved?.toNumber()).toBe(0);
+  });
+
+  it('admin hủy hai đơn đã trả tiền đồng thời chỉ thu hồi tối đa số điểm còn lại', async () => {
+    const otherIngredient = await prisma.ingredient.create({
+      data: { code: 'CANCEL_' + userId, name: 'Nguyên liệu thứ hai', unit: 'G', onHand: 10, reserved: 0 },
+    });
+    try {
+      await prisma.user.update({ where: { id: userId }, data: { loyaltyPoints: 3 } });
+      const orders = await Promise.all([ingredientId, otherIngredient.id].map(id => prisma.order.create({
+        data: {
+          userId, total: 30_000, status: 'PAID', inventoryState: 'CONSUMED', loyaltyPointsEarned: 3,
+          items: { create: { productId, productName: 'Cà phê integration', lineTotal: 30_000,
+            recipeSnapshot: [{ ingredientId: id, quantity: '6' }] } },
+        },
+      })));
+
+      // Giữ hàng user từ trước để buộc cả hai lượt hủy cùng chạm đến bước thu hồi.
+      let signalLocked!: () => void;
+      let release!: () => void;
+      const locked = new Promise<void>(resolve => { signalLocked = resolve; });
+      const unlocked = new Promise<void>(resolve => { release = resolve; });
+      const hold = prisma.$transaction(async tx => {
+        await tx.$queryRaw`SELECT "id" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
+        signalLocked();
+        await unlocked;
+      });
+      await Promise.race([locked, hold]);
+      const admin = app.get(AdminService);
+      const cancellations = Promise.allSettled(orders.map(order => admin.updateStatus(order.id, 'CANCELLED')));
+      try {
+        await vi.waitFor(async () => {
+          const [waiting] = await prisma.$queryRaw<{ count: number }[]>`
+            SELECT count(*)::int AS count FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock'
+              AND query LIKE '%"users"%' AND query NOT LIKE '%pg_stat_activity%'
+          `;
+          expect(waiting.count).toBeGreaterThanOrEqual(2);
+        }, { interval: 25, timeout: 1_500 });
+      } finally {
+        release();
+        await hold;
+        await cancellations;
+      }
+
+      expect((await cancellations).map(result => result.status)).toEqual(['fulfilled', 'fulfilled']);
+      expect(await prisma.order.count({ where: { userId, status: 'CANCELLED', inventoryState: 'RESTORED' } })).toBe(2);
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).loyaltyPoints).toBe(0);
+      expect(await prisma.pointTransaction.findMany({ where: { userId, type: 'REFUND' } }))
+        .toMatchObject([{ points: -3, balanceAfter: 0 }]);
+      expect((await stock()).onHand?.toNumber()).toBe(16);
+      expect((await prisma.ingredient.findUniqueOrThrow({ where: { id: otherIngredient.id } })).onHand?.toNumber()).toBe(16);
+    } finally {
+      await prisma.ingredient.delete({ where: { id: otherIngredient.id } });
+    }
   });
 
   it('thanh toán sau hạn bị từ chối, hủy đơn và trả nguyên liệu', async () => {

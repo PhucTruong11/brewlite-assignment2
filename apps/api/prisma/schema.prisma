@@ -214,7 +214,8 @@ model Order {
   payments Payment[]
   payosPaymentLink PayosPaymentLink?
 
-  userVoucher       UserVoucher?
+  userVoucher       UserVoucher? @relation("UsedVoucher")
+  reservedVoucher   UserVoucher? @relation("ReservedVoucher")
   pointTransactions PointTransaction[]
 
   @@index([userId])
@@ -319,7 +320,7 @@ model RewardItem {
   @@map("reward_items")
 }
 
-/// Mã ưu đãi người dùng đã đổi bằng điểm. Không có hạn dùng; chưa có thời điểm sử dụng nghĩa là còn dùng được.
+/// Voucher đổi điểm dùng theo hạn của Promotion và có thể được giữ cho một đơn đang chờ thanh toán.
 model UserVoucher {
   id           String    @id @default(uuid())
   userId       String
@@ -328,11 +329,13 @@ model UserVoucher {
   createdAt    DateTime  @default(now())
   usedAt       DateTime?
   usedOrderId  String?   @unique
+  reservedOrderId String? @unique
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   promotion  Promotion  @relation(fields: [promotionId], references: [id])
   rewardItem RewardItem @relation(fields: [rewardItemId], references: [id])
-  usedOrder  Order?     @relation(fields: [usedOrderId], references: [id])
+  usedOrder     Order? @relation("UsedVoucher", fields: [usedOrderId], references: [id])
+  reservedOrder Order? @relation("ReservedVoucher", fields: [reservedOrderId], references: [id], onDelete: SetNull)
 
   @@index([userId, promotionId, usedAt])
   @@index([promotionId])

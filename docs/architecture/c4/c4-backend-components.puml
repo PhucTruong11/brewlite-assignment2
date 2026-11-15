@@ -1,0 +1,42 @@
+@startuml c4-backend-components
+!include <C4/C4_Component>
+
+skinparam defaultFontName Arial
+
+Container(web, "Web BrewLite", "Next.js")
+System_Ext(payos, "PayOS", "VietQR")
+System_Ext(mail, "Brevo / SMTP", "Email OTP")
+ContainerDb(db, "Cơ sở dữ liệu", "PostgreSQL")
+
+Container_Boundary(api, "NestJS Backend API") {
+    Component(auth, "AuthModule", "NestJS", "Xác thực JWT và vai trò.")
+    Component(email, "EmailModule", "NestJS", "Gửi mã OTP.")
+    Component(products, "ProductsModule", "NestJS", "Menu, size và topping.")
+    Component(orders, "OrdersModule", "NestJS", "Kiểm tra và tạo đơn, giữ kho 120 giây.")
+    Component(checkout, "CheckoutModule", "NestJS", "Thẻ mô phỏng, PayOS, chống xử lý lặp.")
+    Component(admin, "AdminModule", "NestJS", "Trạng thái đơn, nguyên liệu, công thức và voucher.")
+    Component(inventory, "InventoryModule", "NestJS", "Kiểm tra, giữ, trừ và hoàn nguyên liệu theo công thức.")
+    Component(promotions, "PromotionsModule / RewardsModule", "NestJS", "Ưu đãi, điểm thưởng và voucher đổi điểm.")
+    Component(health, "Cấu hình / Health", "ConfigModule / AppController", "Biến môi trường và GET /api/health.")
+    Component(prisma, "PrismaModule", "Prisma Client", "Truy cập dữ liệu và transaction.")
+}
+
+Rel_D(web, auth, "Tài khoản và phiên")
+Rel_D(web, products, "Xem menu")
+Rel_D(web, orders, "Đặt và xem đơn")
+Rel_D(web, checkout, "Thanh toán / trạng thái")
+Rel_D(web, admin, "Thao tác ADMIN")
+Rel(auth, email, "Gửi OTP")
+Rel(email, mail, "Gửi email")
+Rel(checkout, payos, "Tạo link, đối soát")
+Rel(payos, checkout, "Webhook có chữ ký")
+Rel_D(orders, inventory, "Giữ kho")
+Rel_D(checkout, inventory, "Trừ hoặc nhả kho")
+Rel_D(checkout, promotions, "Ghi điểm và dùng voucher")
+Rel_D(admin, inventory, "Hoàn kho khi hủy")
+Rel_D(inventory, prisma, "Tồn kho và công thức")
+Rel_D(orders, prisma, "Đơn và giao dịch")
+Rel_D(promotions, prisma, "Voucher và điểm")
+Rel_D(health, prisma, "SELECT 1")
+Rel_D(prisma, db, "SQL")
+@enduml

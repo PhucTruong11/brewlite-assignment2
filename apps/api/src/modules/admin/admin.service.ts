@@ -144,11 +144,16 @@ export class AdminService {
             await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${id} FOR UPDATE`;
             const order = await tx.order.findUnique({
                 where: { id },
-                include: { items: true },
+                include: { items: true, payosPaymentLink: { select: { id: true } } },
             });
             if (!order) throw new NotFoundException(`Không tìm thấy đơn ${id}`);
 
             assertTransition(order.status, next);
+
+            if (next === OrderStatus.CANCELLED && order.payosPaymentLink &&
+                (order.status === OrderStatus.PENDING || order.status === OrderStatus.PAYMENT_FAILED)) {
+                throw new ConflictException('Đơn có mã VietQR đang chờ PayOS đối soát. Vui lòng kiểm tra lại sau.');
+            }
 
             // Đơn chưa thanh toán chỉ giữ nguyên liệu; khi hủy phải nhả lượng đã giữ.
             if (next === OrderStatus.CANCELLED &&
@@ -171,8 +176,10 @@ export class AdminService {
                     }
                 }
                 if (order.loyaltyPointsEarned > 0) {
-                    // Không để số dư điểm âm nếu khách đã dùng điểm
-                    const u = await tx.user.findUnique({ where: { id: order.userId }, select: { loyaltyPoints: true } });
+                    // Các đơn khác của cùng khách phải đọc số dư sau khi lần thu hồi trước hoàn tất.
+                    const [u] = await tx.$queryRaw<{ loyaltyPoints: number }[]>`
+                        SELECT "loyaltyPoints" FROM "users" WHERE "id" = ${order.userId} FOR UPDATE
+                    `;
                     const refund = Math.min(order.loyaltyPointsEarned, u?.loyaltyPoints ?? 0);
                     if (refund > 0) {
                         const updated = await tx.user.update({

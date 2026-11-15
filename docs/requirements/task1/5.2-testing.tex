@@ -9,16 +9,23 @@ PostgreSQL 16 riêng, chạy Prisma migration trước khi kiểm thử.
         thái tải, danh sách rỗng và lỗi của menu.
   \item \textbf{Integration test} gọi API tạo đơn và thanh toán trên DB thử nghiệm.
         Các ca bao gồm tranh chấp nguyên liệu, quyền sở hữu đơn, thử lại bằng
-        khóa giao dịch, hết hạn trả kho và đối soát PayOS.
+        khóa giao dịch, hết hạn trả kho và đối soát PayOS. Có ca hai đơn tranh
+        một voucher và ca ADMIN hủy hai đơn của cùng khách đồng thời.
   \item \textbf{E2E qua API} đi từ menu và chi tiết món đến đăng nhập, kiểm tra
         giỏ, tạo đơn, thanh toán CARD mô phỏng và xác nhận đơn \texttt{PAID}
         trong lịch sử. Ca VietQR riêng dùng link giả lập và webhook có chữ ký thử.
   \item \textbf{Tái tạo local} dùng \nolinkurl{docker-compose.yml} cho web, API và
         PostgreSQL. Prisma migration tạo schema. Seed và hai lệnh tạo danh mục,
-        nạp tồn demo chuẩn bị dữ liệu trên DB local trống.
+        nạp tồn demo chuẩn bị dữ liệu trên DB local trống. Script
+        \nolinkurl{test:ingredients} dùng thẻ mô phỏng để kiểm tra giữ, trừ và hoàn kho.
   \item \textbf{Health check} tại \nolinkurl{/api/health} kiểm tra kết nối PostgreSQL.
         Sau khi triển khai, smoke test cũng gọi endpoint này qua proxy của web.
 \end{itemize}
 
-Danh sách ca, lệnh chạy và các bước nghiệm thu trình duyệt nằm trong
-\nolinkurl{tests/README.md}.
+\paragraph{Kết quả kiểm thử local ngày 15/11/2026}
+Đạt 62 unit test API, 21 unit test web, 19 integration test, 9 E2E qua API
+và 4 test preflight. Sáu migration và script kiểm thử kho chạy thành công
+trên PostgreSQL 18 tạm. Với một voucher cho hai đơn, cổng PayOS giả lập chỉ
+nhận một yêu cầu tạo QR. Khi hết hạn, voucher chỉ khả dụng lại sau khi xác
+nhận link đã đóng và chưa có tiền. Hai lần hủy đồng thời chỉ thu hồi số
+điểm còn lại. Danh sách ca và lệnh chạy nằm trong \nolinkurl{tests/README.md}.

@@ -1,0 +1,55 @@
+@startuml deployment
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam packageBackgroundColor #F6F8FA
+skinparam packageBorderColor #607589
+skinparam nodeBackgroundColor #E8F2FC
+skinparam nodeBorderColor #476A8B
+skinparam databaseBackgroundColor #E9F5EF
+skinparam databaseBorderColor #527568
+skinparam artifactBackgroundColor #FFFFFF
+skinparam ArrowColor #334155
+
+node "Thiết bị khách hàng / quản trị viên\nTrình duyệt web" as browser <<device>>
+
+package "Production" as prod {
+  node "Vercel · CDN / Next.js\napps/web · biến build\nLog build và runtime" as vercel <<executionEnvironment>>
+  node "Render · Docker / NestJS\napps/api · cổng nội bộ PORT\nBiến runtime và secret\n/api/health · log NestJS" as render <<executionEnvironment>>
+  database "Supabase · PostgreSQL\nLưu trữ bền vững" as supabase
+  cloud "PayOS · VietQR" as payos
+  cloud "Brevo · Email OTP" as brevo
+
+  vercel -right-> render : HTTPS 443 · proxy /api/*
+  render -right-> supabase : PostgreSQL / TLS\nSession pooler
+  render -down-> payos : HTTPS 443\nTạo link / đối soát
+  payos -up-> render : HTTPS 443\nWebhook đã ký
+  render -down-> brevo : HTTPS 443\nGửi OTP
+}
+
+package "Local · Docker Compose" as local {
+  node "web\nHost và container :3000" as devweb <<executionEnvironment>>
+  node "api\nHost 127.0.0.1:3001" as devapi <<executionEnvironment>>
+  database "db · PostgreSQL 16\nHost :5433 → container :5432" as devdb
+  artifact "Volume brewlite_pgdata" as volume
+
+  devweb -right-> devapi : HTTP\napi:3001
+  devapi -right-> devdb : PostgreSQL\ndb:5432
+  devdb -down-> volume : Gắn volume
+}
+
+package "CI/CD · GitHub Actions" as automation {
+  artifact "Repo brewlite-assignment2\nmain / tag v*" as repo
+  node "Runner · CI và release\nPostgreSQL tạm cho test\nSecrets: environment production" as runner <<executionEnvironment>>
+  artifact "GHCR\nImage web/API theo SHA" as registry
+
+  repo -right-> runner : CI / CD
+  runner -right-> registry : HTTPS 443\nĐẩy image
+}
+
+browser -down-> vercel : HTTPS 443
+render <-[norank]- runner : Release sau CI\nMigration → API → web → smoke test
+payos -[hidden]down-> runner
+runner -[hidden]down-> devapi
+@enduml

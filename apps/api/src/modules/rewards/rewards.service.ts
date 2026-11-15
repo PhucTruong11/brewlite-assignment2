@@ -9,6 +9,14 @@ import { PrismaService } from '../prisma/prisma.service.js';
 
 // 10.000đ = 1 điểm, làm tròn xuống
 export const VND_PER_POINT = 10_000;
+export const VOUCHER_UNAVAILABLE_MESSAGE =
+  'Voucher đổi điểm không còn lượt khả dụng. Vui lòng kiểm tra các đơn đang chờ hoặc chọn mã khác.';
+
+export class RewardVoucherUnavailableException extends ConflictException {
+  constructor() {
+    super(VOUCHER_UNAVAILABLE_MESSAGE);
+  }
+}
 
 @Injectable()
 export class RewardsService {
@@ -37,7 +45,7 @@ export class RewardsService {
         orderBy: { pointsCost: 'asc' },
       }),
       this.prisma.userVoucher.findMany({
-        where: { userId, usedAt: null, promotion: { is: usablePromotion } },
+        where: { userId, usedAt: null, reservedOrderId: null, promotion: { is: usablePromotion } },
         include: { promotion: true },
         orderBy: { createdAt: 'asc' },
       }),
@@ -193,44 +201,80 @@ export class RewardsService {
     if (!promo || !promo.isRewardOnly) return;
 
     const available = await this.prisma.userVoucher.count({
-      where: { userId, promotionId: promo.id, usedAt: null },
+      where: { userId, promotionId: promo.id, usedAt: null, reservedOrderId: null },
     });
     if (available === 0) {
-      throw new BadRequestException(
-        'Bạn chưa sở hữu voucher này. Hãy đổi điểm tại trang Tích điểm để nhận mã.',
-      );
+      const held = await this.prisma.userVoucher.count({
+        where: { userId, promotionId: promo.id, reservedOrderId: { not: null } },
+      });
+      if (held > 0) throw new RewardVoucherUnavailableException();
+      throw new BadRequestException('Bạn không còn voucher này. Hãy đổi điểm tại trang Tích điểm để nhận mã.');
     }
   }
 
-  // ---------------- Đánh dấu voucher đã dùng (gọi trong transaction thanh toán thành công) ----------------
-  async consumeVoucher(
+  // Giữ một lượt cho đơn đang khóa. PostgreSQL kiểm tra lại điều kiện sau khi đợi khóa
+  // của đơn khác, nên mỗi lượt chỉ có thể được gắn vào một đơn.
+  async reserveVoucher(
     tx: Prisma.TransactionClient,
-    userId: string,
-    promoCode: string | null | undefined,
-    orderId: string,
-  ): Promise<void> {
-    if (!promoCode) return;
+    order: { id: string; userId: string; promoCode: string | null },
+  ): Promise<string | null> {
+    if (!order.promoCode) return null;
+
+    const existing = await tx.userVoucher.findUnique({
+      where: { reservedOrderId: order.id },
+      select: { id: true },
+    });
+    if (existing) return existing.id;
 
     const promo = await tx.promotion.findUnique({
+      where: { code: order.promoCode.trim().toUpperCase() },
+      select: { id: true, isRewardOnly: true },
+    });
+    if (!promo?.isRewardOnly) return null;
+
+    const [voucher] = await tx.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "user_vouchers"
+      WHERE "userId" = ${order.userId} AND "promotionId" = ${promo.id}
+        AND "usedAt" IS NULL AND "usedOrderId" IS NULL AND "reservedOrderId" IS NULL
+      ORDER BY "createdAt", "id" LIMIT 1 FOR UPDATE
+    `;
+    if (!voucher) throw new RewardVoucherUnavailableException();
+    await tx.userVoucher.update({
+      where: { id: voucher.id },
+      data: { reservedOrderId: order.id },
+    });
+    return voucher.id;
+  }
+
+  async consumeVoucher(
+    tx: Prisma.TransactionClient,
+    order: { id: string; userId: string; promoCode: string | null },
+  ): Promise<void> {
+    const id = await this.reserveVoucher(tx, order);
+    if (!id) return;
+    await tx.userVoucher.update({
+      where: { id },
+      data: { reservedOrderId: null, usedAt: new Date(), usedOrderId: order.id },
+    });
+  }
+
+  // Link sinh trước migration có thể không còn voucher để giữ.
+  async hasRequiredVoucherHold(orderId: string, promoCode: string | null): Promise<boolean> {
+    if (!promoCode) return true;
+    const promo = await this.prisma.promotion.findUnique({
       where: { code: promoCode.trim().toUpperCase() },
+      select: {
+        isRewardOnly: true,
+        userVouchers: { where: { reservedOrderId: orderId }, select: { id: true } },
+      },
     });
-    if (!promo || !promo.isRewardOnly) return;
+    return !promo?.isRewardOnly || promo.userVouchers.length > 0;
+  }
 
-    // Dùng voucher đổi sớm nhất trước (FIFO)
-    const voucher = await tx.userVoucher.findFirst({
-      where: { userId, promotionId: promo.id, usedAt: null },
-      orderBy: { createdAt: 'asc' },
+  async releaseVoucher(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
+    await tx.userVoucher.updateMany({
+      where: { reservedOrderId: orderId },
+      data: { reservedOrderId: null },
     });
-    if (!voucher) {
-      throw new BadRequestException('Bạn không còn voucher này để sử dụng');
-    }
-
-    const marked = await tx.userVoucher.updateMany({
-      where: { id: voucher.id, usedAt: null },
-      data: { usedAt: new Date(), usedOrderId: orderId },
-    });
-    if (marked.count === 0) {
-      throw new ConflictException('Voucher vừa được sử dụng ở một đơn khác, vui lòng thử lại');
-    }
   }
 }

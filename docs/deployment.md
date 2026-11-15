@@ -1,5 +1,7 @@
 # Triển khai BrewLite Assignment 2
 
+[Sơ đồ triển khai Task 3.2](architecture/deployment/README.md) mô tả các môi trường, kết nối và thành phần mã nguồn tương ứng.
+
 ## Môi trường production dùng chung
 
 | Thành phần | Nền tảng | Địa chỉ / cấu hình |
@@ -10,7 +12,7 @@
 
 Dashboard đang dùng: [Vercel BrewLite](https://vercel.com/phuc-truong1/brewlite-frontend), [Render API](https://dashboard.render.com/web/srv-dbksjsegekts73f2bsk0), [Supabase BrewLite](https://supabase.com/dashboard/project/aclpnyerlyihsepwkhre). Đây là ba project hiện có; không tạo project cloud khác.
 
-Nhóm đã chọn **dùng lại** các project Vercel/Render và DB Supabase hiện có, không tạo project cloud thứ hai. Repo Assignment 2 đã được push lên [GitHub](https://github.com/PhucTruong11/brewlite-assignment2), nhánh `main`. Repo cũ dùng `frontend/`, `backend/`; repo mới dùng `apps/web`, `apps/api`. **Chưa xác nhận Vercel/Render đã trỏ sang repo mới hoặc triển khai commit mới.** Bản Assignment 1 vẫn nằm ở `../brewlite` để chạy local; URL public sẽ chuyển sang bản Assignment 2 sau khi deploy.
+Assignment 2 sử dụng lại dự án Vercel, Render và Supabase của nhóm. Mã nguồn được quản lý trên nhánh `main` của [brewlite-assignment2](https://github.com/PhucTruong11/brewlite-assignment2), với `apps/web` và `apps/api` là các thư mục triển khai.
 
 ## Biến môi trường
 
@@ -37,7 +39,7 @@ Render phải trỏ đúng GitHub repo `PhucTruong11/brewlite-assignment2`, bran
 
 **Trước lần đầu chạy CD:** kiểm tra bảng `_prisma_migrations` trên Supabase, chụp backup và đối chiếu migration `20261029000100_prune_legacy_catalog` vì migration này xóa sản phẩm/topping cũ. Nếu DB production trước đây chỉ dùng `prisma db push`, phải baseline migration đúng cách; không bấm chạy CD để thử. Sau khi đã xác minh migration và backup, đặt GitHub Environment **variable** `PRODUCTION_MIGRATION_BASELINE_OK=true`; đây là cổng chặn trước bước đụng DB. Sau đó có thể tạo tag `v2.0.0` hoặc chạy workflow thủ công. Workflow dừng nếu thiếu secret, target Vercel/Render sai hoặc chưa xác nhận baseline. Không chạy seed trên production.
 
-CI dùng PostgreSQL 16 tạm, chạy `prisma migrate deploy`, `npm run test:integration` và `npm run test:e2e` với DB `brewlite_test`; các bài test tạo rồi dọn dữ liệu fixture, dùng CARD mô phỏng và webhook PayOS có chữ ký với link giả lập. CD build hai Docker image có tag commit SHA và lưu trên GHCR; Render và Vercel hiện xây dựng từ cùng source commit, không kéo trực tiếp GHCR image. Sau deploy, smoke test gọi API `/api/health`, `/api/products`, web HTTPS và proxy web `/api/health`. Trước rollout đầu tiên ngày 05/11/2026, web và API products trả HTTP 200, còn `/api/health` trả HTTP 404; đây là dấu hiệu bản Assignment 2 có health endpoint chưa được xác nhận đang chạy trên production.
+CI dùng PostgreSQL 16 tạm, chạy `prisma migrate deploy`, `npm run test:integration` và `npm run test:e2e` với DB `brewlite_test`. Các bài test tạo rồi dọn dữ liệu fixture, dùng CARD mô phỏng và webhook PayOS có chữ ký với link giả lập. CD build hai Docker image có tag commit SHA và lưu trên GHCR. Render và Vercel xây dựng từ cùng source commit. Sau deploy, smoke test gọi API `/api/health`, `/api/products`, web HTTPS và proxy web `/api/health`.
 
 ## Đối soát PayOS khi khách đã chuyển tiền nhưng checkout chưa hoàn tất
 

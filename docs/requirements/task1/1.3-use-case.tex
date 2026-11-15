@@ -8,7 +8,7 @@
 \textbf{Trigger:} Khách bấm ``Tiến hành thanh toán'' ở giỏ hàng.\\
 \textbf{Tiền điều kiện:} Giỏ có ít nhất một món. Khách cần phiên đăng nhập hợp lệ trước khi gọi API tạo đơn. Sản phẩm, size, topping và công thức có dữ liệu trên máy chủ; đủ nguyên liệu và voucher hợp lệ được kiểm tra trong luồng.\\
 \textbf{Hậu điều kiện thành công:} Đơn có \texttt{orderId}, trạng thái \texttt{PAID}, một payment thành công; lượng nguyên liệu đã giữ được tiêu thụ đúng một lần, điểm/voucher được ghi theo quy tắc, khách xem được biên nhận và giỏ cục bộ được xóa.\\
-\textbf{Hậu điều kiện không thành công:} Giỏ sai hoặc thiếu nguyên liệu không tạo đơn. Đơn chờ hoặc thanh toán thẻ lỗi giữ nguyên liệu đến khi thanh toán thành công hoặc đủ điều kiện hủy. Đơn VietQR có link chỉ trả kho khi PayOS xác nhận link đã đóng và chưa nhận tiền. Đơn chưa trả tiền không được cộng điểm hoặc đưa vào pha chế.
+\textbf{Hậu điều kiện không thành công:} Giỏ sai hoặc thiếu nguyên liệu không tạo đơn. Đơn chờ hoặc thanh toán thẻ lỗi giữ nguyên liệu đến khi thanh toán thành công hoặc đủ điều kiện hủy. Đơn đã cấp VietQR chỉ trả kho và nhả voucher khi PayOS xác nhận link đã đóng và chưa nhận tiền. Đơn chưa trả tiền không được cộng điểm hoặc đưa vào pha chế.
 
 \subsubsection{Sơ đồ use-case của UC-01}
 Sơ đồ thể hiện vai trò của khách hàng, PayOS và quản trị viên trong phân hệ Thanh toán và Đơn hàng. UC-01 tập trung vào các thao tác đặt hàng, thanh toán và xác nhận giao dịch.
@@ -24,7 +24,7 @@ Sơ đồ được lưu riêng ở \nolinkurl{docs/diagrams/uc01-order-checkout.
   \item Nếu đã đăng nhập, giao diện gọi \texttt{POST /api/cart/validate}. API đọc lại sản phẩm, size, topping, giá, công thức và nguyên liệu cho toàn bộ giỏ.
   \item Khi giỏ hợp lệ, giao diện gọi \texttt{POST /api/orders}. Máy chủ tính lại tiền/voucher; trong một transaction kiểm tra lại tồn, giữ nguyên liệu và lưu đơn cùng các dòng món.
   \item API trả \texttt{orderId}, \texttt{PENDING}, tổng tiền và thời hạn hai phút. Giao diện mở \nolinkurl{/checkout?orderId=...}; đồng hồ dùng hạn do máy chủ trả về, không tính lại từ lúc mở trang.
-  \item Với thẻ mô phỏng, ứng dụng gửi \texttt{POST /api/checkout} với \texttt{orderId}, \texttt{method=CARD} và \texttt{Idempotency-Key}. Với VietQR, khách quét mã PayOS. API xác minh chữ ký và dữ liệu giao dịch khi nhận webhook, hoặc đối soát trực tiếp link và số tiền qua PayOS khi đọc trạng thái.
+  \item Với thẻ mô phỏng, ứng dụng gửi \texttt{POST /api/checkout} với \texttt{orderId}, \texttt{method=CARD} và \texttt{Idempotency-Key}. Trước khi cấp VietQR, API giữ voucher đổi điểm cho đơn nếu có. API xác minh webhook hoặc đối soát trực tiếp link và số tiền qua PayOS khi đọc trạng thái.
   \item Khi thanh toán được xác nhận, máy chủ ghi payment, chuyển đơn thành \texttt{PAID}, tiêu thụ nguyên liệu đã giữ và xử lý điểm/voucher. Giao diện đọc trạng thái, hiện biên nhận và xóa giỏ cục bộ.
 \end{enumerate}
 
@@ -39,11 +39,12 @@ Sơ đồ được lưu riêng ở \nolinkurl{docs/diagrams/uc01-order-checkout.
 
 \subsubsection{Luồng ngoại lệ}
 \begin{description}[leftmargin=2.6em,style=nextline]
-  \item[E1 -- Hết hạn] Sau hai phút, API chặn lượt thanh toán mới. Khi đọc trạng thái hoặc chạy tác vụ nền, API hủy đơn chưa thanh toán và trả lượng giữ. Nếu có link VietQR, API đối soát trước khi hủy: nhận đủ thì hoàn tất đơn còn giữ kho; link đã đóng và chưa nhận tiền thì hủy; chưa xác minh được thì giữ nguyên đơn.
+  \item[E1 -- Hết hạn] Sau hai phút, API chặn lượt thanh toán mới. Nếu có link VietQR, API đối soát trước khi hủy. Nhận đủ tiền thì hoàn tất đơn đủ điều kiện. Link đã đóng và chưa nhận tiền thì hủy đơn, trả kho và nhả voucher. Nếu chưa xác minh được, API giữ nguyên đơn.
   \item[E2 -- Gửi lặp] Cùng \texttt{Idempotency-Key} trả payment đã có, không trừ nguyên liệu/cộng điểm hai lần; dùng cùng khóa cho đơn khác bị từ chối.
   \item[E3 -- Sai quyền hoặc trạng thái] Thiếu phiên, orderId của người khác, đơn đã \texttt{PAID}/\texttt{CANCELLED} hoặc quá hạn bị từ chối trước khi ghi nhận payment mới.
   \item[E4 -- Lỗi giao dịch/tranh chấp tồn] Lỗi giữ nguyên liệu, ghi đơn hoặc ghi thanh toán làm rollback phần thay đổi của transaction; giao diện báo lỗi và giữ dữ liệu giỏ để thử lại.
   \item[E5 -- Chưa có tín hiệu PayOS] Trang đọc trạng thái định kỳ hoặc khi khách bấm kiểm tra; API có thể đối soát trực tiếp với PayOS. Nếu đã nhận một phần tiền, dữ liệu không khớp hoặc PayOS chưa phản hồi, trang tiếp tục chờ hoặc báo cần đối soát. Nếu đơn đã hủy và trả kho nhưng PayOS báo có tiền, xử lý qua đối soát riêng.
+  \item[E6 -- Voucher không còn lượt khả dụng] Nếu voucher đang được giữ cho đơn khác hoặc đã dùng, API báo lỗi và không cấp VietQR cho đơn sau.
 \end{description}
 
 \subsubsection{Liên kết yêu cầu và tiêu chí chấp nhận}

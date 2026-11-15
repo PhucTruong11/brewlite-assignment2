@@ -8,9 +8,9 @@ import { PaymentGatewayService } from '../src/modules/checkout/payment-gateway.s
 import { RewardsService } from '../src/modules/rewards/rewards.service.js';
 import { AdminService } from '../src/modules/admin/admin.service.js';
 
-const dbName = new URL(process.env.DATABASE_URL ?? '').pathname.slice(1);
-if (dbName !== 'brewlite_inventory_test') {
-  throw new Error('test:ingredients chỉ được chạy trên DB brewlite_inventory_test');
+const dbUrl = new URL(process.env.DATABASE_URL ?? 'postgresql://invalid/');
+if (dbUrl.pathname !== '/brewlite_inventory_test' || !['localhost', '127.0.0.1'].includes(dbUrl.hostname)) {
+  throw new Error('test:ingredients chỉ được chạy trên DB brewlite_inventory_test ở localhost');
 }
 
 const prisma = new PrismaClient();
@@ -88,12 +88,12 @@ async function main() {
   assert.equal(failedOrder.inventoryState, 'RESERVED');
 
   const paymentKey = randomUUID();
-  const paid = await checkout.processCheckout(order.id, 'EWALLET', paymentKey, user.id);
+  const paid = await checkout.processCheckout(order.id, 'CARD', paymentKey, user.id);
   assert.equal(paid.success, true);
   const beansPaid = await prisma.ingredient.findUniqueOrThrow({ where: { code: 'COFFEE_BEANS' } });
   assert.equal(beansPaid.reserved?.toNumber(), 0);
   assert.equal(beansPaid.onHand?.toNumber(), beansBefore.onHand!.toNumber() - 48);
-  const duplicate = await checkout.processCheckout(order.id, 'EWALLET', paymentKey, user.id);
+  const duplicate = await checkout.processCheckout(order.id, 'CARD', paymentKey, user.id);
   assert.equal(duplicate.isDuplicate, true);
   const beansAfterDuplicate = await prisma.ingredient.findUniqueOrThrow({ where: { code: 'COFFEE_BEANS' } });
   assert.equal(beansAfterDuplicate.onHand?.toNumber(), beansPaid.onHand?.toNumber());
@@ -131,7 +131,7 @@ async function main() {
   assert.equal(status.status, 'CANCELLED');
   const expired = await prisma.order.findUniqueOrThrow({ where: { id: expiring.id } });
   assert.equal(expired.inventoryState, 'RELEASED');
-  await assert.rejects(checkout.processCheckout(expiring.id, 'EWALLET', randomUUID(), user.id), /không thể thanh toán/);
+  await assert.rejects(checkout.processCheckout(expiring.id, 'CARD', randomUUID(), user.id), /không thể thanh toán/);
 
   console.log('PASS: cart recipes, topping, shortages, concurrent reservation, failure/retry, simultaneous idempotency, payment consumption, cancellation restoration, expiry');
 }

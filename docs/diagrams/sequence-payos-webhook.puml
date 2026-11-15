@@ -10,10 +10,17 @@ participant "PostgreSQL" as DB
 participant "PayOS" as PayOS
 UI -> API: GET /api/checkout/status/:orderId
 API -> API: Kiểm tra quyền xem đơn
-opt Chưa có link hợp lệ
-  API -> PayOS: Tạo link theo số tiền trên đơn
-  PayOS --> API: Mã link và dữ liệu VietQR
-  API -> DB: Lưu link của đơn
+opt Chưa có link
+  API -> DB: Khóa đơn và giữ voucher đổi điểm nếu có
+  alt Voucher khả dụng hoặc đơn không cần giữ voucher
+    API -> PayOS: Tạo link theo số tiền trên đơn
+    PayOS --> API: Mã link và dữ liệu VietQR
+    API -> DB: Lưu link cùng lượt giữ voucher
+  else Voucher đã được giữ hoặc đã dùng
+    break Không cấp QR cho đơn này
+      API --> UI: Báo voucher không còn lượt khả dụng
+    end
+  end
 end
 API --> UI: QR và hạn thanh toán
 Customer -> PayOS: Chuyển khoản qua ngân hàng
@@ -27,10 +34,10 @@ else API xử lý polling hoặc tác vụ hết hạn
   end
   PayOS --> API: Trạng thái link và số tiền đã nhận
 end
-alt Đã nhận đủ và đơn còn giữ kho
-  API -> DB: Transaction: ghi SUCCESS và PAID, tiêu thụ tồn một lần
+alt Đã nhận đủ và đơn đủ điều kiện hoàn tất
+  API -> DB: Ghi SUCCESS và PAID, trừ tồn, dùng voucher và cộng điểm
 else Tác vụ hết hạn xác nhận link đóng và chưa nhận tiền
-  API -> DB: Transaction: CANCELLED và trả lượng giữ
+  API -> DB: Ghi CANCELLED, trả lượng giữ và nhả voucher
 else Chờ hoặc giao dịch cần đối soát
   API -> API: Giữ đơn nếu chưa thể xác minh; từ chối webhook sai
 end

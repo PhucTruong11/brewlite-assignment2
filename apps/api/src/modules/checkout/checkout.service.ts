@@ -13,7 +13,11 @@ import { PayOS, type Webhook } from '@payos/node';
 import QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { InventoryState, PaymentMethod, OrderStatus, PaymentStatus, type Order, type Prisma } from '@prisma/client';
-import { RewardsService } from '../rewards/rewards.service.js';
+import {
+  RewardsService,
+  RewardVoucherUnavailableException,
+  VOUCHER_UNAVAILABLE_MESSAGE,
+} from '../rewards/rewards.service.js';
 import { InventoryService, RESERVATION_DURATION_MS } from '../inventory/inventory.service.js';
 import { PaymentGatewayService } from './payment-gateway.service.js';
 
@@ -134,6 +138,7 @@ export class CheckoutService {
       if (state !== 'unpaid') return false;
     }
     await this.inventory.release(tx, order);
+    await this.rewardsService.releaseVoucher(tx, order.id);
     await tx.order.update({ where: { id: order.id }, data: { status: OrderStatus.CANCELLED } });
     return true;
   }
@@ -153,7 +158,13 @@ export class CheckoutService {
         this.logger.error(`PayOS đã nhận tiền nhưng đơn ${order.id} không còn giữ kho; cần đối soát thủ công`);
         return 'review' as const;
       }
-      await this.completePayment(tx, order, PaymentMethod.EWALLET, `PAYOS-RECONCILE-${id}`);
+      try {
+        await this.completePayment(tx, order, PaymentMethod.EWALLET, `PAYOS-RECONCILE-${id}`);
+      } catch (error) {
+        if (!(error instanceof RewardVoucherUnavailableException)) throw error;
+        this.logger.warn(`PayOS đã nhận tiền cho đơn ${order.id} nhưng đơn cũ không còn voucher khả dụng`);
+        return 'review' as const;
+      }
       return 'paid' as const;
     }
     if (remote.amountPaid > 0) return 'review' as const;
@@ -463,6 +474,8 @@ export class CheckoutService {
     method: PaymentMethod,
     idempotencyKey: string,
   ) {
+    // Kiểm tra lượt đã giữ trước mọi thay đổi về tiền, kho và điểm.
+    await this.rewardsService.consumeVoucher(tx, order);
     if (order.inventoryState === InventoryState.RESERVED) {
       await this.inventory.consume(tx, order);
     } else if (order.inventoryState === InventoryState.LEGACY) {
@@ -495,7 +508,6 @@ export class CheckoutService {
       data: { status: OrderStatus.PAID, loyaltyPointsEarned: pointsEarned },
     });
     await this.rewardsService.earnPoints(tx, order);
-    await this.rewardsService.consumeVoucher(tx, order.userId, order.promoCode, order.id);
     return { payment, pointsEarned };
   }
 
@@ -532,6 +544,8 @@ export class CheckoutService {
 
     try {
       if (PAYABLE_STATUSES.includes(order.status) && this.deadline(order).getTime() <= Date.now()) {
+        // Không dùng kết quả polling trước thời điểm hết hạn sau khi đã đối soát đóng link.
+        this.payosChecks.delete(orderId);
         await this.cancelExpiredOrder(orderId);
       }
       order = await this.findOwnedOrder(orderId, userId);
@@ -550,16 +564,25 @@ export class CheckoutService {
       } else {
         try {
           order = await this.getOrCreatePayosLink(orderId, this.payos);
-        } catch {
-          this.logger.warn(`Không thể tạo mã PayOS cho đơn ${orderId}`);
-          payosError = 'Chưa lấy được mã VietQR từ PayOS. Hệ thống sẽ thử lại.';
+        } catch (error) {
+          if (error instanceof RewardVoucherUnavailableException) {
+            payosError = error.message;
+          } else {
+            this.logger.warn(`Không thể tạo mã PayOS cho đơn ${orderId}`);
+            payosError = 'Chưa lấy được mã VietQR từ PayOS. Hệ thống sẽ thử lại.';
+          }
         }
       }
     }
 
     const expiresAt = this.deadline(order);
     const remainingSeconds = Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 1000));
-    const link = remainingSeconds > 0 && PAYABLE_STATUSES.includes(order.status) ? order.payosPaymentLink : null;
+    let link = !paymentReviewRequired && remainingSeconds > 0 && PAYABLE_STATUSES.includes(order.status)
+      ? order.payosPaymentLink : null;
+    if (link && !await this.rewardsService.hasRequiredVoucherHold(order.id, order.promoCode)) {
+      link = null;
+      payosError ??= VOUCHER_UNAVAILABLE_MESSAGE;
+    }
     const payments = await this.prisma.payment.findMany({ where: { orderId }, orderBy: { createdAt: 'desc' } });
 
     return {
@@ -597,6 +620,7 @@ export class CheckoutService {
       const order = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: PAYOS_LINK });
       if (order.payosPaymentLink || !this.canCreatePayosLink(order)) return order;
 
+      await this.rewardsService.reserveVoucher(tx, order);
       const checkoutPage = new URL('/checkout', process.env.FRONTEND_URL || 'http://localhost:3000');
       checkoutPage.searchParams.set('orderId', orderId);
       const link = await payos.paymentRequests.create({

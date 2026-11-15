@@ -1,6 +1,6 @@
 # UC-01 — Đặt và thanh toán đơn hàng (Task 1.3)
 
-Bản nháp này chưa được đưa vào [báo cáo tổng hợp](task1/main.tex). Nội dung LaTeX riêng nằm ở [1.3-use-case.tex](task1/1.3-use-case.tex); có thể dùng sau khi hoàn thiện Task 1.3.
+Đặc tả LaTeX [Task 1.3](task1/1.3-use-case.tex) được ghép vào [báo cáo tổng hợp](task1/main.tex).
 
 ![Sơ đồ use-case UC-01](../diagrams/uc01-order-checkout.svg)
 
@@ -16,7 +16,7 @@ Bản nháp này chưa được đưa vào [báo cáo tổng hợp](task1/main.t
 | Trigger | Khách bấm **Tiến hành thanh toán** ở giỏ. |
 | Tiền điều kiện | Giỏ có ít nhất một món; cần đăng nhập trước khi gọi API tạo đơn. Giá, công thức, nguyên liệu và voucher được xác minh trong luồng. |
 | Thành công | Đơn `PAID`, một payment thành công, nguyên liệu đã giữ được tiêu thụ một lần, điểm/voucher được ghi theo quy tắc, khách thấy biên nhận. |
-| Không thành công | Giỏ sai không tạo đơn; thanh toán lỗi còn giữ nguyên liệu đến hạn; hết hạn thì `CANCELLED` và trả lượng `reserved`. |
+| Không thành công | Giỏ sai không tạo đơn. Lỗi thanh toán vẫn giữ nguyên liệu trong hạn. Nếu đã cấp QR, chỉ hủy, trả kho và nhả voucher sau khi PayOS xác nhận link đóng và chưa nhận tiền. |
 
 **Trong phạm vi:** kiểm tra giỏ, tạo đơn, giữ/trả nguyên liệu, thanh toán, hiển thị trạng thái và biên nhận. **Ngoài phạm vi:** nhập kho, sửa công thức, pha chế/giao đồ, giao tận nơi, hoàn tiền ngân hàng tự động. Mở QR hoặc bấm **Đã chuyển tiền** không có nghĩa đã thanh toán.
 
@@ -26,7 +26,7 @@ Bản nháp này chưa được đưa vào [báo cáo tổng hợp](task1/main.t
 2. Giao diện kiểm tra phiên và gọi `POST /api/cart/validate`; máy chủ đọc lại món, size, topping, giá, công thức và nguyên liệu.
 3. Khi giỏ hợp lệ, giao diện gọi `POST /api/orders`. Máy chủ tính lại tiền/voucher; trong một transaction kiểm tra lại tồn, giữ nguyên liệu và lưu đơn cùng các dòng món.
 4. API trả `orderId`, trạng thái `PENDING`, tổng tiền và hạn hai phút. Giao diện mở `/checkout?orderId=...`, lấy hạn từ máy chủ.
-5. Khách chọn **thẻ mô phỏng** rồi gửi `POST /api/checkout` với `Idempotency-Key`, hoặc quét **VietQR PayOS**. API xác minh chữ ký webhook và đối chiếu mã link cùng số tiền trước khi hoàn tất đơn.
+5. Khách chọn **thẻ mô phỏng** rồi gửi `POST /api/checkout` với `Idempotency-Key`, hoặc quét **VietQR PayOS**. API giữ một voucher đổi điểm cho đơn trước khi cấp QR. Nếu voucher đã được giữ hoặc đã dùng, API báo lỗi và không cấp QR. API xác minh chữ ký webhook và đối chiếu mã link cùng số tiền trước khi hoàn tất đơn.
 6. Khi thanh toán thành công, máy chủ ghi payment, chuyển đơn `PAID`, tiêu thụ nguyên liệu đã giữ, ghi điểm/voucher. Giao diện hiện biên nhận và xóa giỏ cục bộ.
 
 ## Luồng thay thế

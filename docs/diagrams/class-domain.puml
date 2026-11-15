@@ -132,6 +132,7 @@ package "Domain Model (BrewLite)" {
     + minOrderValue: Float
     + maxDiscount: Float
     + isActive: Boolean
+    + redemptionLimit: Int?
     + isValidForOrder(orderTotal: Int): Boolean
   }
 
@@ -150,6 +151,7 @@ package "Domain Model (BrewLite)" {
     + rewardItemId: String
     + usedAt: DateTime
     + usedOrderId: String
+    + reservedOrderId: String?
   }
 
   class "LoyaltyTransaction\n(Prisma: PointTransaction)" as LoyaltyTransaction {
@@ -177,6 +179,7 @@ package "Domain Model (BrewLite)" {
     RESERVED
     CONSUMED
     RELEASED
+    RESTORED
   }
 
   enum PaymentStatus {
@@ -227,7 +230,7 @@ Ingredient "1" --> "0..*" Recipe : used in
 
 Order "1" --> "0..*" Payment : settled by
 Order "1" -- "0..1" PayosPaymentLink : VietQR
-Order "0..1" --> "0..1" UserVoucher : applies
+Order "0..1" --> "0..1" UserVoucher : reserves or uses
 Promotion "1" --> "0..*" UserVoucher : grants
 Promotion "1" --> "0..*" RewardItem : configures
 RewardItem "1" --> "0..*" UserVoucher : redeemed as

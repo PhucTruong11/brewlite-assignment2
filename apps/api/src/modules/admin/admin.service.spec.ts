@@ -7,7 +7,7 @@ describe('AdminService', () => {
         $queryRaw: vi.fn(),
         order: { findUnique: vi.fn(), update: vi.fn() },
         product: { update: vi.fn() },
-        user: { findUnique: vi.fn(), update: vi.fn() },
+        user: { update: vi.fn() },
         pointTransaction: { create: vi.fn() },
     };
     const prisma = {
@@ -111,7 +111,7 @@ describe('AdminService', () => {
             id: 'o1', status: 'PAID', inventoryState: 'LEGACY', userId: 'u1', loyaltyPointsEarned: 3,
             items: [{ productId: 'p1', qty: 2 }],
         });
-        tx.user.findUnique.mockResolvedValue({ loyaltyPoints: 10 });
+        tx.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ loyaltyPoints: 10 }]);
         tx.user.update.mockResolvedValue({ loyaltyPoints: 7 });
 
         await service.updateStatus('o1', 'CANCELLED' as never);
