@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { Webhook } from '@payos/node';
 import { CheckoutService } from './checkout.service.js';
 import { CreateCheckoutDto } from './dto/create-checkout.dto.js';
@@ -82,6 +83,8 @@ export class CheckoutController {
     return this.checkoutService.getOrderCheckoutStatus(orderId, user.id);
   }
 
+  // Webhook do máy chủ PayOS gọi; đã có kiểm tra chữ ký nên không giới hạn theo IP.
+  @SkipThrottle()
   @Post('payos-webhook')
   @HttpCode(HttpStatus.OK)
   async handlePayosWebhook(@Body() body: Webhook) {

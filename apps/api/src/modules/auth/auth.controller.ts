@@ -14,6 +14,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -24,6 +25,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto, } from './dto/auth-password.dto.js';
+import { AUTH_LIMITS } from '../../common/security/rate-limit.js';
 
 @Controller('auth')
 export class AuthController {
@@ -41,23 +43,27 @@ export class AuthController {
     return id;
   }
 
+  @Throttle({ default: AUTH_LIMITS.register })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
+  @Throttle({ default: AUTH_LIMITS.verifyEmail })
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);
   }
 
+  @Throttle({ default: AUTH_LIMITS.sendEmail })
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   resendVerification(@Body() dto: ResendVerificationDto) {
     return this.authService.resendVerification(dto);
   }
 
+  @Throttle({ default: AUTH_LIMITS.login })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
@@ -73,11 +79,13 @@ export class AuthController {
     return result;
   }
 
+  @Throttle({ default: AUTH_LIMITS.sendEmail })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
   }
 
+  @Throttle({ default: AUTH_LIMITS.resetPassword })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);

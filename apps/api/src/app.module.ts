@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppThrottlerGuard, THROTTLER_OPTIONS } from './common/security/rate-limit.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
@@ -21,6 +24,7 @@ import { InventoryModule } from './modules/inventory/inventory.module.js';
       envFilePath: '.env',
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot(THROTTLER_OPTIONS),
     PrismaModule,
     ProductsModule,
     AuthModule,
@@ -33,6 +37,6 @@ import { InventoryModule } from './modules/inventory/inventory.module.js';
     InventoryModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: AppThrottlerGuard }],
 })
 export class AppModule { }

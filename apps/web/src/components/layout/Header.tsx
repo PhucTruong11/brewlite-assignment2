@@ -334,24 +334,22 @@ export function Header() {
                 </div>
               )}
             </div>
-          ) : null /* Ẩn nút Đăng nhập / Đăng ký trên Header
-            (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/auth/login"
-                  className="rounded-full border border-primary/20 px-4 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-background hover:text-primary"
-                >
-                  Đăng nhập
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
-                >
-                  Đăng ký
-                </Link>
-              </div>
-            )
-          */}
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/auth/login"
+                className="rounded-full border border-primary/20 px-4 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-background hover:text-primary"
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                href="/auth/register"
+                className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+              >
+                Đăng ký
+              </Link>
+            </div>
+          )}
         </div>
 
         <button

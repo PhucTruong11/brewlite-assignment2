@@ -56,3 +56,25 @@ Workflow thử rollback về deployment Vercel trước và commit Render trư�
 ## Trạng thái so với Assignment 2
 
 `docker-compose.yml` được giữ cho yêu cầu tái tạo stack local của đề nhưng không dùng làm môi trường demo chính. CI, bài E2E ở mức API và CD đã có trong mã nguồn; CD vẫn cần secrets, dự án cloud trỏ đúng repo, kiểm tra migration production và một release run thành công để có bằng chứng. Bài E2E hiện xác nhận luồng qua API; nếu giảng viên yêu cầu thao tác trình duyệt thật, nhóm cần bổ sung browser E2E. Các tài liệu Sprint, release notes và video demo cũng chưa nằm trong pipeline.
+
+## Chống spam đăng ký và giới hạn tần suất
+
+API giới hạn tần suất theo IP bằng `@nestjs/throttler` (bộ đếm nằm trong bộ nhớ của một instance API, phù hợp cấu hình Render hiện tại). Vượt giới hạn trả HTTP 429 kèm `Retry-After`; riêng các endpoint dưới đây còn khóa IP vi phạm trong `blockDuration`.
+
+| Endpoint | Giới hạn mỗi IP | Khóa IP khi vượt |
+| --- | --- | --- |
+| `POST /api/auth/register` | 5 lần / 1 giờ | 1 giờ |
+| `POST /api/auth/resend-verification`, `POST /api/auth/forgot-password` | 5 lần / 1 giờ | 1 giờ |
+| `POST /api/auth/verify-email`, `POST /api/auth/reset-password` | 10 lần / 10 phút | 10 phút |
+| `POST /api/auth/login` | 10 lần / 1 phút | 5 phút |
+| Các endpoint còn lại | 300 lần / 1 phút | không |
+
+Webhook PayOS không bị giới hạn theo IP vì đã kiểm tra chữ ký. Khi `NODE_ENV=test` (CI) bộ giới hạn tắt để test gọi API liên tục. Ngoài ra `POST /api/auth/register` từ chối bằng 429 khi toàn hệ thống đã tạo từ `MAX_UNVERIFIED_SIGNUPS_PER_HOUR` tài khoản chưa xác minh trong 1 giờ gần nhất, để bot đổi IP vẫn không làm cạn hạn mức gửi email OTP.
+
+Biến môi trường tùy chọn trên Render:
+
+- `TRUST_PROXY_HOPS`: số proxy tin cậy phía trước API. Mặc định `2` ở production (Vercel → Render) và `0` ở môi trường khác. Sau khi deploy, kiểm tra log `RateLimit` có dòng `ip=...` là IP khách thật. Nếu thấy IP của Vercel/Render thì tăng giá trị; nếu `ip` trùng một giá trị do client tự gửi trong `xff` thì giảm giá trị.
+- `BLOCKED_IPS`: danh sách IP bị chặn hẳn (phân tách bằng dấu phẩy), lấy từ log `RateLimit`. Cần deploy lại để có hiệu lực.
+- `MAX_UNVERIFIED_SIGNUPS_PER_HOUR`: mặc định `30`; đặt `0` để tắt trần này.
+
+Ghi chú vận hành: nếu có thêm instance API, bộ đếm theo IP không dùng chung giữa các instance. Khi đó cần Redis làm nơi lưu hoặc đặt giới hạn ở tầng CDN/WAF.
