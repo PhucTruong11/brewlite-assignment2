@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
@@ -58,6 +60,21 @@ export class AuthService {
     }
   }
 
+  // Trần toàn hệ thống: bot đổi IP liên tục vẫn không làm cạn hạn mức gửi email OTP.
+  private async assertSignupCapacity() {
+    const limit = Number(process.env.MAX_UNVERIFIED_SIGNUPS_PER_HOUR ?? 30);
+    if (!Number.isFinite(limit) || limit <= 0) return;
+    const recent = await this.prisma.user.count({
+      where: { emailVerifiedAt: null, createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) } },
+    });
+    if (recent >= limit) {
+      throw new HttpException(
+        { code: 'SIGNUP_TEMPORARILY_LIMITED', message: 'Hệ thống đang nhận quá nhiều đăng ký. Vui lòng thử lại sau ít phút.' },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
   async register(dto: RegisterDto) {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase() },
@@ -70,6 +87,8 @@ export class AuthService {
           : 'Email này đã đăng ký nhưng chưa xác minh. Vui lòng đăng nhập và chọn xác minh email để gửi lại mã.',
       );
     }
+
+    await this.assertSignupCapacity();
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 

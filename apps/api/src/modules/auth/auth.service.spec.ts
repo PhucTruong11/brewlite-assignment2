@@ -22,7 +22,7 @@ describe('AuthService OTP delivery failures', () => {
     role: 'USER',
   };
   const prisma = {
-    user: { findUnique: vi.fn(), create: vi.fn() },
+    user: { findUnique: vi.fn(), create: vi.fn(), count: vi.fn() },
     emailVerification: { create: vi.fn(), upsert: vi.fn() },
     passwordReset: { upsert: vi.fn() },
   };
@@ -60,6 +60,16 @@ describe('AuthService OTP delivery failures', () => {
       }),
     );
     expect(result.email).toBe(email);
+  });
+
+  it('rejects registration with 429 and sends no email when too many unverified signups were created this hour', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.count.mockResolvedValue(30);
+    await expect(
+      service.register({ email, password: 'test-password' }),
+    ).rejects.toMatchObject({ status: 429 });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(mail.sendOtpEmail).not.toHaveBeenCalled();
   });
 
   it('returns 503 and explains how to recover a pending registration when delivery fails', async () => {
