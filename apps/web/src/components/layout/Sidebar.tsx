@@ -110,17 +110,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         >
                             Đăng xuất
                         </button>
-                    ) : null /* Ẩn nút Đăng nhập trên Sidebar
-                        (
-                            <Link
-                                href="/auth/login"
-                                onClick={onClose}
-                                className="mt-3 block rounded-full bg-white py-2.5 text-center text-sm font-semibold text-primary hover:bg-white/90"
-                            >
-                                Đăng nhập
-                            </Link>
-                        )
-                    */}
+                    ) : (
+                        <Link
+                            href="/auth/login"
+                            onClick={onClose}
+                            className="mt-3 block rounded-full bg-white py-2.5 text-center text-sm font-semibold text-primary hover:bg-white/90"
+                        >
+                            Đăng nhập
+                        </Link>
+                    )}
                 </div>
 
                 <div className="p-4">
