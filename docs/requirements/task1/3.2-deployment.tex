@@ -1,19 +1,78 @@
-\clearpage
 \subsection{Task 3.2 -- Deployment diagram}
 
-Trình duyệt truy cập Next.js trên Vercel qua HTTPS. Web chuyển tiếp
-\nolinkurl{/api} sang NestJS trên Render. API kết nối với PostgreSQL trên
-Supabase qua TLS và nhận webhook PayOS trực tiếp. Docker Compose tái tạo
-web, API và PostgreSQL ở local với volume lưu dữ liệu.
+Sơ đồ triển khai được chia thành một hình tổng quan và ba hình phân rã:
+production, môi trường local và quy trình CI/CD. Mỗi hình tập trung vào một
+phạm vi để đọc được tên thành phần, giao thức và đường đi của dữ liệu khi in
+trên giấy A4. Các hình giữ cách biểu diễn UML của bản nhóm: nút triển khai
+dạng khối 3D, stereotype, artifact và ghi chú màu vàng nhạt. Hình vector
+giữ chữ và đường nét rõ khi phóng lớn.
 
-\begin{center}
-\includegraphics[page=1,width=\linewidth,keepaspectratio]{../../architecture/deployment/deployment-diagram.pdf}\\[0.5em]
-{\small\itshape Hình 3.2. Triển khai BrewLite ở local, CI/CD và production}
-\end{center}
+\paragraph{Tổng quan các môi trường}
+Người dùng truy cập web trên Vercel. Web chuyển tiếp yêu cầu API đến Render,
+API lưu dữ liệu trong PostgreSQL Supabase và tích hợp các dịch vụ ngoài.
+Nhóm phát triển tái tạo hệ thống bằng Docker Compose ở local. GitHub Actions
+kiểm tra và phát hành cùng một commit lên production.
 
-Khi CI đạt, workflow lưu image theo SHA lên GHCR, áp migration Supabase,
-deploy API rồi web và kiểm tra \nolinkurl{/api/health} trực tiếp và qua proxy.
-Biến môi trường và secrets được cấu hình trên từng nền tảng.
-Bảng đối chiếu nút triển khai với mã nguồn nằm trong
-\nolinkurl{docs/architecture/deployment/README.md}.
-\clearpage
+Bảng đối chiếu thành phần nằm trong \nolinkurl{README.md} ở thư mục:\\
+\nolinkurl{docs/architecture/deployment/}. Các sơ đồ con dưới đây
+chỉ ra chi tiết kết nối và trình tự phát hành tương ứng.
+
+\begin{reportfigure}
+\input{../../architecture/deployment/overview.tex}
+\par\small\itshape Hình 3.2a. Tổng quan triển khai và các phạm vi phân rã
+\end{reportfigure}
+
+\paragraph{Phân rã production}
+Trình duyệt dùng HTTPS đến Vercel. Rewrite của Next.js chuyển
+\nolinkurl{/api/*} đến NestJS trên Render bằng HTTPS. API kết nối PostgreSQL
+qua TLS, gọi PayOS để tạo hoặc đối soát liên kết thanh toán và nhận webhook
+đã ký trực tiếp trên Render. Brevo cung cấp email OTP qua HTTPS.
+
+\begin{reportfigure}
+\input{../../architecture/deployment/production.tex}
+\par\small\itshape Hình 3.2b. Các nút và kết nối trong môi trường production
+\end{reportfigure}
+
+Render chạy API bằng Docker và nhận cổng nội bộ qua biến \texttt{PORT}.
+Web dùng đường dẫn API tương đối \nolinkurl{/api}; đích rewrite cấu hình qua
+\nolinkurl{API_INTERNAL_URL}. Thông tin kết nối DB, JWT,
+PayOS và Brevo được cấu hình bằng biến môi trường hoặc secrets trên nền
+tảng tương ứng. Trình duyệt truy cập dữ liệu nghiệp vụ qua API.
+\nolinkurl{/api/health} kiểm tra kết nối PostgreSQL; log build/runtime
+được theo dõi trên Vercel và Render.
+
+\paragraph{Phân rã môi trường local}
+Docker Compose chạy ba service \texttt{web}, \texttt{api} và \texttt{db}.
+Tên service được dùng để phân giải địa chỉ trong mạng Compose. Cổng host
+phục vụ truy cập từ máy phát triển được ghi riêng với cổng giữa container.
+
+\begin{reportfigure}
+\input{../../architecture/deployment/local.tex}
+\par\small\itshape Hình 3.2c. Môi trường Docker Compose local và lưu trữ dữ liệu
+\end{reportfigure}
+
+Compose đợi DB healthy trước khi chạy API và đợi API healthy trước khi
+chạy web. DB kiểm tra bằng \texttt{pg\_isready}, API kiểm tra
+\nolinkurl{/api/products}, web kiểm tra \nolinkurl{/}. Volume
+\texttt{brewlite\_pgdata} giữ dữ liệu PostgreSQL giữa các lần tạo lại
+container. Hai tệp cấu hình trong thư mục \nolinkurl{docker/} là
+\nolinkurl{docker-compose.dev.yml} và \nolinkurl{docker-compose.app.yml}.
+
+\paragraph{Phân rã CI/CD}
+CI kiểm tra pull request vào \texttt{main}. Khi merge tạo push vào
+\texttt{main}, CD gọi lại CI trên commit phát hành rồi mới thực hiện các
+bước có thay đổi production. CD cũng hỗ trợ tag \nolinkurl{v*} và chạy
+thủ công. PostgreSQL của job kiểm thử được tách khỏi DB production.
+
+\begin{reportfigure}
+\input{../../architecture/deployment/release.tex}
+\par\small\itshape Hình 3.2d. Quality gate, migration, triển khai và smoke test
+\end{reportfigure}
+
+Hai image trên GHCR lưu bản đóng gói theo SHA để truy vết. Render triển
+khai API theo commit phát hành; Vercel CLI triển khai web từ cùng checkout.
+Workflow dùng secrets của GitHub Environment \texttt{production} và yêu cầu
+xác nhận baseline migration cùng backup trước khi áp migration. Khi rollout
+thất bại sau deploy, workflow thử khôi phục phiên bản ứng dụng trước đó;
+rollback schema và dữ liệu được xử lý riêng. Xem Task 5.3 và
+\nolinkurl{docs/deployment.md}.

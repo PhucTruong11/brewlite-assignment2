@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="950" viewBox="0 0 780 950">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10" fill="#334155"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<path d="M40 25 l9 -9 h340 v108 l-9 9 M380 25 l9 -9 M40 25 h340 v108 h-340 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="210.0" y="53" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">«device» · Thiết bị người dùng</text>
+<text x="210.0" y="78" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Trình duyệt web</text>
+<path d="M40 215 l9 -9 h340 v160 l-9 9 M380 215 l9 -9 M40 215 h340 v160 h-340 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="210.0" y="243" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Vercel Platform</text>
+<text x="210.0" y="268" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">«executionEnvironment»</text>
+<text x="210.0" y="293" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Next.js Frontend · apps/web</text>
+<rect x="56" y="315" width="308" height="46" fill="#F5F7FC" stroke="#50627F" stroke-width="1.5"/>
+<path d="M345 323 h7 l7 7 v10 h-14 Z M352 323 v7 h7" fill="white" stroke="#7C90B0"/>
+<text x="210.0" y="342" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">Web build + rewrite /api/*</text>
+<path d="M40 470 l9 -9 h340 v180 l-9 9 M380 470 l9 -9 M40 470 h340 v180 h-340 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="210.0" y="498" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Render Service · Docker</text>
+<text x="210.0" y="523" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">«executionEnvironment»</text>
+<text x="210.0" y="548" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">NestJS API · apps/api · PORT</text>
+<rect x="56" y="567" width="308" height="69" fill="#F5F7FC" stroke="#50627F" stroke-width="1.5"/>
+<path d="M345 575 h7 l7 7 v10 h-14 Z M352 575 v7 h7" fill="white" stroke="#7C90B0"/>
+<text x="210.0" y="594" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">Backend production build</text>
+<text x="210.0" y="617" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">GET /api/health</text>
+<path d="M40 760 l9 -9 h340 v145 l-9 9 M380 760 l9 -9 M40 760 h340 v145 h-340 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="210.0" y="788" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Supabase Platform</text>
+<text x="210.0" y="813" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">«executionEnvironment»</text>
+<rect x="56" y="822" width="308" height="69" fill="#F5F7FC" stroke="#50627F" stroke-width="1.5"/>
+<path d="M345 830 h7 l7 7 v10 h-14 Z M352 830 v7 h7" fill="white" stroke="#7C90B0"/>
+<text x="210.0" y="849" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">Managed PostgreSQL</text>
+<text x="210.0" y="872" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">Schema + dữ liệu bền vững</text>
+<path d="M520 460 l9 -9 h220 v100 l-9 9 M740 460 l9 -9 M520 460 h220 v100 h-220 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="630.0" y="488" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">PayOS · VietQR</text>
+<text x="630.0" y="513" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">«external system»</text>
+<path d="M520 665 l9 -9 h220 v100 l-9 9 M740 665 l9 -9 M520 665 h220 v100 h-220 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="630.0" y="693" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Brevo · Email OTP</text>
+<text x="630.0" y="718" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">«external system»</text>
+<polyline points="210,133 210,205" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="210,205 214.0,195.0 206.0,195.0" fill="#334155"/>
+<rect x="141.5390625" y="160" width="136.921875" height="25" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="210" y="177" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">HTTPS / TCP 443</text>
+<polyline points="210,375 210,460" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="210,460 214.0,450.0 206.0,450.0" fill="#334155"/>
+<rect x="115.3125" y="393" width="189.375" height="47" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="210" y="410" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">HTTPS 443 · cookie JWT</text>
+<text x="210" y="432" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">Proxy /api/:path*</text>
+<polyline points="210,650 210,750" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="210,750 214.0,740.0 206.0,740.0" fill="#334155"/>
+<rect x="109.0625" y="677" width="201.875" height="47" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="210" y="694" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">PostgreSQL / TLS</text>
+<text x="210" y="716" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">Session Pooler · TCP 5432</text>
+<polyline points="380,505 510,505" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="510,505 500.0,501.0 500.0,509.0" fill="#334155"/>
+<rect x="381.30078125" y="437" width="133.3984375" height="47" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="448" y="454" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">HTTPS 443</text>
+<text x="448" y="476" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">Tạo link / đối soát</text>
+<polyline points="520,540 480,540 480,592 381,592" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="381,592 391.0,596.0 391.0,588.0" fill="#334155"/>
+<rect x="394.859375" y="557" width="118.28125" height="25" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="454" y="574" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">Webhook đã ký</text>
+<polyline points="380,620 450,620 450,715 510,715" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="510,715 500.0,711.0 500.0,719.0" fill="#334155"/>
+<rect x="405.6640625" y="633" width="106.671875" height="25" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="459" y="650" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">HTTPS / OTP</text>
+<path d="M430 815 h294 l16 16 v86 h-310 Z M724 815 v16 h16" fill="#FFF9E8" stroke="#B68836" stroke-width="1.3"/>
+<text x="444" y="843" text-anchor="start" font-family="Arial" font-size="17" font-weight="normal" fill="#514329">TLS: sslmode=require.</text>
+<text x="444" y="866" text-anchor="start" font-family="Arial" font-size="17" font-weight="normal" fill="#514329">Secrets cấu hình trên nền tảng.</text>
+<text x="444" y="889" text-anchor="start" font-family="Arial" font-size="17" font-weight="normal" fill="#514329">Lưu trữ do Supabase quản lý.</text>
+</svg>
