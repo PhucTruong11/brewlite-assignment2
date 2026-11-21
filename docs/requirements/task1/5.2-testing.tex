@@ -29,3 +29,36 @@ trên PostgreSQL 18 tạm. Với một voucher cho hai đơn, cổng PayOS giả
 nhận một yêu cầu tạo QR. Khi hết hạn, voucher chỉ khả dụng lại sau khi xác
 nhận link đã đóng và chưa có tiền. Hai lần hủy đồng thời chỉ thu hồi số
 điểm còn lại. Danh sách ca và lệnh chạy nằm trong \nolinkurl{tests/README.md}.
+
+\paragraph{Bổ sung minh chứng CI ngày 19/11/2026}
+Hình 4.4 ghi nhận cả ba job backend, frontend và integration/E2E đều đạt.
+Đây là kết quả của lượt CI \#20, được
+ghi riêng với kết quả local ngày 15/11 ở trên để giữ đúng mốc kiểm thử.
+
+\paragraph{Minh chứng chạy tích hợp và E2E ngày 20/11/2026}
+Hai bộ kiểm thử được chạy trên PostgreSQL 18.6 local, DB riêng
+\nolinkurl{brewlite_test}, với \texttt{E2E\_DATABASE=1}. Cả sáu migration
+đã được áp trước khi chạy. Lượt chạy ghi nhận 19/19 ca integration và
+9/9 ca E2E qua API đạt, mỗi bộ gồm hai tệp; hai lệnh đều kết thúc với exit code 0.
+
+Hai ảnh terminal dưới đây do nhóm chụp trực tiếp khi chạy lệnh, giữ nguyên
+đầu ra Vitest và mã thoát. Dòng \texttt{ERROR} của CheckoutService trong
+ảnh integration là log của ca kiểm thử tình huống PayOS đã nhận tiền nhưng
+đơn không còn giữ kho; kết quả tổng kết vẫn đạt 19/19 ca.
+
+\begin{reportfigure}
+\includegraphics[width=\linewidth,keepaspectratio]{../../assets/evidence/testing-integration-terminal.png}
+\par\small\itshape Hình 5.2a. Terminal chạy integration lúc 18:42:32 ngày 20/11/2026:
+19/19 ca đạt, exit code 0
+\end{reportfigure}
+
+\begin{reportfigure}
+\includegraphics[width=\linewidth,keepaspectratio]{../../assets/evidence/testing-e2e-terminal.png}
+\par\small\itshape Hình 5.2b. Terminal chạy E2E qua API lúc 18:42:51 ngày 20/11/2026:
+9/9 ca đạt, exit code 0
+\end{reportfigure}
+
+Ảnh gốc và thông tin các lượt chạy được lưu tại
+\nolinkurl{docs/assets/evidence/}.
+E2E này kiểm tra luồng HTTP bằng Supertest;
+các ảnh thao tác qua trình duyệt được trình bày riêng tại Task 5.1.
