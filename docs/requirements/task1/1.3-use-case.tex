@@ -12,9 +12,9 @@
 
 \subsubsection{Sơ đồ use-case của UC-01}
 Sơ đồ thể hiện vai trò của khách hàng, PayOS và quản trị viên trong phân hệ Thanh toán và Đơn hàng. UC-01 tập trung vào các thao tác đặt hàng, thanh toán và xác nhận giao dịch.
-\begin{center}
+\begin{reportfigure}
 \includegraphics[width=\linewidth,height=0.61\textheight,keepaspectratio]{../../diagrams/uc01-order-checkout.png}
-\end{center}
+\end{reportfigure}
 Sơ đồ được lưu riêng ở \nolinkurl{docs/diagrams/uc01-order-checkout.puml} và xuất thành ảnh trước khi đưa vào báo cáo.
 \textbf{Ranh giới:} UC-01 gồm kiểm tra giỏ, tạo đơn, giữ/trả nguyên liệu, thanh toán và hiển thị kết quả. Thao tác tiếp nhận, cập nhật trạng thái pha chế và hủy đơn đã thanh toán thuộc luồng quản trị riêng. Khi hủy đơn đã thanh toán ở trạng thái cho phép, BrewLite hoàn kho và thu hồi điểm đã cấp trong giới hạn số dư hiện tại. Việc mở QR hoặc bấm ``Đã chuyển tiền'' không tự xác nhận đã thanh toán.
 

@@ -8,6 +8,16 @@
 \hypersetup{hidelinks,pdftitle={BrewLite - Bao cao Assignment 2}}
 \setlength{\parskip}{0.4em}
 \setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{2em}
+\clubpenalty=10000
+\widowpenalty=10000
+% Keep each illustration and its caption together, without center-list padding.
+\newenvironment{reportfigure}{%
+  \par\addvspace{6pt}\noindent
+  \begin{minipage}{\linewidth}\centering\setlength{\parskip}{4pt}%
+}{%
+  \par\end{minipage}\par\addvspace{6pt}%
+}
 \setlist[itemize]{nosep,leftmargin=2em}
 \renewcommand{\contentsname}{Mục lục}
 \pagestyle{fancy}
@@ -77,7 +87,6 @@
 \input{2.3-class.tex}
 
 % Task 3 -- Thiết kế kiến trúc
-\clearpage
 \section{Task 3 -- Thiết kế kiến trúc}
 \input{3.1-architecture.tex}
 \input{3.2-deployment.tex}

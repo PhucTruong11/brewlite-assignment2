@@ -1,10 +1,23 @@
 # Task 3.2 — Sơ đồ triển khai
 
-![Sơ đồ triển khai BrewLite](deployment.svg)
+Sơ đồ trong báo cáo được phân rã thành bốn hình vector theo cách trình bày UML của bản nhóm: node 3D, stereotype, artifact nền nhạt và note màu vàng. Chữ, đường nối và đầu mũi tên được giữ ở dạng vector để in A4.
+
+| Hình | Phạm vi | Nguồn được `main.tex` nạp qua Task 3.2 |
+| --- | --- | --- |
+| 3.2a | Tổng quan các môi trường và dịch vụ | [overview.tex](overview.tex) |
+| 3.2b | Production: Vercel, Render, Supabase, PayOS, Brevo | [production.tex](production.tex) |
+| 3.2c | Local: Docker Compose, cổng host/container, volume | [local.tex](local.tex) |
+| 3.2d | Release: CI gate, GHCR, migration, deploy, smoke test | [release.tex](release.tex) |
+
+Mỗi nguồn `.tex` nạp ảnh PDF vector tương ứng; SVG cùng tên là bản vector có thể chỉnh sửa. [render_diagrams.py](render_diagrams.py) sinh bốn SVG/PDF bằng Python và PyMuPDF. Bố cục được thiết kế riêng cho từng phạm vi để hạn chế thu nhỏ chữ. Biên dịch [main.tex](../../requirements/task1/main.tex) để xem bố cục cuối cùng. Nội dung đã đối chiếu với Docker Compose, rewrite Next.js và workflows ngày 20/11/2026.
+
+Sơ đồ gộp trước đây được giữ lại để tham khảo:
+
+![Sơ đồ triển khai BrewLite trước khi phân rã](deployment.svg)
 
 [Mã nguồn PlantUML](deployment.puml) · [Bản PNG](deployment.png) · [Bản draw.io nhóm gửi](deployment-reference.drawio)
 
-Sơ đồ dùng trong báo cáo đã được đối chiếu với cấu hình Assignment 2. Bản draw.io lưu thông tin tham khảo ban đầu của nhóm.
+Các bản PlantUML/PNG/PDF gộp và draw.io lưu thông tin tham khảo ban đầu của nhóm; báo cáo hiện dùng bốn hình phân rã ở trên.
 
 | Nút triển khai | Thành phần và mã nguồn tương ứng |
 | --- | --- |

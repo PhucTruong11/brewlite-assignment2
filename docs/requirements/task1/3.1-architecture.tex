@@ -5,16 +5,15 @@ Web Next.js phục vụ giao diện mobile-first trên Vercel và chuyển tiế
 \nolinkurl{/api} sang NestJS trên Render. PostgreSQL chạy trên Supabase ở
 production và trong Docker Compose ở local. Prisma quản lý schema và migration.
 
-\begin{center}
+\begin{reportfigure}
 \includegraphics[width=\linewidth,height=0.69\textheight,keepaspectratio]{../../architecture/c4/c4-context-container.png}\\[0.5em]
 {\small\itshape Hình 3.1a. Ngữ cảnh và các container của BrewLite (C4 mức 1 và 2)}
-\end{center}
+\end{reportfigure}
 
 Tài liệu \nolinkurl{system-architecture.md} và sáu ADR trong
 \nolinkurl{docs/architecture/} giải thích các luồng xử lý, cấu hình theo môi trường
 và đánh đổi kiến trúc. Mã nguồn sơ đồ nằm trong \nolinkurl{docs/architecture/c4/}.
 
-\clearpage
 \subsubsection*{Thành phần API và các quyết định kiến trúc}
 NestJS chạy dưới dạng modular monolith. Cách này giúp tạo đơn, giữ kho theo
 công thức và xác nhận thanh toán bằng transaction PostgreSQL. Các module chia
@@ -22,7 +21,7 @@ sẻ tài nguyên của một tiến trình API. Checkout xử lý thẻ mô ph�
 dùng PayOS cho VietQR. API xác thực JWT, kiểm tra quyền, ghi log bằng NestJS
 và kiểm tra PostgreSQL qua \nolinkurl{/api/health}.
 
-\begin{center}
+\begin{reportfigure}
 \includegraphics[width=\linewidth,keepaspectratio]{../../architecture/c4/c4-backend-components.png}\\[0.5em]
 {\small\itshape Hình 3.1b. Các thành phần chính của NestJS API (C4 mức 3)}
-\end{center}
+\end{reportfigure}

@@ -1,0 +1,42 @@
+[
+  {
+    "file": "mvp-menu-desktop.png",
+    "url": "https://brewlite-frontend.vercel.app/",
+    "httpStatus": 200,
+    "capturedAt": "2026-11-20T10:32:53.898Z",
+    "viewport": {
+      "width": 1440,
+      "height": 1050
+    }
+  },
+  {
+    "file": "mvp-detail-desktop.png",
+    "url": "https://brewlite-frontend.vercel.app/product/2e71d25c-4306-40f7-a852-67d03cfe7e96",
+    "capturedAt": "2026-11-20T10:32:55.395Z",
+    "viewport": {
+      "width": 1440,
+      "height": 1050
+    },
+    "region": "main element"
+  },
+  {
+    "file": "mvp-menu-mobile.png",
+    "url": "https://brewlite-frontend.vercel.app/",
+    "httpStatus": 200,
+    "capturedAt": "2026-11-20T10:32:59.191Z",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  {
+    "file": "mvp-detail-mobile.png",
+    "url": "https://brewlite-frontend.vercel.app/product/2e71d25c-4306-40f7-a852-67d03cfe7e96",
+    "capturedAt": "2026-11-20T10:33:00.482Z",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "region": "viewport scrolled to product heading"
+  }
+]

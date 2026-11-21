@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="760" viewBox="0 0 780 760">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10" fill="#334155"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<path d="M245 30 l9 -9 h285 v105 l-9 9 M530 30 l9 -9 M245 30 h285 v105 h-285 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="387.5" y="58" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">«device»</text>
+<text x="387.5" y="83" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Thiết bị người dùng</text>
+<text x="387.5" y="108" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Trình duyệt web</text>
+<rect x="28" y="220" width="715" height="280" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="385" y="247" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">PRODUCTION · Hình 3.2b</text>
+<path d="M55 280 l9 -9 h180 v150 l-9 9 M235 280 l9 -9 M55 280 h180 v150 h-180 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="145.0" y="308" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Vercel</text>
+<text x="145.0" y="333" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Next.js / CDN</text>
+<rect x="71" y="370" width="148" height="46" fill="#F5F7FC" stroke="#50627F" stroke-width="1.5"/>
+<path d="M200 378 h7 l7 7 v10 h-14 Z M207 378 v7 h7" fill="white" stroke="#7C90B0"/>
+<text x="145.0" y="397" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">Web build</text>
+<path d="M300 280 l9 -9 h180 v150 l-9 9 M480 280 l9 -9 M300 280 h180 v150 h-180 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="390.0" y="308" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Render</text>
+<text x="390.0" y="333" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">NestJS / Docker</text>
+<rect x="316" y="370" width="148" height="46" fill="#F5F7FC" stroke="#50627F" stroke-width="1.5"/>
+<path d="M445 378 h7 l7 7 v10 h-14 Z M452 378 v7 h7" fill="white" stroke="#7C90B0"/>
+<text x="390.0" y="397" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">API build</text>
+<path d="M545 280 l9 -9 h175 v150 l-9 9 M720 280 l9 -9 M545 280 h175 v150 h-175 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="632.5" y="308" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">Supabase</text>
+<text x="632.5" y="333" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">PostgreSQL</text>
+<rect x="561" y="370" width="143" height="46" fill="#F5F7FC" stroke="#50627F" stroke-width="1.5"/>
+<path d="M685 378 h7 l7 7 v10 h-14 Z M692 378 v7 h7" fill="white" stroke="#7C90B0"/>
+<text x="632.5" y="397" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">DB schema</text>
+<polyline points="388,135 388,190 145,190 145,271" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="145,271 149.0,261.0 141.0,261.0" fill="#334155"/>
+<rect x="224.20703125" y="164" width="91.5859375" height="25" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="270" y="181" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">HTTPS 443</text>
+<polyline points="235,325 299,325" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="299,325 289.0,321.0 289.0,329.0" fill="#334155"/>
+<rect x="236.77734375" y="294" width="60.4453125" height="25" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="267" y="311" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">HTTPS</text>
+<polyline points="480,325 544,325" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="544,325 534.0,321.0 534.0,329.0" fill="#334155"/>
+<rect x="492.328125" y="294" width="37.34375" height="25" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="511" y="311" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">TLS</text>
+<text x="385" y="471" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">API tích hợp PayOS (VietQR) và Brevo (OTP).</text>
+<path d="M40 590 l9 -9 h300 v125 l-9 9 M340 590 l9 -9 M40 590 h300 v125 h-300 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="190.0" y="618" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">«device» · Local · Hình 3.2c</text>
+<rect x="56" y="632" width="268" height="69" fill="#F5F7FC" stroke="#50627F" stroke-width="1.5"/>
+<path d="M305 640 h7 l7 7 v10 h-14 Z M312 640 v7 h7" fill="white" stroke="#7C90B0"/>
+<text x="190.0" y="659" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">Docker Compose</text>
+<text x="190.0" y="682" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">web / api / db</text>
+<path d="M440 590 l9 -9 h300 v125 l-9 9 M740 590 l9 -9 M440 590 h300 v125 h-300 Z" fill="white" stroke="#50627F" stroke-width="1.5"/>
+<text x="590.0" y="618" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#182334">CI/CD · Hình 3.2d</text>
+<rect x="456" y="632" width="268" height="69" fill="#F5F7FC" stroke="#50627F" stroke-width="1.5"/>
+<path d="M705 640 h7 l7 7 v10 h-14 Z M712 640 v7 h7" fill="white" stroke="#7C90B0"/>
+<text x="590.0" y="659" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">GitHub Actions + GHCR</text>
+<text x="590.0" y="682" text-anchor="middle" font-family="Arial" font-size="17" font-weight="normal" fill="#182334">Kiểm thử, phát hành theo SHA</text>
+<polyline points="340,651 439,651" fill="none" stroke="#334155" stroke-width="1.7"/>
+<polygon points="439,651 429.0,647.0 429.0,655.0" fill="#334155"/>
+<rect x="341.6640625" y="614" width="98.671875" height="25" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="391" y="631" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">Commit / PR</text>
+<polyline points="600,581 600,540 390,540 390,500" fill="none" stroke="#334155" stroke-width="1.7" stroke-dasharray="7 5"/>
+<polygon points="390,500 386.0,510.0 394.0,510.0" fill="#334155"/>
+<rect x="439.75390625" y="514" width="108.4921875" height="25" fill="white" stroke="white" stroke-width="1.5"/>
+<text x="494" y="531" text-anchor="middle" font-family="Arial" font-size="16" font-weight="normal" fill="#182334">Deploy sau CI</text>
+</svg>

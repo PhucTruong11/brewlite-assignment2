@@ -1,0 +1,43 @@
+{
+  "capturedAt": "2026-11-20T10:58:08.620Z",
+  "environment": "local demo",
+  "web": "http://localhost:3140",
+  "api": "http://localhost:3141/api",
+  "database": "brewlite_report on PostgreSQL 18.6 localhost:55439",
+  "payment": "CARD simulated gateway",
+  "viewport": {
+    "width": 1280,
+    "height": 1050
+  },
+  "product": {
+    "name": "Bạc Xỉu",
+    "size": "M",
+    "price": 39000
+  },
+  "voucher": {
+    "code": "WELCOME10",
+    "discount": 3900
+  },
+  "total": 35100,
+  "orderId": "2caa188c-4a30-4378-a32e-3817dfe1cdda",
+  "statusAtReceipt": "PAID",
+  "statusAtHistory": "COMPLETED",
+  "localAdminTransitions": [
+    "PREPARING",
+    "READY",
+    "COMPLETED"
+  ],
+  "files": [
+    "sprint2-cart.png",
+    "sprint2-checkout.png",
+    "sprint2-receipt.png",
+    "sprint2-order-detail.png",
+    "sprint2-history.png"
+  ],
+  "regions": {
+    "cart": "cart panel",
+    "checkout": "payment methods and order summary grid",
+    "receipt": "main",
+    "history": "main"
+  }
+}
