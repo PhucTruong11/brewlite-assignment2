@@ -29,8 +29,6 @@ rectangle "Phân hệ Thanh toán & Đơn hàng (BrewLite)" {
 
   ' Khách hàng
   usecase "Xem biên nhận" as UC_ViewInvoice
-  usecase "Tạo đơn mới sau khi đơn cũ đã hủy" as UC_CreateAgain
-  usecase "Xử lý đơn quá hạn" as UC_AutoCancel
   usecase "Tạm giữ tồn kho 120 giây" as UC_Reserve120s
   usecase "Thanh toán thẻ mô phỏng" as UC_PayCard
   usecase "Thanh toán VietQR" as UC_PayVietQR
@@ -47,15 +45,12 @@ Admin -right-> UC_ReceiveOrderPOS
 Admin -right-> UC_UpdateBrewStatus
 
 Customer -right-> UC_ViewInvoice
-Customer -right-> UC_CreateAgain
 Customer -right-> UC_TrackOrder
 Customer -right-> UC_CreateOrder
 Customer -right-> UC_ChoosePayment
 
 UC_CreateOrder ..> UC_Validate : <<include>>
 UC_CreateOrder ..> UC_Reserve120s : <<include>>
-UC_CreateOrder <.right. UC_CreateAgain : <<include>>
-UC_TrackOrder <.right. UC_AutoCancel : <<extend>>\n[đã hết hạn]
 
 UC_ChoosePayment <.right. UC_PayCard : <<extend>>
 UC_ChoosePayment <.right. UC_PayVietQR : <<extend>>
@@ -72,7 +67,6 @@ UC_UpdatePaid ..> UC_DeductInventory : <<include>>
 UC_UpdatePaid ..> UC_AddLoyalty : <<include>>
 
 ' Layout anchors keep both actor columns outside the system boundary.
-Admin -[hidden]-> UC_CreateAgain
 Customer -[hidden]-> UC_ReceiveOrderPOS
 UC_VerifyHMAC -[hidden]-> PaymentGateway
 UC_Validate -[hidden]-> PaymentGateway
